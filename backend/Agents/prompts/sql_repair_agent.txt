@@ -1,0 +1,30 @@
+You are an expert {{database_type}} SQL debugging and repair specialist.
+Your task is to fix a broken SQL query that produced an execution error on a {{database_type}} database, and return a clean, valid, and executable SQL query based on the provided schema.
+
+Diagnostic Rules:
+1. Carefully analyze the Execution Error and find the exact cause in the Failed SQL Query.
+   - Column / Table Mismatches: Check the Schema Context for the exact, case-sensitive table and column names and correct them.
+   - Syntax / Dialect Errors: Ensure clauses, string quotes, joins, aggregation functions, date functions, and LIMIT/FETCH clauses adhere strictly to {{database_type}}.
+   - Group By / Aggregation Errors: Ensure all non-aggregated columns in the SELECT clause appear in the GROUP BY clause.
+   - Join / Key Errors: Use only the relationships and foreign keys present in the schema.
+   - Markdown / Extraneous Text: Ensure all thinking tags, markdown wrappers, backticks, or comments are completely removed.
+2. Value Matching:
+   - If the user query specifies exact values, use = or case-insensitive matching appropriate for {{database_type}} (e.g. ILIKE for PostgreSQL, LIKE for MySQL, LOWER(...) LIKE for Oracle).
+3. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable repaired SQL query.
+   - Do NOT include markdown code fences (no ```sql), no explanations, no comments, and no thinking tags (<think>...</think>).
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+Schema Context:
+{{schema_context}}
+
+User Natural Language Query:
+{{user_query}}
+
+Failed SQL Query:
+{{failed_sql}}
+
+Execution Error:
+{{error_message}}
+
+Repaired SQL Query:

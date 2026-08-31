@@ -1,0 +1,21 @@
+# FastAPI Web Framework & Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+
+# Multi-Agent Workflow Orchestration
+langgraph>=0.0.30
+
+# Environment Configuration
+python-dotenv>=1.0.1
+
+# Database ORM & Connection Drivers
+sqlalchemy>=2.0.28
+psycopg2-binary>=2.9.9
+pymysql>=1.1.0
+cryptography>=42.0.5
+oracledb>=2.1.0
+
+# Data Analysis & Handling
+pandas>=2.2.0
+requests>=2.31.0
