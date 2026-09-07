@@ -1,5 +1,5 @@
 # ==============================================================================
-# KeloStats Backend - Python Dependencies & Libraries
+# KeloStats - Python Dependencies & Libraries
 # ==============================================================================
 
 # FastAPI Web Framework & ASGI Server
