@@ -1,0 +1,44 @@
+{
+  "columns": [
+    "year",
+    "total_sales",
+    "total_profit",
+    "total_loss",
+    "total_gain",
+    "profit_margin_percent"
+  ],
+  "rows": [
+    {
+      "year": 2011.0,
+      "total_sales": 2259450.8955,
+      "total_profit": 248940.8115,
+      "total_loss": -169308.1564,
+      "total_gain": 418248.9679,
+      "profit_margin_percent": 11.02
+    },
+    {
+      "year": 2012.0,
+      "total_sales": 2677438.6949,
+      "total_profit": 307415.2796,
+      "total_loss": -195342.3406,
+      "total_gain": 502757.6202,
+      "profit_margin_percent": 11.48
+    },
+    {
+      "year": 2013.0,
+      "total_sales": 3405746.4497,
+      "total_profit": 406935.2305,
+      "total_loss": -245907.1878,
+      "total_gain": 652842.4183,
+      "profit_margin_percent": 11.95
+    },
+    {
+      "year": 2014.0,
+      "total_sales": 4299865.8707,
+      "total_profit": 504165.9706,
+      "total_loss": -310088.4704,
+      "total_gain": 814254.441,
+      "profit_margin_percent": 11.73
+    }
+  ]
+}

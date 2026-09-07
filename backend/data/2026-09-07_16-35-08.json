@@ -1,0 +1,81 @@
+{
+  "columns": [
+    "city",
+    "cuisine",
+    "total_orders",
+    "total_revenue",
+    "avg_rating"
+  ],
+  "rows": [
+    {
+      "city": "Manchester",
+      "cuisine": "Thai",
+      "total_orders": 107,
+      "total_revenue": 12319.49,
+      "avg_rating": 3.9910714285714284
+    },
+    {
+      "city": "Bristol",
+      "cuisine": "American",
+      "total_orders": 107,
+      "total_revenue": 12137.23,
+      "avg_rating": 4.130232558139535
+    },
+    {
+      "city": "Liverpool",
+      "cuisine": "Thai",
+      "total_orders": 97,
+      "total_revenue": 10381.42,
+      "avg_rating": 4.029098360655738
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Indian",
+      "total_orders": 86,
+      "total_revenue": 9569.03,
+      "avg_rating": 3.62
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Mexican",
+      "total_orders": 83,
+      "total_revenue": 8387.39,
+      "avg_rating": 4.078391959798995
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Thai",
+      "total_orders": 63,
+      "total_revenue": 8183.92,
+      "avg_rating": 4.094047619047619
+    },
+    {
+      "city": "Liverpool",
+      "cuisine": "Mexican",
+      "total_orders": 73,
+      "total_revenue": 7997.19,
+      "avg_rating": 4.002222222222223
+    },
+    {
+      "city": "London",
+      "cuisine": "Italian",
+      "total_orders": 75,
+      "total_revenue": 7774.3,
+      "avg_rating": 4.267052023121387
+    },
+    {
+      "city": "Birmingham",
+      "cuisine": "American",
+      "total_orders": 62,
+      "total_revenue": 7143.36,
+      "avg_rating": 3.6993464052287583
+    },
+    {
+      "city": "Manchester",
+      "cuisine": "Indian",
+      "total_orders": 56,
+      "total_revenue": 6639.27,
+      "avg_rating": 3.658041958041958
+    }
+  ]
+}

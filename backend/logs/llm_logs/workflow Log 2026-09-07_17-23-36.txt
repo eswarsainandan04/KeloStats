@@ -1,0 +1,1105 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"generate line chart in ppt only on month-year in x axis"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The user asks to generate a line chart in PowerPoint with month-year on the x-axis, which pertains to presentation creation and data visualization."
+}
+
+TOKEN COUNT:
+input tokens: 489
+output tokens: 128
+total tokens: 617
+======================
+
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify how the user query should be processed against the provided database schema context.
+
+Note: The user query may be a direct analytical question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt", "Analyze the database and create a dashboard slide with charts"). Any request asking to analyze, summarize, compare, or visualize data from the database is ALWAYS valid.
+
+You must categorize the query into one of two classifications:
+
+1. "SCHEMA_MATCH":
+   - The query can be queried or aggregated directly from the database schema tables and columns.
+   - Includes all general metrics, aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY), date ranges, comparisons, multi-chart summaries, and presentation dashboards based on available tables.
+   - Default to "SCHEMA_MATCH" whenever the query focuses on analyzing the database or generating metrics from available tables.
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query specifically targets concrete entity values, product names, customer names, restaurant names, city names, or specific categories that are NOT explicitly listed in the schema sample values and must be looked up or verified from the database first before writing the final SQL query.
+   - Example: The schema has `restaurant_name` or `customer_name`, and the user asks for a specific name like "Pizza Hut" or "Harsha Vardhan" whose exact spelling needs database retrieval.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate line chart in ppt only on month-year in x axis
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a line chart with month-year on the x-axis, which can be derived from existing date fields (e.g., orders.order_time) without needing specific entity lookups."
+}
+
+TOKEN COUNT:
+input tokens: 1753
+output tokens: 234
+total tokens: 1987
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate line chart in ppt only on month-year in x axis
+
+SQL Query:
+
+LLM OUTPUT:
+
+SELECT to_char(date_trunc('month', o.order_time), 'Mon-YYYY') AS month_year,
+       COUNT(*) AS total_orders,
+       SUM(oi.quantity * oi.price) AS total_revenue
+FROM public.orders o
+LEFT JOIN public.order_items oi ON oi.order_id = o.order_id
+GROUP BY date_trunc('month', o.order_time)
+ORDER BY date_trunc('month', o.order_time);
+
+TOKEN COUNT:
+input tokens: 1796
+output tokens: 389
+total tokens: 2185
+======================
+
+======================
+Node: PPT Generation - PPT Generation Agent
+LLM INPUT:
+
+You are KeloStats AI Master Slide Designer, a world-class presentation architect inspired by Canva, Pitch, Linear, and elite design studios.
+
+Your mission is to generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+
+==============================================================================
+CORE DESIGN PHILOSOPHY & DYNAMIC ARCHITECTURAL FREEDOM:
+==============================================================================
+
+1. COMPLETE CREATIVE FREEDOM (ZERO HARDCODED LAYOUTS):
+   - You are NOT bound to any rigid layout formulas, fixed archetypes, or predetermined card counts.
+   - You have 100% creative freedom to conceptualize, design, and architect the most compelling visual canvas layout for the specific content.
+   - Think like a senior Canva designer: analyze the data and user intent, identify the key narrative focal point, and invent an original layout tailored to this story.
+   - Dynamically compose layouts such as:
+     * Bento-box multi-card grids with varying card weights and visual hierarchy
+     * Asymmetrical split-screens (e.g., hero metric/insight on one side, detailed analysis or interactive visualizer on the other)
+     * Hero focal points with large typographic statements and surrounding supporting data tiles
+     * Side-by-side comparative matrices, timeline/milestone flows, or categorical breakdown cards
+     * Interactive Chart.js visualizations paired with contextual narrative callouts and badge pills
+     * Or any bespoke layout composition that presents the data with maximum boardroom polish!
+
+2. INHERIT BRAND DNA FROM TEMPLATE:
+   - Analyze the provided template slide (<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Orders & Revenue Trend</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+      --secondary-blue: #0066CC;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      padding: 1cqw;
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Orders & Revenue Trend</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const labels = [
+      "2023-01-01","2023-01-02","2023-01-03","2023-01-04","2023-01-05","2023-01-06","2023-01-07","2023-01-08","2023-01-09","2023-01-10",
+      "2023-01-11","2023-01-12","2023-01-13","2023-01-14","2023-01-15","2023-01-16","2023-01-17","2023-01-18","2023-01-19","2023-01-20",
+      "2023-01-21","2023-01-22","2023-01-23","2023-01-24","2023-01-25","2023-01-26","2023-01-27","2023-01-28","2023-01-29","2023-01-30",
+      "2023-01-31","2023-02-01","2023-02-02","2023-02-03","2023-02-04","2023-02-05","2023-02-06","2023-02-07","2023-02-08","2023-02-09",
+      "2023-02-10","2023-02-11","2023-02-12","2023-02-13","2023-02-14","2023-02-15","2023-02-16","2023-02-17","2023-02-18","2023-02-19"
+    ];
+    const ordersCount = [15,5,13,8,14,10,9,14,7,5,12,13,8,9,14,6,11,8,11,8,12,10,9,12,9,7,8,12,10,3,12,13,9,13,16,9,10,9,6,10,16,5,12,4,9,15,10,13,11,10];
+    const totalRevenue = [1371.18,864.18,820.06,1109.78,1300.84,1335.31,923.4,1165.32,517.62,738.06,1125.22,1357.96,748.76,1043.96,1491.68,445.69,1738.86,931.68,1407.68,697.92,1309.01,1177.45,1336.66,1449.55,978.59,690.95,870.29,1339.75,1141.02,813.75,1211.1,1074.49,967.45,1374.34,2102.02,981.19,812.6,1080.22,622.63,961.29,1890.08,686.89,1174.63,506.07,996.54,1711.45,1331.15,1492.14,1068.67,950.64];
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Orders Count',
+            data: ordersCount,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() + '33',
+            yAxisID: 'y',
+            tension: 0.4,
+            pointRadius: 3,
+            fill: false
+          },
+          {
+            label: 'Total Revenue ($)',
+            data: totalRevenue,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim() + '33',
+            yAxisID: 'y1',
+            tension: 0.4,
+            pointRadius: 3,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim(),
+              maxRotation: 45,
+              minRotation: 45
+            },
+            grid: {
+              display: false
+            }
+          },
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Orders Count',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Revenue ($)',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            grid: {
+              drawOnChartArea: false
+            },
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>) and extract its core visual identity:
+     * Color palette: Primary brand accent, secondary accents, surface card backgrounds, and text shades.
+     * Typography & styling: Font family, corner radiuses, subtle border treatments, and decorative accents.
+   - Apply this inherited theme to your newly created layout so the presentation feels unified and branded, while the layout itself is completely fresh and dynamic.
+
+3. VISUAL EXCELLENCE & AESTHETIC POLISH:
+   - A slide is a dynamic visual canvas, never a plain document. Ban raw, unstyled vertical bullet point lists.
+   - Elevate the content with modern UI components: stat tiles, highlight badges, pill tags, colored progress indicators, and well-spaced container cards.
+   - Establish clear visual hierarchy: prominent titles/numbers draw the eye first, followed by clear labels, key takeaways, and secondary metrics.
+
+4. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must be responsive and strictly adhere to the 16:9 aspect ratio:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the entire slide scales seamlessly to any screen resolution.
+   - Use CSS Grid or Flexbox to organize cards and elements so that content naturally breathes, never overflows, and never collides or overlaps.
+
+5. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML (`<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`).
+   - If using Chart.js, include `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` and ensure the canvas ID matches the script selector.
+   - IMPORTANT: Inside `<script>` tags, always use valid JavaScript numbers and math expressions. NEVER use CSS functions like `calc(...)` in JavaScript code.
+   - Do NOT wrap the output in markdown code blocks (no ```html). Output ONLY pure, executable HTML code.
+
+==============================================================================
+INPUT:
+----------
+
+INSTRUCTION:
+generate line chart in ppt only on month-year in x axis
+
+RETRIVED CONTEXT FROM DB:
+{
+  "columns": [
+    "month_year",
+    "total_orders",
+    "total_revenue"
+  ],
+  "rows": [
+    {
+      "month_year": "Jan-2023",
+      "total_orders": 744,
+      "total_revenue": 33453.28
+    },
+    {
+      "month_year": "Feb-2023",
+      "total_orders": 693,
+      "total_revenue": 30887.6
+    },
+    {
+      "month_year": "Mar-2023",
+      "total_orders": 822,
+      "total_revenue": 35970.92
+    },
+    {
+      "month_year": "Apr-2023",
+      "total_orders": 796,
+      "total_revenue": 36117.04
+    },
+    {
+      "month_year": "May-2023",
+      "total_orders": 753,
+      "total_revenue": 33419.53
+    },
+    {
+      "month_year": "Jun-2023",
+      "total_orders": 736,
+      "total_revenue": 33902.61
+    },
+    {
+      "month_year": "Jul-2023",
+      "total_orders": 824,
+      "total_revenue": 36348.99
+    },
+    {
+      "month_year": "Aug-2023",
+      "total_orders": 748,
+      "total_revenue": 35212.25
+    },
+    {
+      "month_year": "Sep-2023",
+      "total_orders": 766,
+      "total_revenue": 34827.77
+    },
+    {
+      "month_year": "Oct-2023",
+      "total_orders": 784,
+      "total_revenue": 36159.31
+    },
+    {
+      "month_year": "Nov-2023",
+      "total_orders": 735,
+      "total_revenue": 33726.62
+    },
+    {
+      "month_year": "Dec-2023",
+      "total_orders": 720,
+      "total_revenue": 34048.28
+    },
+    {
+      "month_year": "Jan-2024",
+      "total_orders": 767,
+      "total_revenue": 33389.48
+    },
+    {
+      "month_year": "Feb-2024",
+      "total_orders": 726,
+      "total_revenue": 33042.45
+    },
+    {
+      "month_year": "Mar-2024",
+      "total_orders": 712,
+      "total_revenue": 33536.63
+    },
+    {
+      "month_year": "Apr-2024",
+      "total_orders": 685,
+      "total_revenue": 30502.13
+    },
+    {
+      "month_year": "May-2024",
+      "total_orders": 380,
+      "total_revenue": 15964.26
+    }
+  ]
+}
+
+CURRENT SLIDE/PREVIOUS SLIDE TEMPLATE (for brand theme inheritance):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Orders & Revenue Trend</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+      --secondary-blue: #0066CC;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      padding: 1cqw;
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Orders & Revenue Trend</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const labels = [
+      "2023-01-01","2023-01-02","2023-01-03","2023-01-04","2023-01-05","2023-01-06","2023-01-07","2023-01-08","2023-01-09","2023-01-10",
+      "2023-01-11","2023-01-12","2023-01-13","2023-01-14","2023-01-15","2023-01-16","2023-01-17","2023-01-18","2023-01-19","2023-01-20",
+      "2023-01-21","2023-01-22","2023-01-23","2023-01-24","2023-01-25","2023-01-26","2023-01-27","2023-01-28","2023-01-29","2023-01-30",
+      "2023-01-31","2023-02-01","2023-02-02","2023-02-03","2023-02-04","2023-02-05","2023-02-06","2023-02-07","2023-02-08","2023-02-09",
+      "2023-02-10","2023-02-11","2023-02-12","2023-02-13","2023-02-14","2023-02-15","2023-02-16","2023-02-17","2023-02-18","2023-02-19"
+    ];
+    const ordersCount = [15,5,13,8,14,10,9,14,7,5,12,13,8,9,14,6,11,8,11,8,12,10,9,12,9,7,8,12,10,3,12,13,9,13,16,9,10,9,6,10,16,5,12,4,9,15,10,13,11,10];
+    const totalRevenue = [1371.18,864.18,820.06,1109.78,1300.84,1335.31,923.4,1165.32,517.62,738.06,1125.22,1357.96,748.76,1043.96,1491.68,445.69,1738.86,931.68,1407.68,697.92,1309.01,1177.45,1336.66,1449.55,978.59,690.95,870.29,1339.75,1141.02,813.75,1211.1,1074.49,967.45,1374.34,2102.02,981.19,812.6,1080.22,622.63,961.29,1890.08,686.89,1174.63,506.07,996.54,1711.45,1331.15,1492.14,1068.67,950.64];
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Orders Count',
+            data: ordersCount,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() + '33',
+            yAxisID: 'y',
+            tension: 0.4,
+            pointRadius: 3,
+            fill: false
+          },
+          {
+            label: 'Total Revenue ($)',
+            data: totalRevenue,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim() + '33',
+            yAxisID: 'y1',
+            tension: 0.4,
+            pointRadius: 3,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim(),
+              maxRotation: 45,
+              minRotation: 45
+            },
+            grid: {
+              display: false
+            }
+          },
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Orders Count',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Revenue ($)',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            grid: {
+              drawOnChartArea: false
+            },
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Monthly Orders & Revenue</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+      --secondary-blue: #0066CC;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    .chart-container {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      padding: 1cqw;
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Monthly Orders & Revenue</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+      <canvas id="monthlyChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const labels = [
+      "Jan-2023","Feb-2023","Mar-2023","Apr-2023","May-2023","Jun-2023","Jul-2023","Aug-2023","Sep-2023","Oct-2023","Nov-2023","Dec-2023","Jan-2024","Feb-2024","Mar-2024","Apr-2024","May-2024"
+    ];
+    const orders = [744,693,822,796,753,736,824,748,766,784,735,720,767,726,712,685,380];
+    const revenue = [33453.28,30887.6,35970.92,36117.04,33419.53,33902.61,36348.99,35212.25,34827.77,36159.31,33726.62,34048.28,33389.48,33042.45,33536.63,30502.13,15964.26];
+
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Total Orders',
+            data: orders,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim() + '33',
+            yAxisID: 'y',
+            tension: 0.4,
+            pointRadius: 4,
+            fill: false
+          },
+          {
+            label: 'Total Revenue ($)',
+            data: revenue,
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim(),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-blue').trim() + '33',
+            yAxisID: 'y1',
+            tension: 0.4,
+            pointRadius: 4,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim(),
+              maxRotation: 0,
+              minRotation: 0
+            },
+            grid: { display: false }
+          },
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Orders',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim() }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Revenue ($)',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim()
+            },
+            grid: { drawOnChartArea: false },
+            ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim() }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-dark').trim() }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 5946
+output tokens: 2003
+total tokens: 7949
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 9984
+OUTPUT TOKENS : 2754
+TOTAL         : 12738
+=======================================

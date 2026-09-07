@@ -1,0 +1,590 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"summarize the database"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The request asks to summarize a database, which pertains to business analytics and data handling."
+}
+
+TOKEN COUNT:
+input tokens: 481
+output tokens: 73
+total tokens: 554
+======================
+
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"summarize the database"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "normal_qa",
+    "reason": "The request asks for a summary of the database, not a directive to create a PowerPoint presentation."
+}
+
+TOKEN COUNT:
+input tokens: 466
+output tokens: 113
+total tokens: 579
+======================
+
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify if the underlying data requested in a user query can be retrieved or calculated using the provided database schema context.
+
+Note: The user query may be a direct question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt"). Focus on evaluating whether the required metrics, tables, columns, or data entities exist in the schema, ignoring presentation framing.
+
+You must categorize the query into one of three classifications:
+
+1. "SCHEMA_MATCH":
+   - The underlying data request is completely related to the database schema.
+   - All referenced tables, columns, metrics, and any specific values/categories needed are already known or answerable from the schema context (or are general aggregations like COUNT, SUM, AVG, GROUP BY, date ranges).
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query is related to the database schema (the tables and columns exist), BUT it mentions specific entity names, product names, customer names, cities, or category values that are NOT listed in the schema context.
+   - Example: The schema has `product_name` column, but the user asks for a specific name like "Cisco Phone 7940" or "Harsha Vardhan" which is not among the sample categories.
+
+3. "UNRELATED":
+   - The user query has no underlying database connection, asks for tables/columns that do not exist, or is completely non-database related.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+summarize the database
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED" | "UNRELATED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a summary of the database, which can be answered using the provided schema information (tables, columns, row counts, and sample values). No unknown specific entities are required."
+}
+
+TOKEN COUNT:
+input tokens: 1753
+output tokens: 156
+total tokens: 1909
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+summarize the database
+
+SQL Query:
+
+LLM OUTPUT:
+
+WITH
+rc AS (SELECT COUNT(*) AS total_restaurants FROM public.restaurants),
+ci AS (SELECT COUNT(*) AS total_menu_items FROM public.menu_items),
+cu AS (SELECT COUNT(*) AS total_customers FROM public.customers),
+or AS (SELECT COUNT(*) AS total_orders FROM public.orders),
+oi AS (SELECT COUNT(*) AS total_order_items FROM public.order_items),
+rev AS (
+    SELECT SUM(oi.price * oi.quantity) AS total_revenue,
+           AVG(oi.price * oi.quantity) AS avg_order_value
+    FROM public.order_items oi
+),
+rating AS (SELECT AVG(rating) AS avg_rating FROM public.restaurants),
+status_counts AS (
+    SELECT status, COUNT(*) AS cnt
+    FROM public.orders
+    GROUP BY status
+)
+SELECT 'Total Restaurants' AS metric, rc.total_restaurants::text AS value FROM rc
+UNION ALL
+SELECT 'Total Menu Items', ci.total_menu_items::text FROM ci
+UNION ALL
+SELECT 'Total Customers', cu.total_customers::text FROM cu
+UNION ALL
+SELECT 'Total Orders', or.total_orders::text FROM or
+UNION ALL
+SELECT 'Total Order Items', oi.total_order_items::text FROM oi
+UNION ALL
+SELECT 'Total Revenue', rev.total_revenue::text FROM rev
+UNION ALL
+SELECT 'Average Order Value', rev.avg_order_value::text FROM rev
+UNION ALL
+SELECT 'Average Restaurant Rating', rating.avg_rating::text FROM rating
+UNION ALL
+SELECT 'Orders Delivered', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Delivered'
+UNION ALL
+SELECT 'Orders Late', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Late'
+UNION ALL
+SELECT 'Orders Cancelled', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Cancelled';
+
+TOKEN COUNT:
+input tokens: 1754
+output tokens: 1006
+total tokens: 2760
+======================
+
+======================
+Node 4 - Repair Attempt 1 - SQL Repair Agent
+LLM INPUT:
+
+You are an expert POSTGRES SQL debugging and repair specialist.
+Your task is to fix a broken SQL query that produced an execution error on a POSTGRES database, and return a clean, valid, and executable SQL query based on the provided schema.
+
+Diagnostic Rules:
+1. Carefully analyze the Execution Error and find the exact cause in the Failed SQL Query.
+   - Column / Table Mismatches: Check the Schema Context for the exact, case-sensitive table and column names and correct them.
+   - Syntax / Dialect Errors: Ensure clauses, string quotes, joins, aggregation functions, date functions, and LIMIT/FETCH clauses adhere strictly to POSTGRES.
+   - Group By / Aggregation Errors: Ensure all non-aggregated columns in the SELECT clause appear in the GROUP BY clause.
+   - Join / Key Errors: Use only the relationships and foreign keys present in the schema.
+   - Markdown / Extraneous Text: Ensure all thinking tags, markdown wrappers, backticks, or comments are completely removed.
+2. Value Matching:
+   - If the user query specifies exact values, use = or case-insensitive matching appropriate for POSTGRES (e.g. ILIKE for PostgreSQL, LIKE for MySQL, LOWER(...) LIKE for Oracle).
+3. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable repaired SQL query.
+   - Do NOT include markdown code fences (no ```sql), no explanations, no comments, and no thinking tags (<think>...</think>).
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+User Natural Language Query:
+summarize the database
+
+Failed SQL Query:
+WITH
+rc AS (SELECT COUNT(*) AS total_restaurants FROM public.restaurants),
+ci AS (SELECT COUNT(*) AS total_menu_items FROM public.menu_items),
+cu AS (SELECT COUNT(*) AS total_customers FROM public.customers),
+or AS (SELECT COUNT(*) AS total_orders FROM public.orders),
+oi AS (SELECT COUNT(*) AS total_order_items FROM public.order_items),
+rev AS (
+    SELECT SUM(oi.price * oi.quantity) AS total_revenue,
+           AVG(oi.price * oi.quantity) AS avg_order_value
+    FROM public.order_items oi
+),
+rating AS (SELECT AVG(rating) AS avg_rating FROM public.restaurants),
+status_counts AS (
+    SELECT status, COUNT(*) AS cnt
+    FROM public.orders
+    GROUP BY status
+)
+SELECT 'Total Restaurants' AS metric, rc.total_restaurants::text AS value FROM rc
+UNION ALL
+SELECT 'Total Menu Items', ci.total_menu_items::text FROM ci
+UNION ALL
+SELECT 'Total Customers', cu.total_customers::text FROM cu
+UNION ALL
+SELECT 'Total Orders', or.total_orders::text FROM or
+UNION ALL
+SELECT 'Total Order Items', oi.total_order_items::text FROM oi
+UNION ALL
+SELECT 'Total Revenue', rev.total_revenue::text FROM rev
+UNION ALL
+SELECT 'Average Order Value', rev.avg_order_value::text FROM rev
+UNION ALL
+SELECT 'Average Restaurant Rating', rating.avg_rating::text FROM rating
+UNION ALL
+SELECT 'Orders Delivered', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Delivered'
+UNION ALL
+SELECT 'Orders Late', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Late'
+UNION ALL
+SELECT 'Orders Cancelled', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Cancelled';
+
+Execution Error:
+(psycopg2.errors.SyntaxError) syntax error at or near "or"
+LINE 5: or AS (SELECT COUNT(*) AS total_orders FROM public.orders),
+        ^
+
+[SQL: WITH
+rc AS (SELECT COUNT(*) AS total_restaurants FROM public.restaurants),
+ci AS (SELECT COUNT(*) AS total_menu_items FROM public.menu_items),
+cu AS (SELECT COUNT(*) AS total_customers FROM public.customers),
+or AS (SELECT COUNT(*) AS total_orders FROM public.orders),
+oi AS (SELECT COUNT(*) AS total_order_items FROM public.order_items),
+rev AS (
+    SELECT SUM(oi.price * oi.quantity) AS total_revenue,
+           AVG(oi.price * oi.quantity) AS avg_order_value
+    FROM public.order_items oi
+),
+rating AS (SELECT AVG(rating) AS avg_rating FROM public.restaurants),
+status_counts AS (
+    SELECT status, COUNT(*) AS cnt
+    FROM public.orders
+    GROUP BY status
+)
+SELECT 'Total Restaurants' AS metric, rc.total_restaurants::text AS value FROM rc
+UNION ALL
+SELECT 'Total Menu Items', ci.total_menu_items::text FROM ci
+UNION ALL
+SELECT 'Total Customers', cu.total_customers::text FROM cu
+UNION ALL
+SELECT 'Total Orders', or.total_orders::text FROM or
+UNION ALL
+SELECT 'Total Order Items', oi.total_order_items::text FROM oi
+UNION ALL
+SELECT 'Total Revenue', rev.total_revenue::text FROM rev
+UNION ALL
+SELECT 'Average Order Value', rev.avg_order_value::text FROM rev
+UNION ALL
+SELECT 'Average Restaurant Rating', rating.avg_rating::text FROM rating
+UNION ALL
+SELECT 'Orders Delivered', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Delivered'
+UNION ALL
+SELECT 'Orders Late', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Late'
+UNION ALL
+SELECT 'Orders Cancelled', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Cancelled';]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+Repaired SQL Query:
+
+LLM OUTPUT:
+
+WITH
+rc AS (SELECT COUNT(*) AS total_restaurants FROM public.restaurants),
+ci AS (SELECT COUNT(*) AS total_menu_items FROM public.menu_items),
+cu AS (SELECT COUNT(*) AS total_customers FROM public.customers),
+ord AS (SELECT COUNT(*) AS total_orders FROM public.orders),
+oi AS (SELECT COUNT(*) AS total_order_items FROM public.order_items),
+rev AS (
+    SELECT SUM(oi.price * oi.quantity) AS total_revenue,
+           AVG(oi.price * oi.quantity) AS avg_order_value
+    FROM public.order_items oi
+),
+rating_cte AS (SELECT AVG(rating) AS avg_rating FROM public.restaurants),
+status_counts AS (
+    SELECT status, COUNT(*) AS cnt
+    FROM public.orders
+    GROUP BY status
+)
+SELECT 'Total Restaurants' AS metric, rc.total_restaurants::text AS value FROM rc
+UNION ALL
+SELECT 'Total Menu Items', ci.total_menu_items::text FROM ci
+UNION ALL
+SELECT 'Total Customers', cu.total_customers::text FROM cu
+UNION ALL
+SELECT 'Total Orders', ord.total_orders::text FROM ord
+UNION ALL
+SELECT 'Total Order Items', oi.total_order_items::text FROM oi
+UNION ALL
+SELECT 'Total Revenue', rev.total_revenue::text FROM rev
+UNION ALL
+SELECT 'Average Order Value', rev.avg_order_value::text FROM rev
+UNION ALL
+SELECT 'Average Restaurant Rating', rating_cte.avg_rating::text FROM rating_cte
+UNION ALL
+SELECT 'Orders Delivered', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Delivered'
+UNION ALL
+SELECT 'Orders Late', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Late'
+UNION ALL
+SELECT 'Orders Cancelled', sc.cnt::text FROM status_counts sc WHERE sc.status = 'Cancelled';
+
+TOKEN COUNT:
+input tokens: 2501
+output tokens: 1170
+total tokens: 3671
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 6955
+OUTPUT TOKENS : 2518
+TOTAL         : 9473
+=======================================

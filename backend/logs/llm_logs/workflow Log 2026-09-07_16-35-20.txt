@@ -1,0 +1,59 @@
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify how the user query should be processed against the provided database schema context.
+
+Note: The user query may be a direct analytical question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt", "Analyze the database and create a dashboard slide with charts"). Any request asking to analyze, summarize, compare, or visualize data from the database is ALWAYS valid.
+
+You must categorize the query into one of two classifications:
+
+1. "SCHEMA_MATCH":
+   - The query can be queried or aggregated directly from the database schema tables and columns.
+   - Includes all general metrics, aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY), date ranges, comparisons, multi-chart summaries, and presentation dashboards based on available tables.
+   - Default to "SCHEMA_MATCH" whenever the query focuses on analyzing the database or generating metrics from available tables.
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query specifically targets concrete entity values, product names, customer names, restaurant names, city names, or specific categories that are NOT explicitly listed in the schema sample values and must be looked up or verified from the database first before writing the final SQL query.
+   - Example: The schema has `restaurant_name` or `customer_name`, and the user asks for a specific name like "Pizza Hut" or "Harsha Vardhan" whose exact spelling needs database retrieval.
+
+Retrieved Schema Context:
+TABLE: products
+Columns: product_id, product_name, category
+TABLE: orders
+Columns: order_id, product_id, quantity
+
+User Natural Language Query:
+Show total orders for product cisco phone 7940
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "RETRIEVAL_REQUIRED",
+  "reason": "The query references a specific product name ('cisco phone 7940') which must be looked up in the products table to obtain its product_id before aggregating orders."
+}
+
+TOKEN COUNT:
+input tokens: 508
+output tokens: 193
+total tokens: 701
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 508
+OUTPUT TOKENS : 193
+TOTAL         : 701
+=======================================

@@ -21,6 +21,8 @@ Rules:
    - You MUST generate ONLY read-only SELECT or WITH queries.
    - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
 
+8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
 Retrieved Schema Context:
 {{llm_prompt_text}}
 {{retrieved_values_section}}

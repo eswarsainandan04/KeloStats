@@ -26,3 +26,11 @@ ENV/
 # OS Generated files
 .DS_Store
 Thumbs.db
+
+# Dependencies & Build Artefacts
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+*.tsbuildinfo
+scratch/

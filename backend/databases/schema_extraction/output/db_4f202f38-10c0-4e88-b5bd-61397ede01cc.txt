@@ -1,0 +1,5 @@
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: store

@@ -1,0 +1,200 @@
+{
+  "columns": [
+    "month_year",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "month_year": "Jan-2011",
+      "total_sales": 98898.4888
+    },
+    {
+      "month_year": "Feb-2011",
+      "total_sales": 91152.157
+    },
+    {
+      "month_year": "Mar-2011",
+      "total_sales": 145729.3673
+    },
+    {
+      "month_year": "Apr-2011",
+      "total_sales": 116915.7642
+    },
+    {
+      "month_year": "May-2011",
+      "total_sales": 146747.8361
+    },
+    {
+      "month_year": "Jun-2011",
+      "total_sales": 215207.3801
+    },
+    {
+      "month_year": "Jul-2011",
+      "total_sales": 115510.4192
+    },
+    {
+      "month_year": "Aug-2011",
+      "total_sales": 207581.4912
+    },
+    {
+      "month_year": "Sep-2011",
+      "total_sales": 290214.4554
+    },
+    {
+      "month_year": "Oct-2011",
+      "total_sales": 199071.2641
+    },
+    {
+      "month_year": "Nov-2011",
+      "total_sales": 298496.5375
+    },
+    {
+      "month_year": "Dec-2011",
+      "total_sales": 333925.7346
+    },
+    {
+      "month_year": "Jan-2012",
+      "total_sales": 135780.7202
+    },
+    {
+      "month_year": "Feb-2012",
+      "total_sales": 100510.2169
+    },
+    {
+      "month_year": "Mar-2012",
+      "total_sales": 163076.7712
+    },
+    {
+      "month_year": "Apr-2012",
+      "total_sales": 161052.2695
+    },
+    {
+      "month_year": "May-2012",
+      "total_sales": 208364.8914
+    },
+    {
+      "month_year": "Jun-2012",
+      "total_sales": 256175.6985
+    },
+    {
+      "month_year": "Jul-2012",
+      "total_sales": 145236.7852
+    },
+    {
+      "month_year": "Aug-2012",
+      "total_sales": 303142.9425
+    },
+    {
+      "month_year": "Sep-2012",
+      "total_sales": 289389.1658
+    },
+    {
+      "month_year": "Oct-2012",
+      "total_sales": 252939.8502
+    },
+    {
+      "month_year": "Nov-2012",
+      "total_sales": 323512.4169
+    },
+    {
+      "month_year": "Dec-2012",
+      "total_sales": 338256.9666
+    },
+    {
+      "month_year": "Jan-2013",
+      "total_sales": 199185.9074
+    },
+    {
+      "month_year": "Feb-2013",
+      "total_sales": 167239.6504
+    },
+    {
+      "month_year": "Mar-2013",
+      "total_sales": 198594.0303
+    },
+    {
+      "month_year": "Apr-2013",
+      "total_sales": 177821.3168
+    },
+    {
+      "month_year": "May-2013",
+      "total_sales": 260498.5646
+    },
+    {
+      "month_year": "Jun-2013",
+      "total_sales": 396519.612
+    },
+    {
+      "month_year": "Jul-2013",
+      "total_sales": 229928.9519
+    },
+    {
+      "month_year": "Aug-2013",
+      "total_sales": 326488.7894
+    },
+    {
+      "month_year": "Sep-2013",
+      "total_sales": 376619.2457
+    },
+    {
+      "month_year": "Oct-2013",
+      "total_sales": 293406.643
+    },
+    {
+      "month_year": "Nov-2013",
+      "total_sales": 373989.36
+    },
+    {
+      "month_year": "Dec-2013",
+      "total_sales": 405454.3782
+    },
+    {
+      "month_year": "Jan-2014",
+      "total_sales": 241268.5556
+    },
+    {
+      "month_year": "Feb-2014",
+      "total_sales": 184837.3556
+    },
+    {
+      "month_year": "Mar-2014",
+      "total_sales": 263100.7726
+    },
+    {
+      "month_year": "Apr-2014",
+      "total_sales": 242771.8613
+    },
+    {
+      "month_year": "May-2014",
+      "total_sales": 288401.0461
+    },
+    {
+      "month_year": "Jun-2014",
+      "total_sales": 401814.0632
+    },
+    {
+      "month_year": "Jul-2014",
+      "total_sales": 258705.6803
+    },
+    {
+      "month_year": "Aug-2014",
+      "total_sales": 456619.9424
+    },
+    {
+      "month_year": "Sep-2014",
+      "total_sales": 481157.2438
+    },
+    {
+      "month_year": "Oct-2014",
+      "total_sales": 422766.6294
+    },
+    {
+      "month_year": "Nov-2014",
+      "total_sales": 555279.0269
+    },
+    {
+      "month_year": "Dec-2014",
+      "total_sales": 503143.6935
+    }
+  ]
+}

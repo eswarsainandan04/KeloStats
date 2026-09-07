@@ -1,0 +1,32 @@
+{
+  "columns": [
+    "kpi",
+    "description"
+  ],
+  "rows": [
+    {
+      "kpi": "Total Orders",
+      "description": "The total count of orders placed across all restaurants, indicating overall platform activity."
+    },
+    {
+      "kpi": "Total Revenue",
+      "description": "Sum of all order item prices multiplied by quantity, representing the total earnings generated."
+    },
+    {
+      "kpi": "Average Order Value",
+      "description": "Average monetary value per order, calculated as total revenue divided by total orders, showing typical spend."
+    },
+    {
+      "kpi": "On-time Delivery Rate",
+      "description": "Percentage of orders delivered on time (status = 'Delivered') versus total delivered orders, measuring delivery performance."
+    },
+    {
+      "kpi": "Customer Acquisition Rate",
+      "description": "Number of new customers who signed up within the last month, reflecting growth in the user base."
+    },
+    {
+      "kpi": "Average Restaurant Rating",
+      "description": "Mean rating of restaurants based on the rating column, indicating overall customer satisfaction."
+    }
+  ]
+}

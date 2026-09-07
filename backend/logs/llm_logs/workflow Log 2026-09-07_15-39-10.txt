@@ -1,0 +1,941 @@
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify if the underlying data requested in a user query can be retrieved or calculated using the provided database schema context.
+
+Note: The user query may be a direct question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt"). Focus on evaluating whether the required metrics, tables, columns, or data entities exist in the schema, ignoring presentation framing.
+
+You must categorize the query into one of three classifications:
+
+1. "SCHEMA_MATCH":
+   - The underlying data request is completely related to the database schema.
+   - All referenced tables, columns, metrics, and any specific values/categories needed are already known or answerable from the schema context (or are general aggregations like COUNT, SUM, AVG, GROUP BY, date ranges).
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query is related to the database schema (the tables and columns exist), BUT it mentions specific entity names, product names, customer names, cities, or category values that are NOT listed in the schema context.
+   - Example: The schema has `product_name` column, but the user asks for a specific name like "Cisco Phone 7940" or "Harsha Vardhan" which is not among the sample categories.
+
+3. "UNRELATED":
+   - The user query has no underlying database connection, asks for tables/columns that do not exist, or is completely non-database related.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+discuss the trend over sales in ppt
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED" | "UNRELATED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a sales trend, which can be derived from existing tables (orders, order_items, menu_items) using aggregations over time. No specific unknown entities are referenced."
+}
+
+TOKEN COUNT:
+input tokens: 1756
+output tokens: 233
+total tokens: 1989
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+discuss the trend over sales in ppt
+
+SQL Query:
+
+LLM OUTPUT:
+
+SELECT date_trunc('month', o.order_time) AS month,
+       SUM(oi.price * oi.quantity) AS total_sales
+FROM public.orders o
+JOIN public.order_items oi ON o.order_id = oi.order_id
+WHERE o.status = 'Delivered'
+GROUP BY month
+ORDER BY month;
+
+TOKEN COUNT:
+input tokens: 1792
+output tokens: 356
+total tokens: 2148
+======================
+
+======================
+Node: PPT Generation - PPT Generation Agent
+LLM INPUT:
+
+You are KeloStats AI Master Slide Designer, a world-class presentation architect inspired by Canva, Pitch, Linear, and elite design studios.
+
+Your mission is to generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+
+==============================================================================
+CORE DESIGN PHILOSOPHY & DYNAMIC ARCHITECTURAL FREEDOM:
+==============================================================================
+
+1. COMPLETE CREATIVE FREEDOM (ZERO HARDCODED LAYOUTS):
+   - You are NOT bound to any rigid layout formulas, fixed archetypes, or predetermined card counts.
+   - You have 100% creative freedom to conceptualize, design, and architect the most compelling visual canvas layout for the specific content.
+   - Think like a senior Canva designer: analyze the data and user intent, identify the key narrative focal point, and invent an original layout tailored to this story.
+   - Dynamically compose layouts such as:
+     * Bento-box multi-card grids with varying card weights and visual hierarchy
+     * Asymmetrical split-screens (e.g., hero metric/insight on one side, detailed analysis or interactive visualizer on the other)
+     * Hero focal points with large typographic statements and surrounding supporting data tiles
+     * Side-by-side comparative matrices, timeline/milestone flows, or categorical breakdown cards
+     * Interactive Chart.js visualizations paired with contextual narrative callouts and badge pills
+     * Or any bespoke layout composition that presents the data with maximum boardroom polish!
+
+2. INHERIT BRAND DNA FROM TEMPLATE:
+   - Analyze the provided template slide (<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 40px at 1920px -> 40 / 19.2 = 2.08cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 4.500%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-text {
+      position: absolute;
+      left: 11.625%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>
+) and extract its core visual identity:
+     * Color palette: Primary brand accent, secondary accents, surface card backgrounds, and text shades.
+     * Typography & styling: Font family, corner radiuses, subtle border treatments, and decorative accents.
+   - Apply this inherited theme to your newly created layout so the presentation feels unified and branded, while the layout itself is completely fresh and dynamic.
+
+3. VISUAL EXCELLENCE & AESTHETIC POLISH:
+   - A slide is a dynamic visual canvas, never a plain document. Ban raw, unstyled vertical bullet point lists.
+   - Elevate the content with modern UI components: stat tiles, highlight badges, pill tags, colored progress indicators, and well-spaced container cards.
+   - Establish clear visual hierarchy: prominent titles/numbers draw the eye first, followed by clear labels, key takeaways, and secondary metrics.
+
+4. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must be responsive and strictly adhere to the 16:9 aspect ratio:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the entire slide scales seamlessly to any screen resolution.
+   - Use CSS Grid or Flexbox to organize cards and elements so that content naturally breathes, never overflows, and never collides or overlaps.
+
+5. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML (`<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`).
+   - If using Chart.js, include `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` and ensure the canvas ID matches the script selector.
+   - IMPORTANT: Inside `<script>` tags, always use valid JavaScript numbers and math expressions. NEVER use CSS functions like `calc(...)` in JavaScript code.
+   - Do NOT wrap the output in markdown code blocks (no ```html). Output ONLY pure, executable HTML code.
+
+==============================================================================
+INPUT:
+----------
+
+INSTRUCTION:
+discuss the trend over sales in ppt
+
+RETRIVED CONTEXT FROM DB:
+{
+  "columns": [
+    "month",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "month": "2023-01-01T00:00:00",
+      "total_sales": 10442.48
+    },
+    {
+      "month": "2023-02-01T00:00:00",
+      "total_sales": 10744.93
+    },
+    {
+      "month": "2023-03-01T00:00:00",
+      "total_sales": 13182.51
+    },
+    {
+      "month": "2023-04-01T00:00:00",
+      "total_sales": 14462.13
+    },
+    {
+      "month": "2023-05-01T00:00:00",
+      "total_sales": 11967.8
+    },
+    {
+      "month": "2023-06-01T00:00:00",
+      "total_sales": 12217.14
+    },
+    {
+      "month": "2023-07-01T00:00:00",
+      "total_sales": 12848.36
+    },
+    {
+      "month": "2023-08-01T00:00:00",
+      "total_sales": 12080.59
+    },
+    {
+      "month": "2023-09-01T00:00:00",
+      "total_sales": 11588.74
+    },
+    {
+      "month": "2023-10-01T00:00:00",
+      "total_sales": 12636.67
+    },
+    {
+      "month": "2023-11-01T00:00:00",
+      "total_sales": 11849.54
+    },
+    {
+      "month": "2023-12-01T00:00:00",
+      "total_sales": 11485.14
+    },
+    {
+      "month": "2024-01-01T00:00:00",
+      "total_sales": 10249.59
+    },
+    {
+      "month": "2024-02-01T00:00:00",
+      "total_sales": 10632.16
+    },
+    {
+      "month": "2024-03-01T00:00:00",
+      "total_sales": 11499.44
+    },
+    {
+      "month": "2024-04-01T00:00:00",
+      "total_sales": 9821.39
+    },
+    {
+      "month": "2024-05-01T00:00:00",
+      "total_sales": 5492.07
+    }
+  ]
+}
+
+CURRENT SLIDE/PREVIOUS SLIDE TEMPLATE (for brand theme inheritance):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 40px at 1920px -> 40 / 19.2 = 2.08cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 4.500%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-text {
+      position: absolute;
+      left: 11.625%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>
+
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Sales Trend</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster – same as template */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+
+    /* Content grid */
+    .content-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 27%;
+      width: 87.25%;
+      height: 65%;
+      display: grid;
+      grid-template-columns: 60% 38%;
+      gap: 2%;
+    }
+
+    /* Chart canvas */
+    #salesChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Stat cards container */
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 2cqw;
+    }
+
+    .stat-card {
+      background-color: #F5F5F5;
+      border-radius: 0.8cqw;
+      padding: 1.5cqw 2cqw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5cqw;
+    }
+
+    .stat-value {
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+    }
+
+    .stat-label {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #000000;
+    }
+
+    .badge {
+      align-self: flex-start;
+      background-color: #FF5148;
+      color: #FFFFFF;
+      font-size: calc(14 / 19.2 * 1cqw);
+      font-weight: 600;
+      padding: 0.3cqw 0.8cqw;
+      border-radius: 0.5cqw;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Title -->
+    <h1 class="slide-title">Sales Trend Overview</h1>
+    <div class="accent-bar"></div>
+
+    <!-- Main content -->
+    <div class="content-grid">
+      <!-- Chart -->
+      <canvas id="salesChart"></canvas>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="badge">Peak</div>
+          <div class="stat-value" id="peakValue">$0</div>
+          <div class="stat-label" id="peakMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">Low</div>
+          <div class="stat-value" id="lowValue">$0</div>
+          <div class="stat-label" id="lowMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">YoY Δ</div>
+          <div class="stat-value" id="yoyChange">0%</div>
+          <div class="stat-label">Change vs. Same Month Last Year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rawData = [
+      {"month":"2023-01-01T00:00:00","total_sales":10442.48},
+      {"month":"2023-02-01T00:00:00","total_sales":10744.93},
+      {"month":"2023-03-01T00:00:00","total_sales":13182.51},
+      {"month":"2023-04-01T00:00:00","total_sales":14462.13},
+      {"month":"2023-05-01T00:00:00","total_sales":11967.8},
+      {"month":"2023-06-01T00:00:00","total_sales":12217.14},
+      {"month":"2023-07-01T00:00:00","total_sales":12848.36},
+      {"month":"2023-08-01T00:00:00","total_sales":12080.59},
+      {"month":"2023-09-01T00:00:00","total_sales":11588.74},
+      {"month":"2023-10-01T00:00:00","total_sales":12636.67},
+      {"month":"2023-11-01T00:00:00","total_sales":11849.54},
+      {"month":"2023-12-01T00:00:00","total_sales":11485.14},
+      {"month":"2024-01-01T00:00:00","total_sales":10249.59},
+      {"month":"2024-02-01T00:00:00","total_sales":10632.16},
+      {"month":"2024-03-01T00:00:00","total_sales":11499.44},
+      {"month":"2024-04-01T00:00:00","total_sales":9821.39},
+      {"month":"2024-05-01T00:00:00","total_sales":5492.07}
+    ];
+
+    // Prepare labels and data
+    const labels = rawData.map(d => {
+      const date = new Date(d.month);
+      const options = { month: 'short', year: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    });
+    const sales = rawData.map(d => d.total_sales);
+
+    // Find peak and low
+    const peak = rawData.reduce((a,b)=> b.total_sales>a.total_sales?b:a);
+    const low = rawData.reduce((a,b)=> b.total_sales<a.total_sales?b:a);
+
+    // YoY change (compare last month (May 2024) with May 2023)
+    const may2023 = rawData.find(d=> d.month.startsWith('2023-05'));
+    const may2024 = rawData.find(d=> d.month.startsWith('2024-05'));
+    const yoy = ((may2024.total_sales - may2023.total_sales) / may2023.total_sales) * 100;
+
+    // Populate stat cards
+    document.getElementById('peakValue').textContent = `$${peak.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('peakMonth').textContent = new Date(peak.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('lowValue').textContent = `$${low.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('lowMonth').textContent = new Date(low.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('yoyChange').textContent = `${yoy.toFixed(1)}%`;
+
+    // Chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total Sales',
+          data: sales,
+          borderColor: '#FF5148',
+          backgroundColor: 'rgba(255,81,72,0.1)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#FF5148',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#000' }
+          },
+          y: {
+            grid: { color: '#e0e0e0' },
+            ticks: {
+              color: '#000',
+              callback: v => `$${v/1000}k`
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 4320
+output tokens: 2830
+total tokens: 7150
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 7868
+OUTPUT TOKENS : 3419
+TOTAL         : 11287
+=======================================

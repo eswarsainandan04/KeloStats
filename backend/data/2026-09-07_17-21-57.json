@@ -1,0 +1,2514 @@
+{
+  "columns": [
+    "order_date",
+    "orders_count",
+    "total_revenue"
+  ],
+  "rows": [
+    {
+      "order_date": "2023-01-01",
+      "orders_count": 15,
+      "total_revenue": 1371.18
+    },
+    {
+      "order_date": "2023-01-02",
+      "orders_count": 5,
+      "total_revenue": 864.18
+    },
+    {
+      "order_date": "2023-01-03",
+      "orders_count": 13,
+      "total_revenue": 820.06
+    },
+    {
+      "order_date": "2023-01-04",
+      "orders_count": 8,
+      "total_revenue": 1109.78
+    },
+    {
+      "order_date": "2023-01-05",
+      "orders_count": 14,
+      "total_revenue": 1300.84
+    },
+    {
+      "order_date": "2023-01-06",
+      "orders_count": 10,
+      "total_revenue": 1335.31
+    },
+    {
+      "order_date": "2023-01-07",
+      "orders_count": 9,
+      "total_revenue": 923.4
+    },
+    {
+      "order_date": "2023-01-08",
+      "orders_count": 14,
+      "total_revenue": 1165.32
+    },
+    {
+      "order_date": "2023-01-09",
+      "orders_count": 7,
+      "total_revenue": 517.62
+    },
+    {
+      "order_date": "2023-01-10",
+      "orders_count": 5,
+      "total_revenue": 738.06
+    },
+    {
+      "order_date": "2023-01-11",
+      "orders_count": 12,
+      "total_revenue": 1125.22
+    },
+    {
+      "order_date": "2023-01-12",
+      "orders_count": 13,
+      "total_revenue": 1357.96
+    },
+    {
+      "order_date": "2023-01-13",
+      "orders_count": 8,
+      "total_revenue": 748.76
+    },
+    {
+      "order_date": "2023-01-14",
+      "orders_count": 9,
+      "total_revenue": 1043.96
+    },
+    {
+      "order_date": "2023-01-15",
+      "orders_count": 14,
+      "total_revenue": 1491.68
+    },
+    {
+      "order_date": "2023-01-16",
+      "orders_count": 6,
+      "total_revenue": 445.69
+    },
+    {
+      "order_date": "2023-01-17",
+      "orders_count": 11,
+      "total_revenue": 1738.86
+    },
+    {
+      "order_date": "2023-01-18",
+      "orders_count": 8,
+      "total_revenue": 931.68
+    },
+    {
+      "order_date": "2023-01-19",
+      "orders_count": 11,
+      "total_revenue": 1407.68
+    },
+    {
+      "order_date": "2023-01-20",
+      "orders_count": 8,
+      "total_revenue": 697.92
+    },
+    {
+      "order_date": "2023-01-21",
+      "orders_count": 12,
+      "total_revenue": 1309.01
+    },
+    {
+      "order_date": "2023-01-22",
+      "orders_count": 10,
+      "total_revenue": 1177.45
+    },
+    {
+      "order_date": "2023-01-23",
+      "orders_count": 9,
+      "total_revenue": 1336.66
+    },
+    {
+      "order_date": "2023-01-24",
+      "orders_count": 12,
+      "total_revenue": 1449.55
+    },
+    {
+      "order_date": "2023-01-25",
+      "orders_count": 9,
+      "total_revenue": 978.59
+    },
+    {
+      "order_date": "2023-01-26",
+      "orders_count": 7,
+      "total_revenue": 690.95
+    },
+    {
+      "order_date": "2023-01-27",
+      "orders_count": 8,
+      "total_revenue": 870.29
+    },
+    {
+      "order_date": "2023-01-28",
+      "orders_count": 12,
+      "total_revenue": 1339.75
+    },
+    {
+      "order_date": "2023-01-29",
+      "orders_count": 10,
+      "total_revenue": 1141.02
+    },
+    {
+      "order_date": "2023-01-30",
+      "orders_count": 3,
+      "total_revenue": 813.75
+    },
+    {
+      "order_date": "2023-01-31",
+      "orders_count": 12,
+      "total_revenue": 1211.1
+    },
+    {
+      "order_date": "2023-02-01",
+      "orders_count": 13,
+      "total_revenue": 1074.49
+    },
+    {
+      "order_date": "2023-02-02",
+      "orders_count": 9,
+      "total_revenue": 967.45
+    },
+    {
+      "order_date": "2023-02-03",
+      "orders_count": 13,
+      "total_revenue": 1374.34
+    },
+    {
+      "order_date": "2023-02-04",
+      "orders_count": 16,
+      "total_revenue": 2102.02
+    },
+    {
+      "order_date": "2023-02-05",
+      "orders_count": 9,
+      "total_revenue": 981.19
+    },
+    {
+      "order_date": "2023-02-06",
+      "orders_count": 10,
+      "total_revenue": 812.6
+    },
+    {
+      "order_date": "2023-02-07",
+      "orders_count": 9,
+      "total_revenue": 1080.22
+    },
+    {
+      "order_date": "2023-02-08",
+      "orders_count": 6,
+      "total_revenue": 622.63
+    },
+    {
+      "order_date": "2023-02-09",
+      "orders_count": 10,
+      "total_revenue": 961.29
+    },
+    {
+      "order_date": "2023-02-10",
+      "orders_count": 16,
+      "total_revenue": 1890.08
+    },
+    {
+      "order_date": "2023-02-11",
+      "orders_count": 5,
+      "total_revenue": 686.89
+    },
+    {
+      "order_date": "2023-02-12",
+      "orders_count": 12,
+      "total_revenue": 1174.63
+    },
+    {
+      "order_date": "2023-02-13",
+      "orders_count": 4,
+      "total_revenue": 506.07
+    },
+    {
+      "order_date": "2023-02-14",
+      "orders_count": 9,
+      "total_revenue": 996.54
+    },
+    {
+      "order_date": "2023-02-15",
+      "orders_count": 15,
+      "total_revenue": 1711.45
+    },
+    {
+      "order_date": "2023-02-16",
+      "orders_count": 10,
+      "total_revenue": 1331.15
+    },
+    {
+      "order_date": "2023-02-17",
+      "orders_count": 13,
+      "total_revenue": 1492.14
+    },
+    {
+      "order_date": "2023-02-18",
+      "orders_count": 11,
+      "total_revenue": 1068.67
+    },
+    {
+      "order_date": "2023-02-19",
+      "orders_count": 10,
+      "total_revenue": 950.64
+    },
+    {
+      "order_date": "2023-02-20",
+      "orders_count": 7,
+      "total_revenue": 584.76
+    },
+    {
+      "order_date": "2023-02-21",
+      "orders_count": 14,
+      "total_revenue": 1682.71
+    },
+    {
+      "order_date": "2023-02-22",
+      "orders_count": 7,
+      "total_revenue": 876.08
+    },
+    {
+      "order_date": "2023-02-23",
+      "orders_count": 8,
+      "total_revenue": 594.5
+    },
+    {
+      "order_date": "2023-02-24",
+      "orders_count": 11,
+      "total_revenue": 969.91
+    },
+    {
+      "order_date": "2023-02-25",
+      "orders_count": 13,
+      "total_revenue": 1565.67
+    },
+    {
+      "order_date": "2023-02-26",
+      "orders_count": 9,
+      "total_revenue": 995.88
+    },
+    {
+      "order_date": "2023-02-27",
+      "orders_count": 10,
+      "total_revenue": 994.81
+    },
+    {
+      "order_date": "2023-02-28",
+      "orders_count": 9,
+      "total_revenue": 838.79
+    },
+    {
+      "order_date": "2023-03-01",
+      "orders_count": 11,
+      "total_revenue": 1106.91
+    },
+    {
+      "order_date": "2023-03-02",
+      "orders_count": 15,
+      "total_revenue": 2036.93
+    },
+    {
+      "order_date": "2023-03-03",
+      "orders_count": 7,
+      "total_revenue": 931.21
+    },
+    {
+      "order_date": "2023-03-04",
+      "orders_count": 13,
+      "total_revenue": 1371.17
+    },
+    {
+      "order_date": "2023-03-05",
+      "orders_count": 13,
+      "total_revenue": 959.9
+    },
+    {
+      "order_date": "2023-03-06",
+      "orders_count": 13,
+      "total_revenue": 1416.07
+    },
+    {
+      "order_date": "2023-03-07",
+      "orders_count": 16,
+      "total_revenue": 1758.85
+    },
+    {
+      "order_date": "2023-03-08",
+      "orders_count": 13,
+      "total_revenue": 1436.98
+    },
+    {
+      "order_date": "2023-03-09",
+      "orders_count": 6,
+      "total_revenue": 806.89
+    },
+    {
+      "order_date": "2023-03-10",
+      "orders_count": 9,
+      "total_revenue": 1031.43
+    },
+    {
+      "order_date": "2023-03-11",
+      "orders_count": 10,
+      "total_revenue": 991.09
+    },
+    {
+      "order_date": "2023-03-12",
+      "orders_count": 13,
+      "total_revenue": 1147.95
+    },
+    {
+      "order_date": "2023-03-13",
+      "orders_count": 12,
+      "total_revenue": 1585.52
+    },
+    {
+      "order_date": "2023-03-14",
+      "orders_count": 17,
+      "total_revenue": 2072.99
+    },
+    {
+      "order_date": "2023-03-15",
+      "orders_count": 14,
+      "total_revenue": 1636.61
+    },
+    {
+      "order_date": "2023-03-16",
+      "orders_count": 5,
+      "total_revenue": 470.91
+    },
+    {
+      "order_date": "2023-03-17",
+      "orders_count": 15,
+      "total_revenue": 1668.46
+    },
+    {
+      "order_date": "2023-03-18",
+      "orders_count": 6,
+      "total_revenue": 736.82
+    },
+    {
+      "order_date": "2023-03-19",
+      "orders_count": 9,
+      "total_revenue": 1215.67
+    },
+    {
+      "order_date": "2023-03-20",
+      "orders_count": 12,
+      "total_revenue": 775.39
+    },
+    {
+      "order_date": "2023-03-21",
+      "orders_count": 12,
+      "total_revenue": 1045.42
+    },
+    {
+      "order_date": "2023-03-22",
+      "orders_count": 9,
+      "total_revenue": 1065.73
+    },
+    {
+      "order_date": "2023-03-23",
+      "orders_count": 3,
+      "total_revenue": 338.6
+    },
+    {
+      "order_date": "2023-03-24",
+      "orders_count": 14,
+      "total_revenue": 1607.58
+    },
+    {
+      "order_date": "2023-03-25",
+      "orders_count": 12,
+      "total_revenue": 1736.9
+    },
+    {
+      "order_date": "2023-03-26",
+      "orders_count": 5,
+      "total_revenue": 562.48
+    },
+    {
+      "order_date": "2023-03-27",
+      "orders_count": 10,
+      "total_revenue": 1322.57
+    },
+    {
+      "order_date": "2023-03-28",
+      "orders_count": 7,
+      "total_revenue": 729.99
+    },
+    {
+      "order_date": "2023-03-29",
+      "orders_count": 8,
+      "total_revenue": 516.33
+    },
+    {
+      "order_date": "2023-03-30",
+      "orders_count": 9,
+      "total_revenue": 1084.05
+    },
+    {
+      "order_date": "2023-03-31",
+      "orders_count": 8,
+      "total_revenue": 803.52
+    },
+    {
+      "order_date": "2023-04-01",
+      "orders_count": 14,
+      "total_revenue": 1858.35
+    },
+    {
+      "order_date": "2023-04-02",
+      "orders_count": 16,
+      "total_revenue": 1319.07
+    },
+    {
+      "order_date": "2023-04-03",
+      "orders_count": 14,
+      "total_revenue": 1744.52
+    },
+    {
+      "order_date": "2023-04-04",
+      "orders_count": 14,
+      "total_revenue": 1467.29
+    },
+    {
+      "order_date": "2023-04-05",
+      "orders_count": 16,
+      "total_revenue": 1963.54
+    },
+    {
+      "order_date": "2023-04-06",
+      "orders_count": 15,
+      "total_revenue": 1562.79
+    },
+    {
+      "order_date": "2023-04-07",
+      "orders_count": 13,
+      "total_revenue": 1482.61
+    },
+    {
+      "order_date": "2023-04-08",
+      "orders_count": 11,
+      "total_revenue": 1212.86
+    },
+    {
+      "order_date": "2023-04-09",
+      "orders_count": 14,
+      "total_revenue": 1377.43
+    },
+    {
+      "order_date": "2023-04-10",
+      "orders_count": 12,
+      "total_revenue": 1547.27
+    },
+    {
+      "order_date": "2023-04-11",
+      "orders_count": 9,
+      "total_revenue": 1166.57
+    },
+    {
+      "order_date": "2023-04-12",
+      "orders_count": 13,
+      "total_revenue": 1617.49
+    },
+    {
+      "order_date": "2023-04-13",
+      "orders_count": 8,
+      "total_revenue": 741.52
+    },
+    {
+      "order_date": "2023-04-14",
+      "orders_count": 8,
+      "total_revenue": 935.44
+    },
+    {
+      "order_date": "2023-04-15",
+      "orders_count": 13,
+      "total_revenue": 1710.73
+    },
+    {
+      "order_date": "2023-04-16",
+      "orders_count": 10,
+      "total_revenue": 1301.32
+    },
+    {
+      "order_date": "2023-04-17",
+      "orders_count": 7,
+      "total_revenue": 611.51
+    },
+    {
+      "order_date": "2023-04-18",
+      "orders_count": 14,
+      "total_revenue": 2143.82
+    },
+    {
+      "order_date": "2023-04-19",
+      "orders_count": 12,
+      "total_revenue": 1239.93
+    },
+    {
+      "order_date": "2023-04-20",
+      "orders_count": 4,
+      "total_revenue": 367.09
+    },
+    {
+      "order_date": "2023-04-21",
+      "orders_count": 8,
+      "total_revenue": 708.53
+    },
+    {
+      "order_date": "2023-04-22",
+      "orders_count": 9,
+      "total_revenue": 1115.14
+    },
+    {
+      "order_date": "2023-04-23",
+      "orders_count": 11,
+      "total_revenue": 1012.16
+    },
+    {
+      "order_date": "2023-04-24",
+      "orders_count": 12,
+      "total_revenue": 1152.85
+    },
+    {
+      "order_date": "2023-04-25",
+      "orders_count": 6,
+      "total_revenue": 858.8
+    },
+    {
+      "order_date": "2023-04-26",
+      "orders_count": 10,
+      "total_revenue": 1153.16
+    },
+    {
+      "order_date": "2023-04-27",
+      "orders_count": 10,
+      "total_revenue": 1079.38
+    },
+    {
+      "order_date": "2023-04-28",
+      "orders_count": 7,
+      "total_revenue": 740.47
+    },
+    {
+      "order_date": "2023-04-29",
+      "orders_count": 6,
+      "total_revenue": 238.53
+    },
+    {
+      "order_date": "2023-04-30",
+      "orders_count": 4,
+      "total_revenue": 686.87
+    },
+    {
+      "order_date": "2023-05-01",
+      "orders_count": 5,
+      "total_revenue": 598.88
+    },
+    {
+      "order_date": "2023-05-02",
+      "orders_count": 6,
+      "total_revenue": 607.36
+    },
+    {
+      "order_date": "2023-05-03",
+      "orders_count": 8,
+      "total_revenue": 1047.98
+    },
+    {
+      "order_date": "2023-05-04",
+      "orders_count": 9,
+      "total_revenue": 924.53
+    },
+    {
+      "order_date": "2023-05-05",
+      "orders_count": 5,
+      "total_revenue": 763.57
+    },
+    {
+      "order_date": "2023-05-06",
+      "orders_count": 11,
+      "total_revenue": 1348.4
+    },
+    {
+      "order_date": "2023-05-07",
+      "orders_count": 10,
+      "total_revenue": 951.34
+    },
+    {
+      "order_date": "2023-05-08",
+      "orders_count": 13,
+      "total_revenue": 1500.9
+    },
+    {
+      "order_date": "2023-05-09",
+      "orders_count": 9,
+      "total_revenue": 1093.58
+    },
+    {
+      "order_date": "2023-05-10",
+      "orders_count": 11,
+      "total_revenue": 1375.15
+    },
+    {
+      "order_date": "2023-05-11",
+      "orders_count": 8,
+      "total_revenue": 972.63
+    },
+    {
+      "order_date": "2023-05-12",
+      "orders_count": 6,
+      "total_revenue": 721.58
+    },
+    {
+      "order_date": "2023-05-13",
+      "orders_count": 11,
+      "total_revenue": 1497.53
+    },
+    {
+      "order_date": "2023-05-14",
+      "orders_count": 15,
+      "total_revenue": 1438.56
+    },
+    {
+      "order_date": "2023-05-15",
+      "orders_count": 8,
+      "total_revenue": 813.92
+    },
+    {
+      "order_date": "2023-05-16",
+      "orders_count": 10,
+      "total_revenue": 1327.41
+    },
+    {
+      "order_date": "2023-05-17",
+      "orders_count": 19,
+      "total_revenue": 2259.96
+    },
+    {
+      "order_date": "2023-05-18",
+      "orders_count": 12,
+      "total_revenue": 1300.94
+    },
+    {
+      "order_date": "2023-05-19",
+      "orders_count": 9,
+      "total_revenue": 906.91
+    },
+    {
+      "order_date": "2023-05-20",
+      "orders_count": 7,
+      "total_revenue": 532.22
+    },
+    {
+      "order_date": "2023-05-21",
+      "orders_count": 6,
+      "total_revenue": 614.54
+    },
+    {
+      "order_date": "2023-05-22",
+      "orders_count": 5,
+      "total_revenue": 509.97
+    },
+    {
+      "order_date": "2023-05-23",
+      "orders_count": 12,
+      "total_revenue": 1517.53
+    },
+    {
+      "order_date": "2023-05-24",
+      "orders_count": 9,
+      "total_revenue": 988.2
+    },
+    {
+      "order_date": "2023-05-25",
+      "orders_count": 12,
+      "total_revenue": 1399.44
+    },
+    {
+      "order_date": "2023-05-26",
+      "orders_count": 9,
+      "total_revenue": 871.05
+    },
+    {
+      "order_date": "2023-05-27",
+      "orders_count": 10,
+      "total_revenue": 1386.39
+    },
+    {
+      "order_date": "2023-05-28",
+      "orders_count": 11,
+      "total_revenue": 1019.73
+    },
+    {
+      "order_date": "2023-05-29",
+      "orders_count": 8,
+      "total_revenue": 850.11
+    },
+    {
+      "order_date": "2023-05-30",
+      "orders_count": 6,
+      "total_revenue": 450.35
+    },
+    {
+      "order_date": "2023-05-31",
+      "orders_count": 15,
+      "total_revenue": 1828.87
+    },
+    {
+      "order_date": "2023-06-01",
+      "orders_count": 11,
+      "total_revenue": 1377.83
+    },
+    {
+      "order_date": "2023-06-02",
+      "orders_count": 6,
+      "total_revenue": 432.92
+    },
+    {
+      "order_date": "2023-06-03",
+      "orders_count": 12,
+      "total_revenue": 1350.27
+    },
+    {
+      "order_date": "2023-06-04",
+      "orders_count": 8,
+      "total_revenue": 847.53
+    },
+    {
+      "order_date": "2023-06-05",
+      "orders_count": 14,
+      "total_revenue": 1810.45
+    },
+    {
+      "order_date": "2023-06-06",
+      "orders_count": 11,
+      "total_revenue": 1269.88
+    },
+    {
+      "order_date": "2023-06-07",
+      "orders_count": 6,
+      "total_revenue": 735.94
+    },
+    {
+      "order_date": "2023-06-08",
+      "orders_count": 9,
+      "total_revenue": 1248.35
+    },
+    {
+      "order_date": "2023-06-09",
+      "orders_count": 5,
+      "total_revenue": 409.79
+    },
+    {
+      "order_date": "2023-06-10",
+      "orders_count": 18,
+      "total_revenue": 2284.44
+    },
+    {
+      "order_date": "2023-06-11",
+      "orders_count": 5,
+      "total_revenue": 530.37
+    },
+    {
+      "order_date": "2023-06-12",
+      "orders_count": 8,
+      "total_revenue": 1128.39
+    },
+    {
+      "order_date": "2023-06-13",
+      "orders_count": 9,
+      "total_revenue": 1373.9
+    },
+    {
+      "order_date": "2023-06-14",
+      "orders_count": 6,
+      "total_revenue": 751.7
+    },
+    {
+      "order_date": "2023-06-15",
+      "orders_count": 14,
+      "total_revenue": 1701.35
+    },
+    {
+      "order_date": "2023-06-16",
+      "orders_count": 13,
+      "total_revenue": 1552.78
+    },
+    {
+      "order_date": "2023-06-17",
+      "orders_count": 10,
+      "total_revenue": 1052.45
+    },
+    {
+      "order_date": "2023-06-18",
+      "orders_count": 14,
+      "total_revenue": 1852.3
+    },
+    {
+      "order_date": "2023-06-19",
+      "orders_count": 10,
+      "total_revenue": 1089.89
+    },
+    {
+      "order_date": "2023-06-20",
+      "orders_count": 7,
+      "total_revenue": 666.97
+    },
+    {
+      "order_date": "2023-06-21",
+      "orders_count": 8,
+      "total_revenue": 573.65
+    },
+    {
+      "order_date": "2023-06-22",
+      "orders_count": 12,
+      "total_revenue": 1545.58
+    },
+    {
+      "order_date": "2023-06-23",
+      "orders_count": 8,
+      "total_revenue": 998.82
+    },
+    {
+      "order_date": "2023-06-24",
+      "orders_count": 16,
+      "total_revenue": 1312.99
+    },
+    {
+      "order_date": "2023-06-25",
+      "orders_count": 12,
+      "total_revenue": 1315.38
+    },
+    {
+      "order_date": "2023-06-26",
+      "orders_count": 7,
+      "total_revenue": 617.23
+    },
+    {
+      "order_date": "2023-06-27",
+      "orders_count": 9,
+      "total_revenue": 1144.79
+    },
+    {
+      "order_date": "2023-06-28",
+      "orders_count": 10,
+      "total_revenue": 1150.13
+    },
+    {
+      "order_date": "2023-06-29",
+      "orders_count": 10,
+      "total_revenue": 1221.81
+    },
+    {
+      "order_date": "2023-06-30",
+      "orders_count": 7,
+      "total_revenue": 554.73
+    },
+    {
+      "order_date": "2023-07-01",
+      "orders_count": 11,
+      "total_revenue": 1229.16
+    },
+    {
+      "order_date": "2023-07-02",
+      "orders_count": 6,
+      "total_revenue": 510.31
+    },
+    {
+      "order_date": "2023-07-03",
+      "orders_count": 10,
+      "total_revenue": 1001.71
+    },
+    {
+      "order_date": "2023-07-04",
+      "orders_count": 16,
+      "total_revenue": 1393.4
+    },
+    {
+      "order_date": "2023-07-05",
+      "orders_count": 13,
+      "total_revenue": 1290.1
+    },
+    {
+      "order_date": "2023-07-06",
+      "orders_count": 7,
+      "total_revenue": 598.23
+    },
+    {
+      "order_date": "2023-07-07",
+      "orders_count": 5,
+      "total_revenue": 416.71
+    },
+    {
+      "order_date": "2023-07-08",
+      "orders_count": 11,
+      "total_revenue": 1411.84
+    },
+    {
+      "order_date": "2023-07-09",
+      "orders_count": 15,
+      "total_revenue": 1622.99
+    },
+    {
+      "order_date": "2023-07-10",
+      "orders_count": 13,
+      "total_revenue": 1357.79
+    },
+    {
+      "order_date": "2023-07-11",
+      "orders_count": 11,
+      "total_revenue": 1357.56
+    },
+    {
+      "order_date": "2023-07-12",
+      "orders_count": 8,
+      "total_revenue": 741.15
+    },
+    {
+      "order_date": "2023-07-13",
+      "orders_count": 14,
+      "total_revenue": 1396.55
+    },
+    {
+      "order_date": "2023-07-14",
+      "orders_count": 12,
+      "total_revenue": 1010.84
+    },
+    {
+      "order_date": "2023-07-15",
+      "orders_count": 15,
+      "total_revenue": 1539.39
+    },
+    {
+      "order_date": "2023-07-16",
+      "orders_count": 11,
+      "total_revenue": 1367.67
+    },
+    {
+      "order_date": "2023-07-17",
+      "orders_count": 11,
+      "total_revenue": 1614.59
+    },
+    {
+      "order_date": "2023-07-18",
+      "orders_count": 10,
+      "total_revenue": 1435.83
+    },
+    {
+      "order_date": "2023-07-19",
+      "orders_count": 10,
+      "total_revenue": 1116.92
+    },
+    {
+      "order_date": "2023-07-20",
+      "orders_count": 5,
+      "total_revenue": 446.35
+    },
+    {
+      "order_date": "2023-07-21",
+      "orders_count": 13,
+      "total_revenue": 1535.58
+    },
+    {
+      "order_date": "2023-07-22",
+      "orders_count": 11,
+      "total_revenue": 1123.71
+    },
+    {
+      "order_date": "2023-07-23",
+      "orders_count": 8,
+      "total_revenue": 961.75
+    },
+    {
+      "order_date": "2023-07-24",
+      "orders_count": 9,
+      "total_revenue": 1065.6
+    },
+    {
+      "order_date": "2023-07-25",
+      "orders_count": 16,
+      "total_revenue": 1671.43
+    },
+    {
+      "order_date": "2023-07-26",
+      "orders_count": 13,
+      "total_revenue": 1748.98
+    },
+    {
+      "order_date": "2023-07-27",
+      "orders_count": 14,
+      "total_revenue": 1899.14
+    },
+    {
+      "order_date": "2023-07-28",
+      "orders_count": 6,
+      "total_revenue": 691.02
+    },
+    {
+      "order_date": "2023-07-29",
+      "orders_count": 9,
+      "total_revenue": 559.35
+    },
+    {
+      "order_date": "2023-07-30",
+      "orders_count": 5,
+      "total_revenue": 512.33
+    },
+    {
+      "order_date": "2023-07-31",
+      "orders_count": 15,
+      "total_revenue": 1721.01
+    },
+    {
+      "order_date": "2023-08-01",
+      "orders_count": 11,
+      "total_revenue": 1401.67
+    },
+    {
+      "order_date": "2023-08-02",
+      "orders_count": 12,
+      "total_revenue": 751.4
+    },
+    {
+      "order_date": "2023-08-03",
+      "orders_count": 10,
+      "total_revenue": 1343.57
+    },
+    {
+      "order_date": "2023-08-04",
+      "orders_count": 9,
+      "total_revenue": 1059.22
+    },
+    {
+      "order_date": "2023-08-05",
+      "orders_count": 14,
+      "total_revenue": 1697.7
+    },
+    {
+      "order_date": "2023-08-06",
+      "orders_count": 8,
+      "total_revenue": 894.25
+    },
+    {
+      "order_date": "2023-08-07",
+      "orders_count": 7,
+      "total_revenue": 1132.79
+    },
+    {
+      "order_date": "2023-08-08",
+      "orders_count": 11,
+      "total_revenue": 1319.24
+    },
+    {
+      "order_date": "2023-08-09",
+      "orders_count": 9,
+      "total_revenue": 709.93
+    },
+    {
+      "order_date": "2023-08-10",
+      "orders_count": 4,
+      "total_revenue": 342.06
+    },
+    {
+      "order_date": "2023-08-11",
+      "orders_count": 14,
+      "total_revenue": 1987.43
+    },
+    {
+      "order_date": "2023-08-12",
+      "orders_count": 7,
+      "total_revenue": 890.2
+    },
+    {
+      "order_date": "2023-08-13",
+      "orders_count": 14,
+      "total_revenue": 1803.92
+    },
+    {
+      "order_date": "2023-08-14",
+      "orders_count": 7,
+      "total_revenue": 920.84
+    },
+    {
+      "order_date": "2023-08-15",
+      "orders_count": 6,
+      "total_revenue": 787.82
+    },
+    {
+      "order_date": "2023-08-16",
+      "orders_count": 10,
+      "total_revenue": 1498.67
+    },
+    {
+      "order_date": "2023-08-17",
+      "orders_count": 14,
+      "total_revenue": 1441.48
+    },
+    {
+      "order_date": "2023-08-18",
+      "orders_count": 8,
+      "total_revenue": 899.69
+    },
+    {
+      "order_date": "2023-08-19",
+      "orders_count": 6,
+      "total_revenue": 942.91
+    },
+    {
+      "order_date": "2023-08-20",
+      "orders_count": 11,
+      "total_revenue": 1403.12
+    },
+    {
+      "order_date": "2023-08-21",
+      "orders_count": 10,
+      "total_revenue": 1239.69
+    },
+    {
+      "order_date": "2023-08-22",
+      "orders_count": 11,
+      "total_revenue": 1410.92
+    },
+    {
+      "order_date": "2023-08-23",
+      "orders_count": 7,
+      "total_revenue": 557.07
+    },
+    {
+      "order_date": "2023-08-24",
+      "orders_count": 10,
+      "total_revenue": 1150.66
+    },
+    {
+      "order_date": "2023-08-25",
+      "orders_count": 9,
+      "total_revenue": 696.3
+    },
+    {
+      "order_date": "2023-08-26",
+      "orders_count": 11,
+      "total_revenue": 1654.92
+    },
+    {
+      "order_date": "2023-08-27",
+      "orders_count": 6,
+      "total_revenue": 395.87
+    },
+    {
+      "order_date": "2023-08-28",
+      "orders_count": 7,
+      "total_revenue": 982.61
+    },
+    {
+      "order_date": "2023-08-29",
+      "orders_count": 14,
+      "total_revenue": 1660.73
+    },
+    {
+      "order_date": "2023-08-30",
+      "orders_count": 14,
+      "total_revenue": 1478.04
+    },
+    {
+      "order_date": "2023-08-31",
+      "orders_count": 6,
+      "total_revenue": 757.53
+    },
+    {
+      "order_date": "2023-09-01",
+      "orders_count": 12,
+      "total_revenue": 1446.64
+    },
+    {
+      "order_date": "2023-09-02",
+      "orders_count": 12,
+      "total_revenue": 1042.31
+    },
+    {
+      "order_date": "2023-09-03",
+      "orders_count": 10,
+      "total_revenue": 1238.51
+    },
+    {
+      "order_date": "2023-09-04",
+      "orders_count": 8,
+      "total_revenue": 988.62
+    },
+    {
+      "order_date": "2023-09-05",
+      "orders_count": 10,
+      "total_revenue": 878.06
+    },
+    {
+      "order_date": "2023-09-06",
+      "orders_count": 7,
+      "total_revenue": 752.75
+    },
+    {
+      "order_date": "2023-09-07",
+      "orders_count": 8,
+      "total_revenue": 819.19
+    },
+    {
+      "order_date": "2023-09-08",
+      "orders_count": 11,
+      "total_revenue": 1207.41
+    },
+    {
+      "order_date": "2023-09-09",
+      "orders_count": 12,
+      "total_revenue": 1633.16
+    },
+    {
+      "order_date": "2023-09-10",
+      "orders_count": 12,
+      "total_revenue": 1308.53
+    },
+    {
+      "order_date": "2023-09-11",
+      "orders_count": 13,
+      "total_revenue": 1990.59
+    },
+    {
+      "order_date": "2023-09-12",
+      "orders_count": 16,
+      "total_revenue": 1816.93
+    },
+    {
+      "order_date": "2023-09-13",
+      "orders_count": 12,
+      "total_revenue": 1239.07
+    },
+    {
+      "order_date": "2023-09-14",
+      "orders_count": 13,
+      "total_revenue": 1366.58
+    },
+    {
+      "order_date": "2023-09-15",
+      "orders_count": 17,
+      "total_revenue": 1935.19
+    },
+    {
+      "order_date": "2023-09-16",
+      "orders_count": 11,
+      "total_revenue": 1193.37
+    },
+    {
+      "order_date": "2023-09-17",
+      "orders_count": 13,
+      "total_revenue": 1273.07
+    },
+    {
+      "order_date": "2023-09-18",
+      "orders_count": 8,
+      "total_revenue": 717.55
+    },
+    {
+      "order_date": "2023-09-19",
+      "orders_count": 9,
+      "total_revenue": 976.21
+    },
+    {
+      "order_date": "2023-09-20",
+      "orders_count": 7,
+      "total_revenue": 891.98
+    },
+    {
+      "order_date": "2023-09-21",
+      "orders_count": 5,
+      "total_revenue": 755.06
+    },
+    {
+      "order_date": "2023-09-22",
+      "orders_count": 8,
+      "total_revenue": 1001.99
+    },
+    {
+      "order_date": "2023-09-23",
+      "orders_count": 9,
+      "total_revenue": 1103.57
+    },
+    {
+      "order_date": "2023-09-24",
+      "orders_count": 9,
+      "total_revenue": 964.7
+    },
+    {
+      "order_date": "2023-09-25",
+      "orders_count": 13,
+      "total_revenue": 1966.45
+    },
+    {
+      "order_date": "2023-09-26",
+      "orders_count": 6,
+      "total_revenue": 790.21
+    },
+    {
+      "order_date": "2023-09-27",
+      "orders_count": 6,
+      "total_revenue": 878.99
+    },
+    {
+      "order_date": "2023-09-28",
+      "orders_count": 6,
+      "total_revenue": 698.48
+    },
+    {
+      "order_date": "2023-09-29",
+      "orders_count": 6,
+      "total_revenue": 483.78
+    },
+    {
+      "order_date": "2023-09-30",
+      "orders_count": 10,
+      "total_revenue": 1468.82
+    },
+    {
+      "order_date": "2023-10-01",
+      "orders_count": 19,
+      "total_revenue": 2656.52
+    },
+    {
+      "order_date": "2023-10-02",
+      "orders_count": 8,
+      "total_revenue": 981.12
+    },
+    {
+      "order_date": "2023-10-03",
+      "orders_count": 14,
+      "total_revenue": 1913.38
+    },
+    {
+      "order_date": "2023-10-04",
+      "orders_count": 11,
+      "total_revenue": 1051.1
+    },
+    {
+      "order_date": "2023-10-05",
+      "orders_count": 5,
+      "total_revenue": 554.52
+    },
+    {
+      "order_date": "2023-10-06",
+      "orders_count": 6,
+      "total_revenue": 864.46
+    },
+    {
+      "order_date": "2023-10-07",
+      "orders_count": 9,
+      "total_revenue": 1313.26
+    },
+    {
+      "order_date": "2023-10-08",
+      "orders_count": 11,
+      "total_revenue": 1316.55
+    },
+    {
+      "order_date": "2023-10-09",
+      "orders_count": 7,
+      "total_revenue": 496.09
+    },
+    {
+      "order_date": "2023-10-10",
+      "orders_count": 12,
+      "total_revenue": 1272.37
+    },
+    {
+      "order_date": "2023-10-11",
+      "orders_count": 8,
+      "total_revenue": 877.57
+    },
+    {
+      "order_date": "2023-10-12",
+      "orders_count": 14,
+      "total_revenue": 1332.63
+    },
+    {
+      "order_date": "2023-10-13",
+      "orders_count": 6,
+      "total_revenue": 779.47
+    },
+    {
+      "order_date": "2023-10-14",
+      "orders_count": 8,
+      "total_revenue": 1062.47
+    },
+    {
+      "order_date": "2023-10-15",
+      "orders_count": 6,
+      "total_revenue": 766.39
+    },
+    {
+      "order_date": "2023-10-16",
+      "orders_count": 11,
+      "total_revenue": 1142.5
+    },
+    {
+      "order_date": "2023-10-17",
+      "orders_count": 11,
+      "total_revenue": 1452.83
+    },
+    {
+      "order_date": "2023-10-18",
+      "orders_count": 8,
+      "total_revenue": 701.77
+    },
+    {
+      "order_date": "2023-10-19",
+      "orders_count": 6,
+      "total_revenue": 723.11
+    },
+    {
+      "order_date": "2023-10-20",
+      "orders_count": 17,
+      "total_revenue": 1775.57
+    },
+    {
+      "order_date": "2023-10-21",
+      "orders_count": 12,
+      "total_revenue": 1129.95
+    },
+    {
+      "order_date": "2023-10-22",
+      "orders_count": 20,
+      "total_revenue": 1811.59
+    },
+    {
+      "order_date": "2023-10-23",
+      "orders_count": 10,
+      "total_revenue": 1405.11
+    },
+    {
+      "order_date": "2023-10-24",
+      "orders_count": 8,
+      "total_revenue": 878.82
+    },
+    {
+      "order_date": "2023-10-25",
+      "orders_count": 6,
+      "total_revenue": 648.02
+    },
+    {
+      "order_date": "2023-10-26",
+      "orders_count": 12,
+      "total_revenue": 1730.08
+    },
+    {
+      "order_date": "2023-10-27",
+      "orders_count": 7,
+      "total_revenue": 429.27
+    },
+    {
+      "order_date": "2023-10-28",
+      "orders_count": 11,
+      "total_revenue": 932.99
+    },
+    {
+      "order_date": "2023-10-29",
+      "orders_count": 13,
+      "total_revenue": 1671.32
+    },
+    {
+      "order_date": "2023-10-30",
+      "orders_count": 13,
+      "total_revenue": 1488.03
+    },
+    {
+      "order_date": "2023-10-31",
+      "orders_count": 9,
+      "total_revenue": 1000.45
+    },
+    {
+      "order_date": "2023-11-01",
+      "orders_count": 13,
+      "total_revenue": 1799.41
+    },
+    {
+      "order_date": "2023-11-02",
+      "orders_count": 10,
+      "total_revenue": 1158.98
+    },
+    {
+      "order_date": "2023-11-03",
+      "orders_count": 10,
+      "total_revenue": 1563.93
+    },
+    {
+      "order_date": "2023-11-04",
+      "orders_count": 9,
+      "total_revenue": 1041.93
+    },
+    {
+      "order_date": "2023-11-05",
+      "orders_count": 11,
+      "total_revenue": 1223.65
+    },
+    {
+      "order_date": "2023-11-06",
+      "orders_count": 13,
+      "total_revenue": 1294.49
+    },
+    {
+      "order_date": "2023-11-07",
+      "orders_count": 18,
+      "total_revenue": 1831.47
+    },
+    {
+      "order_date": "2023-11-08",
+      "orders_count": 8,
+      "total_revenue": 1401.8
+    },
+    {
+      "order_date": "2023-11-09",
+      "orders_count": 13,
+      "total_revenue": 1023.45
+    },
+    {
+      "order_date": "2023-11-10",
+      "orders_count": 8,
+      "total_revenue": 949.47
+    },
+    {
+      "order_date": "2023-11-11",
+      "orders_count": 12,
+      "total_revenue": 1363.51
+    },
+    {
+      "order_date": "2023-11-12",
+      "orders_count": 12,
+      "total_revenue": 1863.52
+    },
+    {
+      "order_date": "2023-11-13",
+      "orders_count": 6,
+      "total_revenue": 947.02
+    },
+    {
+      "order_date": "2023-11-14",
+      "orders_count": 8,
+      "total_revenue": 834.99
+    },
+    {
+      "order_date": "2023-11-15",
+      "orders_count": 7,
+      "total_revenue": 1100.16
+    },
+    {
+      "order_date": "2023-11-16",
+      "orders_count": 10,
+      "total_revenue": 1449.21
+    },
+    {
+      "order_date": "2023-11-17",
+      "orders_count": 10,
+      "total_revenue": 1004.98
+    },
+    {
+      "order_date": "2023-11-18",
+      "orders_count": 6,
+      "total_revenue": 614.19
+    },
+    {
+      "order_date": "2023-11-19",
+      "orders_count": 11,
+      "total_revenue": 978.04
+    },
+    {
+      "order_date": "2023-11-20",
+      "orders_count": 5,
+      "total_revenue": 911.34
+    },
+    {
+      "order_date": "2023-11-21",
+      "orders_count": 6,
+      "total_revenue": 772.08
+    },
+    {
+      "order_date": "2023-11-22",
+      "orders_count": 6,
+      "total_revenue": 771.56
+    },
+    {
+      "order_date": "2023-11-23",
+      "orders_count": 4,
+      "total_revenue": 419.14
+    },
+    {
+      "order_date": "2023-11-24",
+      "orders_count": 15,
+      "total_revenue": 1531.73
+    },
+    {
+      "order_date": "2023-11-25",
+      "orders_count": 7,
+      "total_revenue": 853.59
+    },
+    {
+      "order_date": "2023-11-26",
+      "orders_count": 9,
+      "total_revenue": 1102.8
+    },
+    {
+      "order_date": "2023-11-27",
+      "orders_count": 10,
+      "total_revenue": 863.76
+    },
+    {
+      "order_date": "2023-11-28",
+      "orders_count": 12,
+      "total_revenue": 1699.76
+    },
+    {
+      "order_date": "2023-11-29",
+      "orders_count": 7,
+      "total_revenue": 602.27
+    },
+    {
+      "order_date": "2023-11-30",
+      "orders_count": 7,
+      "total_revenue": 754.39
+    },
+    {
+      "order_date": "2023-12-01",
+      "orders_count": 6,
+      "total_revenue": 732.17
+    },
+    {
+      "order_date": "2023-12-02",
+      "orders_count": 13,
+      "total_revenue": 1261.08
+    },
+    {
+      "order_date": "2023-12-03",
+      "orders_count": 5,
+      "total_revenue": 534.87
+    },
+    {
+      "order_date": "2023-12-04",
+      "orders_count": 13,
+      "total_revenue": 1403.1
+    },
+    {
+      "order_date": "2023-12-05",
+      "orders_count": 15,
+      "total_revenue": 1379.35
+    },
+    {
+      "order_date": "2023-12-06",
+      "orders_count": 6,
+      "total_revenue": 656.89
+    },
+    {
+      "order_date": "2023-12-07",
+      "orders_count": 11,
+      "total_revenue": 1606.86
+    },
+    {
+      "order_date": "2023-12-08",
+      "orders_count": 9,
+      "total_revenue": 1110.18
+    },
+    {
+      "order_date": "2023-12-09",
+      "orders_count": 4,
+      "total_revenue": 438.74
+    },
+    {
+      "order_date": "2023-12-10",
+      "orders_count": 9,
+      "total_revenue": 1399.09
+    },
+    {
+      "order_date": "2023-12-11",
+      "orders_count": 12,
+      "total_revenue": 1748.9
+    },
+    {
+      "order_date": "2023-12-12",
+      "orders_count": 9,
+      "total_revenue": 931.96
+    },
+    {
+      "order_date": "2023-12-13",
+      "orders_count": 13,
+      "total_revenue": 1368.42
+    },
+    {
+      "order_date": "2023-12-14",
+      "orders_count": 7,
+      "total_revenue": 797.28
+    },
+    {
+      "order_date": "2023-12-15",
+      "orders_count": 11,
+      "total_revenue": 1272.64
+    },
+    {
+      "order_date": "2023-12-16",
+      "orders_count": 5,
+      "total_revenue": 746.97
+    },
+    {
+      "order_date": "2023-12-17",
+      "orders_count": 15,
+      "total_revenue": 1390.72
+    },
+    {
+      "order_date": "2023-12-18",
+      "orders_count": 11,
+      "total_revenue": 1181.01
+    },
+    {
+      "order_date": "2023-12-19",
+      "orders_count": 10,
+      "total_revenue": 1590.61
+    },
+    {
+      "order_date": "2023-12-20",
+      "orders_count": 13,
+      "total_revenue": 1487.77
+    },
+    {
+      "order_date": "2023-12-21",
+      "orders_count": 8,
+      "total_revenue": 583.98
+    },
+    {
+      "order_date": "2023-12-22",
+      "orders_count": 11,
+      "total_revenue": 1140.24
+    },
+    {
+      "order_date": "2023-12-23",
+      "orders_count": 9,
+      "total_revenue": 1265.32
+    },
+    {
+      "order_date": "2023-12-24",
+      "orders_count": 8,
+      "total_revenue": 799.52
+    },
+    {
+      "order_date": "2023-12-25",
+      "orders_count": 12,
+      "total_revenue": 1552.01
+    },
+    {
+      "order_date": "2023-12-26",
+      "orders_count": 7,
+      "total_revenue": 800.84
+    },
+    {
+      "order_date": "2023-12-27",
+      "orders_count": 4,
+      "total_revenue": 332.18
+    },
+    {
+      "order_date": "2023-12-28",
+      "orders_count": 13,
+      "total_revenue": 1160.39
+    },
+    {
+      "order_date": "2023-12-29",
+      "orders_count": 11,
+      "total_revenue": 1060.75
+    },
+    {
+      "order_date": "2023-12-30",
+      "orders_count": 10,
+      "total_revenue": 843.24
+    },
+    {
+      "order_date": "2023-12-31",
+      "orders_count": 14,
+      "total_revenue": 1471.2
+    },
+    {
+      "order_date": "2024-01-01",
+      "orders_count": 7,
+      "total_revenue": 956.73
+    },
+    {
+      "order_date": "2024-01-02",
+      "orders_count": 8,
+      "total_revenue": 900.89
+    },
+    {
+      "order_date": "2024-01-03",
+      "orders_count": 9,
+      "total_revenue": 775.45
+    },
+    {
+      "order_date": "2024-01-04",
+      "orders_count": 13,
+      "total_revenue": 1259.79
+    },
+    {
+      "order_date": "2024-01-05",
+      "orders_count": 9,
+      "total_revenue": 676.1
+    },
+    {
+      "order_date": "2024-01-06",
+      "orders_count": 15,
+      "total_revenue": 1355.31
+    },
+    {
+      "order_date": "2024-01-07",
+      "orders_count": 7,
+      "total_revenue": 553.65
+    },
+    {
+      "order_date": "2024-01-08",
+      "orders_count": 11,
+      "total_revenue": 1055.1
+    },
+    {
+      "order_date": "2024-01-09",
+      "orders_count": 10,
+      "total_revenue": 726.94
+    },
+    {
+      "order_date": "2024-01-10",
+      "orders_count": 7,
+      "total_revenue": 752.84
+    },
+    {
+      "order_date": "2024-01-11",
+      "orders_count": 12,
+      "total_revenue": 1499.02
+    },
+    {
+      "order_date": "2024-01-12",
+      "orders_count": 8,
+      "total_revenue": 915.15
+    },
+    {
+      "order_date": "2024-01-13",
+      "orders_count": 13,
+      "total_revenue": 1518.08
+    },
+    {
+      "order_date": "2024-01-14",
+      "orders_count": 9,
+      "total_revenue": 1053.66
+    },
+    {
+      "order_date": "2024-01-15",
+      "orders_count": 10,
+      "total_revenue": 917.68
+    },
+    {
+      "order_date": "2024-01-16",
+      "orders_count": 10,
+      "total_revenue": 838.03
+    },
+    {
+      "order_date": "2024-01-17",
+      "orders_count": 9,
+      "total_revenue": 1000.25
+    },
+    {
+      "order_date": "2024-01-18",
+      "orders_count": 9,
+      "total_revenue": 1143.13
+    },
+    {
+      "order_date": "2024-01-19",
+      "orders_count": 9,
+      "total_revenue": 868.09
+    },
+    {
+      "order_date": "2024-01-20",
+      "orders_count": 12,
+      "total_revenue": 1157.24
+    },
+    {
+      "order_date": "2024-01-21",
+      "orders_count": 9,
+      "total_revenue": 1114.14
+    },
+    {
+      "order_date": "2024-01-22",
+      "orders_count": 9,
+      "total_revenue": 976.3
+    },
+    {
+      "order_date": "2024-01-23",
+      "orders_count": 12,
+      "total_revenue": 1574.21
+    },
+    {
+      "order_date": "2024-01-24",
+      "orders_count": 11,
+      "total_revenue": 836.65
+    },
+    {
+      "order_date": "2024-01-25",
+      "orders_count": 12,
+      "total_revenue": 1378.77
+    },
+    {
+      "order_date": "2024-01-26",
+      "orders_count": 13,
+      "total_revenue": 1534.28
+    },
+    {
+      "order_date": "2024-01-27",
+      "orders_count": 15,
+      "total_revenue": 1773.29
+    },
+    {
+      "order_date": "2024-01-28",
+      "orders_count": 16,
+      "total_revenue": 1915.39
+    },
+    {
+      "order_date": "2024-01-29",
+      "orders_count": 7,
+      "total_revenue": 613.36
+    },
+    {
+      "order_date": "2024-01-30",
+      "orders_count": 12,
+      "total_revenue": 1352.1
+    },
+    {
+      "order_date": "2024-01-31",
+      "orders_count": 5,
+      "total_revenue": 397.86
+    },
+    {
+      "order_date": "2024-02-01",
+      "orders_count": 6,
+      "total_revenue": 558.17
+    },
+    {
+      "order_date": "2024-02-02",
+      "orders_count": 15,
+      "total_revenue": 1457.76
+    },
+    {
+      "order_date": "2024-02-03",
+      "orders_count": 12,
+      "total_revenue": 1309.36
+    },
+    {
+      "order_date": "2024-02-04",
+      "orders_count": 5,
+      "total_revenue": 557.8
+    },
+    {
+      "order_date": "2024-02-05",
+      "orders_count": 6,
+      "total_revenue": 847.8
+    },
+    {
+      "order_date": "2024-02-06",
+      "orders_count": 5,
+      "total_revenue": 632.73
+    },
+    {
+      "order_date": "2024-02-07",
+      "orders_count": 15,
+      "total_revenue": 1748.96
+    },
+    {
+      "order_date": "2024-02-08",
+      "orders_count": 12,
+      "total_revenue": 1205.81
+    },
+    {
+      "order_date": "2024-02-09",
+      "orders_count": 7,
+      "total_revenue": 881.2
+    },
+    {
+      "order_date": "2024-02-10",
+      "orders_count": 17,
+      "total_revenue": 1450.31
+    },
+    {
+      "order_date": "2024-02-11",
+      "orders_count": 17,
+      "total_revenue": 1860.86
+    },
+    {
+      "order_date": "2024-02-12",
+      "orders_count": 10,
+      "total_revenue": 875.48
+    },
+    {
+      "order_date": "2024-02-13",
+      "orders_count": 13,
+      "total_revenue": 1014.69
+    },
+    {
+      "order_date": "2024-02-14",
+      "orders_count": 13,
+      "total_revenue": 1570.33
+    },
+    {
+      "order_date": "2024-02-15",
+      "orders_count": 13,
+      "total_revenue": 1745.19
+    },
+    {
+      "order_date": "2024-02-16",
+      "orders_count": 16,
+      "total_revenue": 1905.65
+    },
+    {
+      "order_date": "2024-02-17",
+      "orders_count": 12,
+      "total_revenue": 1745.57
+    },
+    {
+      "order_date": "2024-02-18",
+      "orders_count": 13,
+      "total_revenue": 1199.09
+    },
+    {
+      "order_date": "2024-02-19",
+      "orders_count": 11,
+      "total_revenue": 1464.5
+    },
+    {
+      "order_date": "2024-02-20",
+      "orders_count": 10,
+      "total_revenue": 1116.38
+    },
+    {
+      "order_date": "2024-02-21",
+      "orders_count": 9,
+      "total_revenue": 1059.71
+    },
+    {
+      "order_date": "2024-02-22",
+      "orders_count": 11,
+      "total_revenue": 1028.88
+    },
+    {
+      "order_date": "2024-02-23",
+      "orders_count": 12,
+      "total_revenue": 1028.61
+    },
+    {
+      "order_date": "2024-02-24",
+      "orders_count": 7,
+      "total_revenue": 911.63
+    },
+    {
+      "order_date": "2024-02-25",
+      "orders_count": 12,
+      "total_revenue": 1297.92
+    },
+    {
+      "order_date": "2024-02-26",
+      "orders_count": 4,
+      "total_revenue": 204.4
+    },
+    {
+      "order_date": "2024-02-27",
+      "orders_count": 10,
+      "total_revenue": 1052.48
+    },
+    {
+      "order_date": "2024-02-28",
+      "orders_count": 5,
+      "total_revenue": 326.15
+    },
+    {
+      "order_date": "2024-02-29",
+      "orders_count": 11,
+      "total_revenue": 985.03
+    },
+    {
+      "order_date": "2024-03-01",
+      "orders_count": 6,
+      "total_revenue": 789.19
+    },
+    {
+      "order_date": "2024-03-02",
+      "orders_count": 8,
+      "total_revenue": 1173.52
+    },
+    {
+      "order_date": "2024-03-03",
+      "orders_count": 15,
+      "total_revenue": 1286.68
+    },
+    {
+      "order_date": "2024-03-04",
+      "orders_count": 10,
+      "total_revenue": 1248.91
+    },
+    {
+      "order_date": "2024-03-05",
+      "orders_count": 6,
+      "total_revenue": 976.3
+    },
+    {
+      "order_date": "2024-03-06",
+      "orders_count": 12,
+      "total_revenue": 1255.92
+    },
+    {
+      "order_date": "2024-03-07",
+      "orders_count": 8,
+      "total_revenue": 1201.65
+    },
+    {
+      "order_date": "2024-03-08",
+      "orders_count": 12,
+      "total_revenue": 1500.14
+    },
+    {
+      "order_date": "2024-03-09",
+      "orders_count": 11,
+      "total_revenue": 1226.04
+    },
+    {
+      "order_date": "2024-03-10",
+      "orders_count": 13,
+      "total_revenue": 1615.92
+    },
+    {
+      "order_date": "2024-03-11",
+      "orders_count": 6,
+      "total_revenue": 515.03
+    },
+    {
+      "order_date": "2024-03-12",
+      "orders_count": 10,
+      "total_revenue": 1035.74
+    },
+    {
+      "order_date": "2024-03-13",
+      "orders_count": 6,
+      "total_revenue": 713.96
+    },
+    {
+      "order_date": "2024-03-14",
+      "orders_count": 12,
+      "total_revenue": 1366.61
+    },
+    {
+      "order_date": "2024-03-15",
+      "orders_count": 8,
+      "total_revenue": 743.39
+    },
+    {
+      "order_date": "2024-03-16",
+      "orders_count": 10,
+      "total_revenue": 1222.72
+    },
+    {
+      "order_date": "2024-03-17",
+      "orders_count": 8,
+      "total_revenue": 608.62
+    },
+    {
+      "order_date": "2024-03-18",
+      "orders_count": 9,
+      "total_revenue": 1157.88
+    },
+    {
+      "order_date": "2024-03-19",
+      "orders_count": 10,
+      "total_revenue": 1108.68
+    },
+    {
+      "order_date": "2024-03-20",
+      "orders_count": 7,
+      "total_revenue": 699.0
+    },
+    {
+      "order_date": "2024-03-21",
+      "orders_count": 10,
+      "total_revenue": 1547.81
+    },
+    {
+      "order_date": "2024-03-22",
+      "orders_count": 9,
+      "total_revenue": 853.97
+    },
+    {
+      "order_date": "2024-03-23",
+      "orders_count": 8,
+      "total_revenue": 783.86
+    },
+    {
+      "order_date": "2024-03-24",
+      "orders_count": 11,
+      "total_revenue": 979.52
+    },
+    {
+      "order_date": "2024-03-25",
+      "orders_count": 8,
+      "total_revenue": 1263.74
+    },
+    {
+      "order_date": "2024-03-26",
+      "orders_count": 9,
+      "total_revenue": 745.03
+    },
+    {
+      "order_date": "2024-03-27",
+      "orders_count": 8,
+      "total_revenue": 719.31
+    },
+    {
+      "order_date": "2024-03-28",
+      "orders_count": 10,
+      "total_revenue": 1107.41
+    },
+    {
+      "order_date": "2024-03-29",
+      "orders_count": 13,
+      "total_revenue": 1677.73
+    },
+    {
+      "order_date": "2024-03-30",
+      "orders_count": 7,
+      "total_revenue": 1018.15
+    },
+    {
+      "order_date": "2024-03-31",
+      "orders_count": 10,
+      "total_revenue": 1394.2
+    },
+    {
+      "order_date": "2024-04-01",
+      "orders_count": 7,
+      "total_revenue": 722.56
+    },
+    {
+      "order_date": "2024-04-02",
+      "orders_count": 9,
+      "total_revenue": 750.56
+    },
+    {
+      "order_date": "2024-04-03",
+      "orders_count": 7,
+      "total_revenue": 720.35
+    },
+    {
+      "order_date": "2024-04-04",
+      "orders_count": 8,
+      "total_revenue": 811.48
+    },
+    {
+      "order_date": "2024-04-05",
+      "orders_count": 12,
+      "total_revenue": 1468.29
+    },
+    {
+      "order_date": "2024-04-06",
+      "orders_count": 7,
+      "total_revenue": 931.68
+    },
+    {
+      "order_date": "2024-04-07",
+      "orders_count": 8,
+      "total_revenue": 1028.53
+    },
+    {
+      "order_date": "2024-04-08",
+      "orders_count": 10,
+      "total_revenue": 1110.01
+    },
+    {
+      "order_date": "2024-04-09",
+      "orders_count": 8,
+      "total_revenue": 865.75
+    },
+    {
+      "order_date": "2024-04-10",
+      "orders_count": 3,
+      "total_revenue": 477.75
+    },
+    {
+      "order_date": "2024-04-11",
+      "orders_count": 11,
+      "total_revenue": 991.32
+    },
+    {
+      "order_date": "2024-04-12",
+      "orders_count": 9,
+      "total_revenue": 936.4
+    },
+    {
+      "order_date": "2024-04-13",
+      "orders_count": 7,
+      "total_revenue": 462.3
+    },
+    {
+      "order_date": "2024-04-14",
+      "orders_count": 8,
+      "total_revenue": 1205.2
+    },
+    {
+      "order_date": "2024-04-15",
+      "orders_count": 13,
+      "total_revenue": 1259.42
+    },
+    {
+      "order_date": "2024-04-16",
+      "orders_count": 13,
+      "total_revenue": 1531.61
+    },
+    {
+      "order_date": "2024-04-17",
+      "orders_count": 15,
+      "total_revenue": 1565.03
+    },
+    {
+      "order_date": "2024-04-18",
+      "orders_count": 13,
+      "total_revenue": 1436.94
+    },
+    {
+      "order_date": "2024-04-19",
+      "orders_count": 10,
+      "total_revenue": 1285.93
+    },
+    {
+      "order_date": "2024-04-20",
+      "orders_count": 7,
+      "total_revenue": 545.95
+    },
+    {
+      "order_date": "2024-04-21",
+      "orders_count": 8,
+      "total_revenue": 967.93
+    },
+    {
+      "order_date": "2024-04-22",
+      "orders_count": 9,
+      "total_revenue": 1015.59
+    },
+    {
+      "order_date": "2024-04-23",
+      "orders_count": 9,
+      "total_revenue": 1397.85
+    },
+    {
+      "order_date": "2024-04-24",
+      "orders_count": 12,
+      "total_revenue": 1614.82
+    },
+    {
+      "order_date": "2024-04-25",
+      "orders_count": 9,
+      "total_revenue": 1117.01
+    },
+    {
+      "order_date": "2024-04-26",
+      "orders_count": 7,
+      "total_revenue": 716.26
+    },
+    {
+      "order_date": "2024-04-27",
+      "orders_count": 10,
+      "total_revenue": 918.38
+    },
+    {
+      "order_date": "2024-04-28",
+      "orders_count": 11,
+      "total_revenue": 1153.52
+    },
+    {
+      "order_date": "2024-04-29",
+      "orders_count": 7,
+      "total_revenue": 802.06
+    },
+    {
+      "order_date": "2024-04-30",
+      "orders_count": 5,
+      "total_revenue": 691.65
+    },
+    {
+      "order_date": "2024-05-01",
+      "orders_count": 9,
+      "total_revenue": 784.59
+    },
+    {
+      "order_date": "2024-05-02",
+      "orders_count": 13,
+      "total_revenue": 1458.24
+    },
+    {
+      "order_date": "2024-05-03",
+      "orders_count": 10,
+      "total_revenue": 1050.1
+    },
+    {
+      "order_date": "2024-05-04",
+      "orders_count": 12,
+      "total_revenue": 1479.91
+    },
+    {
+      "order_date": "2024-05-05",
+      "orders_count": 7,
+      "total_revenue": 727.23
+    },
+    {
+      "order_date": "2024-05-06",
+      "orders_count": 10,
+      "total_revenue": 958.86
+    },
+    {
+      "order_date": "2024-05-07",
+      "orders_count": 10,
+      "total_revenue": 1162.03
+    },
+    {
+      "order_date": "2024-05-08",
+      "orders_count": 10,
+      "total_revenue": 808.27
+    },
+    {
+      "order_date": "2024-05-09",
+      "orders_count": 17,
+      "total_revenue": 2015.97
+    },
+    {
+      "order_date": "2024-05-10",
+      "orders_count": 5,
+      "total_revenue": 539.79
+    },
+    {
+      "order_date": "2024-05-11",
+      "orders_count": 9,
+      "total_revenue": 1173.63
+    },
+    {
+      "order_date": "2024-05-12",
+      "orders_count": 9,
+      "total_revenue": 937.36
+    },
+    {
+      "order_date": "2024-05-13",
+      "orders_count": 7,
+      "total_revenue": 703.65
+    },
+    {
+      "order_date": "2024-05-14",
+      "orders_count": 10,
+      "total_revenue": 1108.48
+    },
+    {
+      "order_date": "2024-05-15",
+      "orders_count": 11,
+      "total_revenue": 1056.15
+    }
+  ]
+}

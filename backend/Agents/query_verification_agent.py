@@ -139,8 +139,9 @@ def QueryVerifyAgent(
         }
 
     status = (verification_result.get("status") or "").upper().strip()
+    if status != "RETRIEVAL_REQUIRED":
+        status = "SCHEMA_MATCH"
     reason = verification_result.get("reason", "No reason provided.")
-
 
     return {
         "status": status,

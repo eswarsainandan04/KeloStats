@@ -1,0 +1,108 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"you looking great!"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "out_of_scope",
+    "reason": "The statement is a personal compliment and unrelated to business analytics or presentation tasks."
+}
+
+TOKEN COUNT:
+input tokens: 480
+output tokens: 80
+total tokens: 560
+======================
+
+======================
+Node: Handle Out Of Scope - Out of Scope Handler Agent
+LLM INPUT:
+
+You are KeloStats AI Copilot, an enterprise-grade AI analytics and business intelligence assistant.
+
+        The user asked the following question:
+        "you looking great!"
+
+        Context:
+        This query is classified as OUT OF SCOPE. KeloStats Copilot specializes strictly in:
+        1. Querying and analyzing connected databases (PostgreSQL, MySQL, Oracle SQL) for metrics, reports, and data insights.
+        2. Generating boardroom-ready executive presentation slide decks.
+        It does not handle unrelated topics such as general trivia, creative writing, programming tutorials, weather, personal advice, or non-business topics.
+
+        Task:
+        Politely and professionally inform the user that their request falls outside your domain of expertise.
+        Remind them of what you can assist with (analyzing database data or creating presentation decks), and invite them to ask a question related to their database.
+
+        Guidelines:
+        - Maintain a courteous, professional, and helpful tone.
+        - Do NOT answer the out-of-scope question itself.
+        - Keep the response concise (2 to 3 sentences max).
+        - Do NOT wrap your response in markdown code blocks or quotation marks.
+        - Respond directly with the message text.
+
+LLM OUTPUT:
+
+I’m sorry, but that request is outside the scope of KeloStats AI Copilot. I can help you analyze data from your PostgreSQL, MySQL, or Oracle databases and create executive presentation decks. Please let me know if you have a data‑related question I can assist with.
+
+TOKEN COUNT:
+input tokens: 320
+output tokens: 100
+total tokens: 420
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 800
+OUTPUT TOKENS : 180
+TOTAL         : 980
+=======================================

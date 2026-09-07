@@ -1,0 +1,1206 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"generate a possible chart in PPT"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The user asks to generate a chart in PowerPoint, which pertains to presentation creation and is within the platform's analytics/presentation scope."
+}
+
+TOKEN COUNT:
+input tokens: 483
+output tokens: 101
+total tokens: 584
+======================
+
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify how the user query should be processed against the provided database schema context.
+
+Note: The user query may be a direct analytical question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt", "Analyze the database and create a dashboard slide with charts"). Any request asking to analyze, summarize, compare, or visualize data from the database is ALWAYS valid.
+
+You must categorize the query into one of two classifications:
+
+1. "SCHEMA_MATCH":
+   - The query can be queried or aggregated directly from the database schema tables and columns.
+   - Includes all general metrics, aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY), date ranges, comparisons, multi-chart summaries, and presentation dashboards based on available tables.
+   - Default to "SCHEMA_MATCH" whenever the query focuses on analyzing the database or generating metrics from available tables.
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query specifically targets concrete entity values, product names, customer names, restaurant names, city names, or specific categories that are NOT explicitly listed in the schema sample values and must be looked up or verified from the database first before writing the final SQL query.
+   - Example: The schema has `restaurant_name` or `customer_name`, and the user asks for a specific name like "Pizza Hut" or "Harsha Vardhan" whose exact spelling needs database retrieval.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate a possible chart in PPT
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request is for a generic chart in PPT, which can be addressed by suggesting a visualization based on available schema data (e.g., orders by city, average rating by cuisine). No specific entity lookup is required."
+}
+
+TOKEN COUNT:
+input tokens: 1747
+output tokens: 509
+total tokens: 2256
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate a possible chart in PPT
+
+SQL Query:
+
+LLM OUTPUT:
+
+SELECT r.city,
+       r.cuisine,
+       COUNT(DISTINCT o.order_id) AS total_orders,
+       SUM(oi.quantity * oi.price) AS total_revenue,
+       AVG(r.rating) AS avg_rating
+FROM public.orders o
+JOIN public.restaurants r ON o.restaurant_id = r.restaurant_id
+JOIN public.order_items oi ON o.order_id = oi.order_id
+JOIN public.menu_items mi ON oi.item_id = mi.item_id
+WHERE o.status = 'Delivered'
+GROUP BY r.city, r.cuisine
+ORDER BY total_revenue DESC
+LIMIT 10;
+
+TOKEN COUNT:
+input tokens: 1790
+output tokens: 412
+total tokens: 2202
+======================
+
+======================
+Node: PPT Generation - PPT Generation Agent
+LLM INPUT:
+
+You are KeloStats AI Master Slide Designer, a world-class presentation architect inspired by Canva, Pitch, Linear, and elite design studios.
+
+Your mission is to generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+
+==============================================================================
+CORE DESIGN PHILOSOPHY & DYNAMIC ARCHITECTURAL FREEDOM:
+==============================================================================
+
+1. COMPLETE CREATIVE FREEDOM (ZERO HARDCODED LAYOUTS):
+   - You are NOT bound to any rigid layout formulas, fixed archetypes, or predetermined card counts.
+   - You have 100% creative freedom to conceptualize, design, and architect the most compelling visual canvas layout for the specific content.
+   - Think like a senior Canva designer: analyze the data and user intent, identify the key narrative focal point, and invent an original layout tailored to this story.
+   - Dynamically compose layouts such as:
+     * Bento-box multi-card grids with varying card weights and visual hierarchy
+     * Asymmetrical split-screens (e.g., hero metric/insight on one side, detailed analysis or interactive visualizer on the other)
+     * Hero focal points with large typographic statements and surrounding supporting data tiles
+     * Side-by-side comparative matrices, timeline/milestone flows, or categorical breakdown cards
+     * Interactive Chart.js visualizations paired with contextual narrative callouts and badge pills
+     * Or any bespoke layout composition that presents the data with maximum boardroom polish!
+
+2. INHERIT BRAND DNA FROM TEMPLATE:
+   - Analyze the provided template slide (<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Sales Trend</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster – same as template */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+
+    /* Content grid */
+    .content-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 27%;
+      width: 87.25%;
+      height: 65%;
+      display: grid;
+      grid-template-columns: 60% 38%;
+      gap: 2%;
+    }
+
+    /* Chart canvas */
+    #salesChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Stat cards container */
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 2cqw;
+    }
+
+    .stat-card {
+      background-color: #F5F5F5;
+      border-radius: 0.8cqw;
+      padding: 1.5cqw 2cqw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5cqw;
+    }
+
+    .stat-value {
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+    }
+
+    .stat-label {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #000000;
+    }
+
+    .badge {
+      align-self: flex-start;
+      background-color: #FF5148;
+      color: #FFFFFF;
+      font-size: calc(14 / 19.2 * 1cqw);
+      font-weight: 600;
+      padding: 0.3cqw 0.8cqw;
+      border-radius: 0.5cqw;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Title -->
+    <h1 class="slide-title">Sales Trend Overview</h1>
+    <div class="accent-bar"></div>
+
+    <!-- Main content -->
+    <div class="content-grid">
+      <!-- Chart -->
+      <canvas id="salesChart"></canvas>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="badge">Peak</div>
+          <div class="stat-value" id="peakValue">$0</div>
+          <div class="stat-label" id="peakMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">Low</div>
+          <div class="stat-value" id="lowValue">$0</div>
+          <div class="stat-label" id="lowMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">YoY Δ</div>
+          <div class="stat-value" id="yoyChange">0%</div>
+          <div class="stat-label">Change vs. Same Month Last Year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rawData = [
+      {"month":"2023-01-01T00:00:00","total_sales":10442.48},
+      {"month":"2023-02-01T00:00:00","total_sales":10744.93},
+      {"month":"2023-03-01T00:00:00","total_sales":13182.51},
+      {"month":"2023-04-01T00:00:00","total_sales":14462.13},
+      {"month":"2023-05-01T00:00:00","total_sales":11967.8},
+      {"month":"2023-06-01T00:00:00","total_sales":12217.14},
+      {"month":"2023-07-01T00:00:00","total_sales":12848.36},
+      {"month":"2023-08-01T00:00:00","total_sales":12080.59},
+      {"month":"2023-09-01T00:00:00","total_sales":11588.74},
+      {"month":"2023-10-01T00:00:00","total_sales":12636.67},
+      {"month":"2023-11-01T00:00:00","total_sales":11849.54},
+      {"month":"2023-12-01T00:00:00","total_sales":11485.14},
+      {"month":"2024-01-01T00:00:00","total_sales":10249.59},
+      {"month":"2024-02-01T00:00:00","total_sales":10632.16},
+      {"month":"2024-03-01T00:00:00","total_sales":11499.44},
+      {"month":"2024-04-01T00:00:00","total_sales":9821.39},
+      {"month":"2024-05-01T00:00:00","total_sales":5492.07}
+    ];
+
+    // Prepare labels and data
+    const labels = rawData.map(d => {
+      const date = new Date(d.month);
+      const options = { month: 'short', year: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    });
+    const sales = rawData.map(d => d.total_sales);
+
+    // Find peak and low
+    const peak = rawData.reduce((a,b)=> b.total_sales>a.total_sales?b:a);
+    const low = rawData.reduce((a,b)=> b.total_sales<a.total_sales?b:a);
+
+    // YoY change (compare last month (May 2024) with May 2023)
+    const may2023 = rawData.find(d=> d.month.startsWith('2023-05'));
+    const may2024 = rawData.find(d=> d.month.startsWith('2024-05'));
+    const yoy = ((may2024.total_sales - may2023.total_sales) / may2023.total_sales) * 100;
+
+    // Populate stat cards
+    document.getElementById('peakValue').textContent = `$${peak.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('peakMonth').textContent = new Date(peak.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('lowValue').textContent = `$${low.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('lowMonth').textContent = new Date(low.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('yoyChange').textContent = `${yoy.toFixed(1)}%`;
+
+    // Chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total Sales',
+          data: sales,
+          borderColor: '#FF5148',
+          backgroundColor: 'rgba(255,81,72,0.1)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#FF5148',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#000' }
+          },
+          y: {
+            grid: { color: '#e0e0e0' },
+            ticks: {
+              color: '#000',
+              callback: v => `$${v/1000}k`
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>) and extract its core visual identity:
+     * Color palette: Primary brand accent, secondary accents, surface card backgrounds, and text shades.
+     * Typography & styling: Font family, corner radiuses, subtle border treatments, and decorative accents.
+   - Apply this inherited theme to your newly created layout so the presentation feels unified and branded, while the layout itself is completely fresh and dynamic.
+
+3. VISUAL EXCELLENCE & AESTHETIC POLISH:
+   - A slide is a dynamic visual canvas, never a plain document. Ban raw, unstyled vertical bullet point lists.
+   - Elevate the content with modern UI components: stat tiles, highlight badges, pill tags, colored progress indicators, and well-spaced container cards.
+   - Establish clear visual hierarchy: prominent titles/numbers draw the eye first, followed by clear labels, key takeaways, and secondary metrics.
+
+4. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must be responsive and strictly adhere to the 16:9 aspect ratio:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the entire slide scales seamlessly to any screen resolution.
+   - Use CSS Grid or Flexbox to organize cards and elements so that content naturally breathes, never overflows, and never collides or overlaps.
+
+5. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML (`<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`).
+   - If using Chart.js, include `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` and ensure the canvas ID matches the script selector.
+   - IMPORTANT: Inside `<script>` tags, always use valid JavaScript numbers and math expressions. NEVER use CSS functions like `calc(...)` in JavaScript code.
+   - Do NOT wrap the output in markdown code blocks (no ```html). Output ONLY pure, executable HTML code.
+
+==============================================================================
+INPUT:
+----------
+
+INSTRUCTION:
+generate a possible chart in PPT
+
+RETRIVED CONTEXT FROM DB:
+{
+  "columns": [
+    "city",
+    "cuisine",
+    "total_orders",
+    "total_revenue",
+    "avg_rating"
+  ],
+  "rows": [
+    {
+      "city": "Manchester",
+      "cuisine": "Thai",
+      "total_orders": 107,
+      "total_revenue": 12319.49,
+      "avg_rating": 3.9910714285714284
+    },
+    {
+      "city": "Bristol",
+      "cuisine": "American",
+      "total_orders": 107,
+      "total_revenue": 12137.23,
+      "avg_rating": 4.130232558139535
+    },
+    {
+      "city": "Liverpool",
+      "cuisine": "Thai",
+      "total_orders": 97,
+      "total_revenue": 10381.42,
+      "avg_rating": 4.029098360655738
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Indian",
+      "total_orders": 86,
+      "total_revenue": 9569.03,
+      "avg_rating": 3.62
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Mexican",
+      "total_orders": 83,
+      "total_revenue": 8387.39,
+      "avg_rating": 4.078391959798995
+    },
+    {
+      "city": "Leeds",
+      "cuisine": "Thai",
+      "total_orders": 63,
+      "total_revenue": 8183.92,
+      "avg_rating": 4.094047619047619
+    },
+    {
+      "city": "Liverpool",
+      "cuisine": "Mexican",
+      "total_orders": 73,
+      "total_revenue": 7997.19,
+      "avg_rating": 4.002222222222223
+    },
+    {
+      "city": "London",
+      "cuisine": "Italian",
+      "total_orders": 75,
+      "total_revenue": 7774.3,
+      "avg_rating": 4.267052023121387
+    },
+    {
+      "city": "Birmingham",
+      "cuisine": "American",
+      "total_orders": 62,
+      "total_revenue": 7143.36,
+      "avg_rating": 3.6993464052287583
+    },
+    {
+      "city": "Manchester",
+      "cuisine": "Indian",
+      "total_orders": 56,
+      "total_revenue": 6639.27,
+      "avg_rating": 3.658041958041958
+    }
+  ]
+}
+
+CURRENT SLIDE/PREVIOUS SLIDE TEMPLATE (for brand theme inheritance):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Sales Trend</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster – same as template */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+
+    /* Content grid */
+    .content-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 27%;
+      width: 87.25%;
+      height: 65%;
+      display: grid;
+      grid-template-columns: 60% 38%;
+      gap: 2%;
+    }
+
+    /* Chart canvas */
+    #salesChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Stat cards container */
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 2cqw;
+    }
+
+    .stat-card {
+      background-color: #F5F5F5;
+      border-radius: 0.8cqw;
+      padding: 1.5cqw 2cqw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5cqw;
+    }
+
+    .stat-value {
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+    }
+
+    .stat-label {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #000000;
+    }
+
+    .badge {
+      align-self: flex-start;
+      background-color: #FF5148;
+      color: #FFFFFF;
+      font-size: calc(14 / 19.2 * 1cqw);
+      font-weight: 600;
+      padding: 0.3cqw 0.8cqw;
+      border-radius: 0.5cqw;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Title -->
+    <h1 class="slide-title">Sales Trend Overview</h1>
+    <div class="accent-bar"></div>
+
+    <!-- Main content -->
+    <div class="content-grid">
+      <!-- Chart -->
+      <canvas id="salesChart"></canvas>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="badge">Peak</div>
+          <div class="stat-value" id="peakValue">$0</div>
+          <div class="stat-label" id="peakMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">Low</div>
+          <div class="stat-value" id="lowValue">$0</div>
+          <div class="stat-label" id="lowMonth">Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">YoY Δ</div>
+          <div class="stat-value" id="yoyChange">0%</div>
+          <div class="stat-label">Change vs. Same Month Last Year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rawData = [
+      {"month":"2023-01-01T00:00:00","total_sales":10442.48},
+      {"month":"2023-02-01T00:00:00","total_sales":10744.93},
+      {"month":"2023-03-01T00:00:00","total_sales":13182.51},
+      {"month":"2023-04-01T00:00:00","total_sales":14462.13},
+      {"month":"2023-05-01T00:00:00","total_sales":11967.8},
+      {"month":"2023-06-01T00:00:00","total_sales":12217.14},
+      {"month":"2023-07-01T00:00:00","total_sales":12848.36},
+      {"month":"2023-08-01T00:00:00","total_sales":12080.59},
+      {"month":"2023-09-01T00:00:00","total_sales":11588.74},
+      {"month":"2023-10-01T00:00:00","total_sales":12636.67},
+      {"month":"2023-11-01T00:00:00","total_sales":11849.54},
+      {"month":"2023-12-01T00:00:00","total_sales":11485.14},
+      {"month":"2024-01-01T00:00:00","total_sales":10249.59},
+      {"month":"2024-02-01T00:00:00","total_sales":10632.16},
+      {"month":"2024-03-01T00:00:00","total_sales":11499.44},
+      {"month":"2024-04-01T00:00:00","total_sales":9821.39},
+      {"month":"2024-05-01T00:00:00","total_sales":5492.07}
+    ];
+
+    // Prepare labels and data
+    const labels = rawData.map(d => {
+      const date = new Date(d.month);
+      const options = { month: 'short', year: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    });
+    const sales = rawData.map(d => d.total_sales);
+
+    // Find peak and low
+    const peak = rawData.reduce((a,b)=> b.total_sales>a.total_sales?b:a);
+    const low = rawData.reduce((a,b)=> b.total_sales<a.total_sales?b:a);
+
+    // YoY change (compare last month (May 2024) with May 2023)
+    const may2023 = rawData.find(d=> d.month.startsWith('2023-05'));
+    const may2024 = rawData.find(d=> d.month.startsWith('2024-05'));
+    const yoy = ((may2024.total_sales - may2023.total_sales) / may2023.total_sales) * 100;
+
+    // Populate stat cards
+    document.getElementById('peakValue').textContent = `$${peak.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('peakMonth').textContent = new Date(peak.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('lowValue').textContent = `$${low.total_sales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('lowMonth').textContent = new Date(low.month).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+    document.getElementById('yoyChange').textContent = `${yoy.toFixed(1)}%`;
+
+    // Chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total Sales',
+          data: sales,
+          borderColor: '#FF5148',
+          backgroundColor: 'rgba(255,81,72,0.1)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#FF5148',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#000' }
+          },
+          y: {
+            grid: { color: '#e0e0e0' },
+            ticks: {
+              color: '#000',
+              callback: v => `$${v/1000}k`
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – City & Cuisine Performance</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+
+    .content-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 27%;
+      width: 87.25%;
+      height: 65%;
+      display: grid;
+      grid-template-columns: 58% 38%;
+      gap: 4%;
+    }
+
+    #performanceChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 2cqw;
+    }
+
+    .stat-card {
+      background-color: #F5F5F5;
+      border-radius: 0.8cqw;
+      padding: 1.5cqw 2cqw;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5cqw;
+    }
+
+    .stat-value {
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+    }
+
+    .stat-label {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #000000;
+    }
+
+    .badge {
+      align-self: flex-start;
+      background-color: #FF5148;
+      color: #FFFFFF;
+      font-size: calc(14 / 19.2 * 1cqw);
+      font-weight: 600;
+      padding: 0.3cqw 0.8cqw;
+      border-radius: 0.5cqw;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">City &amp; Cuisine Performance</h1>
+    <div class="accent-bar"></div>
+
+    <div class="content-grid">
+      <canvas id="performanceChart"></canvas>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="badge">Top City</div>
+          <div class="stat-value" id="topCityValue">$0</div>
+          <div class="stat-label" id="topCityName">City</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">Top Cuisine</div>
+          <div class="stat-value" id="topCuisineValue">$0</div>
+          <div class="stat-label" id="topCuisineName">Cuisine</div>
+        </div>
+        <div class="stat-card">
+          <div class="badge">Avg Rating</div>
+          <div class="stat-value" id="avgRating">0.0</div>
+          <div class="stat-label">Overall Avg Rating</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rows = [
+      {"city":"Manchester","cuisine":"Thai","total_orders":107,"total_revenue":12319.49,"avg_rating":3.9910714285714284},
+      {"city":"Bristol","cuisine":"American","total_orders":107,"total_revenue":12137.23,"avg_rating":4.130232558139535},
+      {"city":"Liverpool","cuisine":"Thai","total_orders":97,"total_revenue":10381.42,"avg_rating":4.029098360655738},
+      {"city":"Leeds","cuisine":"Indian","total_orders":86,"total_revenue":9569.03,"avg_rating":3.62},
+      {"city":"Leeds","cuisine":"Mexican","total_orders":83,"total_revenue":8387.39,"avg_rating":4.078391959798995},
+      {"city":"Leeds","cuisine":"Thai","total_orders":63,"total_revenue":8183.92,"avg_rating":4.094047619047619},
+      {"city":"Liverpool","cuisine":"Mexican","total_orders":73,"total_revenue":7997.19,"avg_rating":4.002222222222223},
+      {"city":"London","cuisine":"Italian","total_orders":75,"total_revenue":7774.3,"avg_rating":4.267052023121387},
+      {"city":"Birmingham","cuisine":"American","total_orders":62,"total_revenue":7143.36,"avg_rating":3.6993464052287583},
+      {"city":"Manchester","cuisine":"Indian","total_orders":56,"total_revenue":6639.27,"avg_rating":3.658041958041958}
+    ];
+
+    // Aggregate revenue per city
+    const cityRev = {};
+    rows.forEach(r => {
+      cityRev[r.city] = (cityRev[r.city] || 0) + r.total_revenue;
+    });
+
+    // Aggregate revenue per cuisine
+    const cuisineRev = {};
+    rows.forEach(r => {
+      cuisineRev[r.cuisine] = (cuisineRev[r.cuisine] || 0) + r.total_revenue;
+    });
+
+    // Overall average rating (simple mean of provided avg_rating)
+    const avgRating = rows.reduce((sum, r) => sum + r.avg_rating, 0) / rows.length;
+
+    // Find top city
+    const topCity = Object.entries(cityRev).reduce((a, b) => b[1] > a[1] ? b : a);
+    // Find top cuisine
+    const topCuisine = Object.entries(cuisineRev).reduce((a, b) => b[1] > a[1] ? b : a);
+
+    // Populate stat cards
+    document.getElementById('topCityValue').textContent = `$${topCity[1].toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('topCityName').textContent = topCity[0];
+    document.getElementById('topCuisineValue').textContent = `$${topCuisine[1].toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    document.getElementById('topCuisineName').textContent = topCuisine[0];
+    document.getElementById('avgRating').textContent = avgRating.toFixed(2);
+
+    // Prepare chart data (city revenue)
+    const cityLabels = Object.keys(cityRev);
+    const cityValues = Object.values(cityRev);
+
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: cityLabels,
+        datasets: [{
+          label: 'Revenue ($)',
+          data: cityValues,
+          backgroundColor: '#FF5148',
+          borderColor: '#FF5148',
+          borderWidth: 1,
+          borderRadius: 4,
+          maxBarThickness: 40
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `$${ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#000' }
+          },
+          y: {
+            grid: { color: '#e0e0e0' },
+            ticks: {
+              color: '#000',
+              callback: v => `$${(v/1000).toFixed(0)}k`
+            },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 6134
+output tokens: 2693
+total tokens: 8827
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 10154
+OUTPUT TOKENS : 3715
+TOTAL         : 13869
+=======================================

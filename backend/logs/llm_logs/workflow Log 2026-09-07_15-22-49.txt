@@ -1,0 +1,72 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"Analyze the provided restaurant database and create ONE professional PowerPoint slide that showcases the maximum number of meaningful chart types possible from the available data.  Include diverse and relevant visualizations such as bar charts, horizontal bar charts, line charts, area charts, pie charts, donut charts, stacked bar charts, grouped bar charts, scatter plots, histograms, and other meaningful chart types where supported by the data.  Use the relationships between restaurants, menu items, customers, orders, and order items to generate meaningful metrics and comparisons. Do not create duplicate charts showing the same insight. Each chart must represent a different analytical perspective.  Organize all charts into a single well-designed dashboard-style slide with clear titles and labels. Prioritize visual variety, data relevance, and readability. Do not add lengthy explanations or insight paragraphs."
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The user asks for data analysis and creation of a professional PowerPoint slide with multiple visualizations, which directly relates to business analytics and presentation generation."
+}
+
+TOKEN COUNT:
+input tokens: 638
+output tokens: 111
+total tokens: 749
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 638
+OUTPUT TOKENS : 111
+TOTAL         : 749
+=======================================

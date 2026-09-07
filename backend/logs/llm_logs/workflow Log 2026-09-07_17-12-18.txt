@@ -1,0 +1,1298 @@
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify how the user query should be processed against the provided database schema context.
+
+Note: The user query may be a direct analytical question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt", "Analyze the database and create a dashboard slide with charts"). Any request asking to analyze, summarize, compare, or visualize data from the database is ALWAYS valid.
+
+You must categorize the query into one of two classifications:
+
+1. "SCHEMA_MATCH":
+   - The query can be queried or aggregated directly from the database schema tables and columns.
+   - Includes all general metrics, aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY), date ranges, comparisons, multi-chart summaries, and presentation dashboards based on available tables.
+   - Default to "SCHEMA_MATCH" whenever the query focuses on analyzing the database or generating metrics from available tables.
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query specifically targets concrete entity values, product names, customer names, restaurant names, city names, or specific categories that are NOT explicitly listed in the schema sample values and must be looked up or verified from the database first before writing the final SQL query.
+   - Example: The schema has `restaurant_name` or `customer_name`, and the user asks for a specific name like "Pizza Hut" or "Harsha Vardhan" whose exact spelling needs database retrieval.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate the summary of database in ppt
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a general summary and presentation of the database, which can be created using the available schema and aggregated information without needing specific entity lookups."
+}
+
+TOKEN COUNT:
+input tokens: 1748
+output tokens: 136
+total tokens: 1884
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: public
+
+TABLE: restaurants
+Rows: 120
+
+Columns:
+- restaurant_id | VARCHAR(50) | PK | not_null | samples: "R001", "R002", "R003", "R004", "R005"
+- cuisine | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Thai", "Indian", "Italian", "Mexican", "American",..+1
+- city | VARCHAR(100) | categorical | unique: 5% | distinct: 6 | categories: "Leeds", "Liverpool", "Manchester", "Bristol", "London",..+1
+- rating | NUMERIC(3,1) | unique: 17.5% | range: 3-5 | samples: 3.4, 4.1, 4.1, 3.5, 4.3
+
+TABLE: menu_items
+Rows: 400
+
+Columns:
+- item_id | VARCHAR(50) | PK | not_null | samples: "M0001", "M0002", "M0003", "M0004", "M0005"
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 29.25% | distinct: 117 | categories: "R013", "R099", "R046", "R016", "R095",..+112
+- price | NUMERIC(10,2) | unique: 93.75% | range: 5.04-40 | samples: 20.34, 20.84, 15.51, 29.88, 34.72
+
+TABLE: customers
+Rows: 1500
+
+Columns:
+- customer_id | VARCHAR(50) | PK | not_null | samples: "C0001", "C0002", "C0003", "C0004", "C0005"
+- city | VARCHAR(100) | categorical | unique: 0.4% | distinct: 6 | categories: "Bristol", "Leeds", "Liverpool", "London", "Birmingham",..+1
+- signup_date | DATE | unique: 41.27% | range: "2022-01-01"-"2023-12-01" | samples: "2022-04-25", "2022-10-09", "2022-08-17", "2022-04-15", "2023-07-13"
+
+TABLE: orders
+Rows: 5000
+
+Columns:
+- order_id | VARCHAR(50) | PK | not_null | samples: "O00001", "O00002", "O00003", "O00004", "O00005"
+- customer_id | VARCHAR(50) | FK -> customers.customer_id | categorical | unique: 29.04% | distinct: 1452 | categories: "C1065", "C0860", "C0801", "C0932", "C0502",..+1447
+- restaurant_id | VARCHAR(50) | FK -> restaurants.restaurant_id | categorical | unique: 2.4% | distinct: 120 | categories: "R021", "R060", "R022", "R038", "R088",..+115
+- order_time | TIMESTAMP | unique: 10.02% | range: "2023-01-01T00:00:00"-"2024-05-15T00:00:00" | samples: "2023-01-17T00:00:00", "2023-04-24T00:00:00", "2024-01-17T00:00:00", "2023-03-27T00:00:00", "2024-01-09T00:00:00"
+- delivery_time | TIMESTAMP | unique: 93.52% | range: "2023-01-01T00:31:00"-"2024-05-15T01:27:00" | samples: "2023-01-17T00:43:00", "2023-04-24T00:33:00", "2024-01-17T00:29:00", "2023-03-27T00:31:00", "2024-01-09T01:02:00"
+- status | VARCHAR(50) | categorical | unique: 0.06% | distinct: 3 | categories: "Delivered", "Late", "Cancelled"
+
+TABLE: order_items
+Rows: 12391
+
+Columns:
+- order_id | VARCHAR(50) | FK -> orders.order_id | categorical | unique: 40.35% | distinct: 5000 | categories: "O00646", "O04108", "O02182", "O00254", "O03186",..+4995
+- item_id | VARCHAR(50) | FK -> menu_items.item_id | categorical | unique: 3.23% | distinct: 400 | categories: "M0200", "M0245", "M0231", "M0108", "M0255",..+395
+- quantity | INTEGER | unique: 0.02% | range: 1-3 | samples: 2, 1, 3, 3, 3
+- price | NUMERIC(10,2) | unique: 3.03% | range: 5.04-40 | samples: 7.93, 14.2, 26.56, 6.03, 35.65
+
+
+RELATIONSHIPS:
+- menu_items.restaurant_id -> restaurants.restaurant_id
+- orders.customer_id -> customers.customer_id
+- orders.restaurant_id -> restaurants.restaurant_id
+- order_items.order_id -> orders.order_id
+- order_items.item_id -> menu_items.item_id
+
+
+User Natural Language Query:
+generate the summary of database in ppt
+
+SQL Query:
+
+LLM OUTPUT:
+
+WITH r AS (
+    SELECT COUNT(*) AS total_restaurants,
+           ROUND(AVG(rating)::numeric,2) AS avg_rating
+    FROM public.restaurants
+),
+m AS (
+    SELECT COUNT(*) AS total_menu_items
+    FROM public.menu_items
+),
+c AS (
+    SELECT COUNT(*) AS total_customers
+    FROM public.customers
+),
+o AS (
+    SELECT COUNT(*) AS total_orders,
+           COUNT(DISTINCT customer_id) AS unique_customers,
+           COUNT(DISTINCT restaurant_id) AS unique_restaurants
+    FROM public.orders
+),
+oi AS (
+    SELECT COUNT(*) AS total_order_items,
+           SUM(quantity) AS total_quantity,
+           ROUND(SUM(price * quantity)::numeric,2) AS total_sales
+    FROM public.order_items
+)
+SELECT 'Total Restaurants' AS metric, r.total_restaurants::text AS value FROM r
+UNION ALL
+SELECT 'Average Restaurant Rating', r.avg_rating::text FROM r
+UNION ALL
+SELECT 'Total Menu Items', m.total_menu_items::text FROM m
+UNION ALL
+SELECT 'Total Customers', c.total_customers::text FROM c
+UNION ALL
+SELECT 'Total Orders', o.total_orders::text FROM o
+UNION ALL
+SELECT 'Unique Customers (Orders)', o.unique_customers::text FROM o
+UNION ALL
+SELECT 'Unique Restaurants (Orders)', o.unique_restaurants::text FROM o
+UNION ALL
+SELECT 'Total Order Items', oi.total_order_items::text FROM oi
+UNION ALL
+SELECT 'Total Quantity Ordered', oi.total_quantity::text FROM oi
+UNION ALL
+SELECT 'Total Sales', oi.total_sales::text FROM oi;
+
+TOKEN COUNT:
+input tokens: 1791
+output tokens: 814
+total tokens: 2605
+======================
+
+======================
+Node: PPT Generation - PPT Generation Agent
+LLM INPUT:
+
+You are KeloStats AI Master Slide Designer, a world-class presentation architect inspired by Canva, Pitch, Linear, and elite design studios.
+
+Your mission is to generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+
+==============================================================================
+CORE DESIGN PHILOSOPHY & DYNAMIC ARCHITECTURAL FREEDOM:
+==============================================================================
+
+1. COMPLETE CREATIVE FREEDOM (ZERO HARDCODED LAYOUTS):
+   - You are NOT bound to any rigid layout formulas, fixed archetypes, or predetermined card counts.
+   - You have 100% creative freedom to conceptualize, design, and architect the most compelling visual canvas layout for the specific content.
+   - Think like a senior Canva designer: analyze the data and user intent, identify the key narrative focal point, and invent an original layout tailored to this story.
+   - Dynamically compose layouts such as:
+     * Bento-box multi-card grids with varying card weights and visual hierarchy
+     * Asymmetrical split-screens (e.g., hero metric/insight on one side, detailed analysis or interactive visualizer on the other)
+     * Hero focal points with large typographic statements and surrounding supporting data tiles
+     * Side-by-side comparative matrices, timeline/milestone flows, or categorical breakdown cards
+     * Interactive Chart.js visualizations paired with contextual narrative callouts and badge pills
+     * Or any bespoke layout composition that presents the data with maximum boardroom polish!
+
+2. INHERIT BRAND DNA FROM TEMPLATE:
+   - Analyze the provided template slide (<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 40px at 1920px -> 40 / 19.2 = 2.08cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 4.500%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-text {
+      position: absolute;
+      left: 11.625%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>
+) and extract its core visual identity:
+     * Color palette: Primary brand accent, secondary accents, surface card backgrounds, and text shades.
+     * Typography & styling: Font family, corner radiuses, subtle border treatments, and decorative accents.
+   - Apply this inherited theme to your newly created layout so the presentation feels unified and branded, while the layout itself is completely fresh and dynamic.
+
+3. VISUAL EXCELLENCE & AESTHETIC POLISH:
+   - A slide is a dynamic visual canvas, never a plain document. Ban raw, unstyled vertical bullet point lists.
+   - Elevate the content with modern UI components: stat tiles, highlight badges, pill tags, colored progress indicators, and well-spaced container cards.
+   - Establish clear visual hierarchy: prominent titles/numbers draw the eye first, followed by clear labels, key takeaways, and secondary metrics.
+
+4. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must be responsive and strictly adhere to the 16:9 aspect ratio:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the entire slide scales seamlessly to any screen resolution.
+   - Use CSS Grid or Flexbox to organize cards and elements so that content naturally breathes, never overflows, and never collides or overlaps.
+
+5. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML (`<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`).
+   - If using Chart.js, include `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` and ensure the canvas ID matches the script selector.
+   - IMPORTANT: Inside `<script>` tags, always use valid JavaScript numbers and math expressions. NEVER use CSS functions like `calc(...)` in JavaScript code.
+   - Do NOT wrap the output in markdown code blocks (no ```html). Output ONLY pure, executable HTML code.
+
+==============================================================================
+INPUT:
+----------
+
+INSTRUCTION:
+generate the summary of database in ppt
+
+RETRIVED CONTEXT FROM DB:
+{
+  "columns": [
+    "metric",
+    "value"
+  ],
+  "rows": [
+    {
+      "metric": "Total Restaurants",
+      "value": "120"
+    },
+    {
+      "metric": "Average Restaurant Rating",
+      "value": "4.01"
+    },
+    {
+      "metric": "Total Menu Items",
+      "value": "400"
+    },
+    {
+      "metric": "Total Customers",
+      "value": "1500"
+    },
+    {
+      "metric": "Total Orders",
+      "value": "5000"
+    },
+    {
+      "metric": "Unique Customers (Orders)",
+      "value": "1452"
+    },
+    {
+      "metric": "Unique Restaurants (Orders)",
+      "value": "120"
+    },
+    {
+      "metric": "Total Order Items",
+      "value": "12391"
+    },
+    {
+      "metric": "Total Quantity Ordered",
+      "value": "24699"
+    },
+    {
+      "metric": "Total Sales",
+      "value": "560509.15"
+    }
+  ]
+}
+
+CURRENT SLIDE/PREVIOUS SLIDE TEMPLATE (for brand theme inheritance):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 40px at 1920px -> 40 / 19.2 = 2.08cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 4.500%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 22px at 1920px -> 22 / 19.2 = 1.15cqw) */
+    .topic-text {
+      position: absolute;
+      left: 11.625%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(22 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>
+
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Key Metrics Summary</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    /* Grid container for metric cards */
+    .metrics-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(20cqw, 1fr));
+      gap: 2cqw;
+      padding: 1cqw;
+    }
+
+    .metric-card {
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      padding: 1.5cqw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .metric-name {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #555555;
+      margin-bottom: 0.5cqw;
+    }
+
+    .metric-value {
+      font-size: calc(28 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--accent-red);
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+      .metric-name { font-size: calc(14 / 19.2 * 1cqw); }
+      .metric-value { font-size: calc(22 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Key Metrics Summary</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-name">Total Restaurants</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Average Restaurant Rating</div>
+        <div class="metric-value">4.01</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Menu Items</div>
+        <div class="metric-value">400</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Customers</div>
+        <div class="metric-value">1,500</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Orders</div>
+        <div class="metric-value">5,000</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Customers (Orders)</div>
+        <div class="metric-value">1,452</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Restaurants (Orders)</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Order Items</div>
+        <div class="metric-value">12,391</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Quantity Ordered</div>
+        <div class="metric-value">24,699</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Sales</div>
+        <div class="metric-value">$560,509.15</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 3965
+output tokens: 1902
+total tokens: 5867
+======================
+
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Key Metrics Summary</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    /* Grid container for metric cards */
+    .metrics-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(20cqw, 1fr));
+      gap: 2cqw;
+      padding: 1cqw;
+    }
+
+    .metric-card {
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      padding: 1.5cqw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .metric-name {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #555555;
+      margin-bottom: 0.5cqw;
+    }
+
+    .metric-value {
+      font-size: calc(28 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--accent-red);
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+      .metric-name { font-size: calc(14 / 19.2 * 1cqw); }
+      .metric-value { font-size: calc(22 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Key Metrics Summary</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-name">Total Restaurants</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Average Restaurant Rating</div>
+        <div class="metric-value">4.01</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Menu Items</div>
+        <div class="metric-value">400</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Customers</div>
+        <div class="metric-value">1,500</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Orders</div>
+        <div class="metric-value">5,000</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Customers (Orders)</div>
+        <div class="metric-value">1,452</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Restaurants (Orders)</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Order Items</div>
+        <div class="metric-value">12,391</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Quantity Ordered</div>
+        <div class="metric-value">24,699</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Sales</div>
+        <div class="metric-value">$560,509.15</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Key Metrics Summary</title>
+  <style>
+    :root {
+      --accent-red: #FF5148;
+      --bg-dark: #0f172a;
+      --bg-white: #ffffff;
+      --card-bg: #f8f9fa;
+      --text-dark: #000000;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--bg-white);
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+
+    /* Dot cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.333%;
+      width: 78.75%;
+      height: 8%;
+      font-size: calc(40 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Accent bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: var(--accent-red);
+      z-index: 2;
+    }
+
+    /* Grid container for metric cards */
+    .metrics-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 28%;
+      width: 87.25%;
+      height: 66%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(20cqw, 1fr));
+      gap: 2cqw;
+      padding: 1cqw;
+    }
+
+    .metric-card {
+      background-color: var(--card-bg);
+      border-radius: 0.8cqw;
+      padding: 1.5cqw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .metric-name {
+      font-size: calc(18 / 19.2 * 1cqw);
+      color: #555555;
+      margin-bottom: 0.5cqw;
+    }
+
+    .metric-value {
+      font-size: calc(28 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: var(--accent-red);
+    }
+
+    @media (max-width: 600px) {
+      .slide-title { font-size: calc(30 / 19.2 * 1cqw); }
+      .metric-name { font-size: calc(14 / 19.2 * 1cqw); }
+      .metric-value { font-size: calc(22 / 19.2 * 1cqw); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <!-- Dot Cluster -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Key Metrics Summary</h1>
+
+    <!-- Accent Bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-name">Total Restaurants</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Average Restaurant Rating</div>
+        <div class="metric-value">4.01</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Menu Items</div>
+        <div class="metric-value">400</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Customers</div>
+        <div class="metric-value">1,500</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Orders</div>
+        <div class="metric-value">5,000</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Customers (Orders)</div>
+        <div class="metric-value">1,452</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Unique Restaurants (Orders)</div>
+        <div class="metric-value">120</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Order Items</div>
+        <div class="metric-value">12,391</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Quantity Ordered</div>
+        <div class="metric-value">24,699</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Total Sales</div>
+        <div class="metric-value">$560,509.15</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 2410
+output tokens: 1793
+total tokens: 4203
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 9914
+OUTPUT TOKENS : 4645
+TOTAL         : 14559
+=======================================

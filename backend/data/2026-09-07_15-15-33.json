@@ -1,0 +1,52 @@
+{
+  "columns": [
+    "metric",
+    "value"
+  ],
+  "rows": [
+    {
+      "metric": "Total Restaurants",
+      "value": "120"
+    },
+    {
+      "metric": "Total Menu Items",
+      "value": "400"
+    },
+    {
+      "metric": "Total Customers",
+      "value": "1500"
+    },
+    {
+      "metric": "Total Orders",
+      "value": "5000"
+    },
+    {
+      "metric": "Total Order Items",
+      "value": "12391"
+    },
+    {
+      "metric": "Total Revenue",
+      "value": "560509.15"
+    },
+    {
+      "metric": "Average Order Value",
+      "value": "45.2351827939633605"
+    },
+    {
+      "metric": "Average Restaurant Rating",
+      "value": "4.0066666666666667"
+    },
+    {
+      "metric": "Orders Delivered",
+      "value": "1717"
+    },
+    {
+      "metric": "Orders Late",
+      "value": "1671"
+    },
+    {
+      "metric": "Orders Cancelled",
+      "value": "1612"
+    }
+  ]
+}

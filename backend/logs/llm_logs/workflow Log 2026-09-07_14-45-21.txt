@@ -1,0 +1,172 @@
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    .slide-canvas { width: 100%; aspect-ratio: 16/9; position: relative; }
+    .title { font-size: calc(32/19.2*1cqw); }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <h1 class="title">Test Revenue</h1>
+    <div><p>Unclosed div content
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'bar',
+      data: { labels: ['Q1', 'Q2'], datasets: [{ data: [100, 200] }] },
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: calc(12/19.2*100) }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Revenue Slide</title>
+  <style>
+    .slide-canvas {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      container-type: inline-size;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 1cqw;
+      padding: 0 6.375%;
+      box-sizing: border-box;
+    }
+    .title {
+      font-size: calc(32 / 19.2 * 1cqw);
+      margin: 0;
+    }
+    .chart-wrapper {
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <h1 class="title">Test Revenue</h1>
+    <div class="chart-wrapper">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    new Chart(document.getElementById('revenueChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Q1', 'Q2'],
+        datasets: [{
+          label: 'Revenue',
+          data: [100, 200],
+          backgroundColor: '#4e79a7'
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: (12 / 19.2 * 100) } // 62.5
+            }
+          }
+        },
+        maintainAspectRatio: false,
+        responsive: true
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 1175
+output tokens: 920
+total tokens: 2095
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 1175
+OUTPUT TOKENS : 920
+TOTAL         : 2095
+=======================================

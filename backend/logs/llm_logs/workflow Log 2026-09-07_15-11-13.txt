@@ -1,0 +1,236 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"summarize the database?"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The query asks to summarize a database, which pertains to business analytics and data handling."
+}
+
+TOKEN COUNT:
+input tokens: 481
+output tokens: 74
+total tokens: 555
+======================
+
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"summarize the database?"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "normal_qa",
+    "reason": "The user asks for a summary of the database, which is a data query, not a request to create a presentation or slide."
+}
+
+TOKEN COUNT:
+input tokens: 466
+output tokens: 117
+total tokens: 583
+======================
+
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify if the underlying data requested in a user query can be retrieved or calculated using the provided database schema context.
+
+Note: The user query may be a direct question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt"). Focus on evaluating whether the required metrics, tables, columns, or data entities exist in the schema, ignoring presentation framing.
+
+You must categorize the query into one of three classifications:
+
+1. "SCHEMA_MATCH":
+   - The underlying data request is completely related to the database schema.
+   - All referenced tables, columns, metrics, and any specific values/categories needed are already known or answerable from the schema context (or are general aggregations like COUNT, SUM, AVG, GROUP BY, date ranges).
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query is related to the database schema (the tables and columns exist), BUT it mentions specific entity names, product names, customer names, cities, or category values that are NOT listed in the schema context.
+   - Example: The schema has `product_name` column, but the user asks for a specific name like "Cisco Phone 7940" or "Harsha Vardhan" which is not among the sample categories.
+
+3. "UNRELATED":
+   - The user query has no underlying database connection, asks for tables/columns that do not exist, or is completely non-database related.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: store
+
+
+User Natural Language Query:
+summarize the database?
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED" | "UNRELATED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a summary of the database, which directly pertains to the provided schema information."
+}
+
+TOKEN COUNT:
+input tokens: 499
+output tokens: 261
+total tokens: 760
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: sample_test
+Dialect: PostgreSQL
+Schema: store
+
+
+User Natural Language Query:
+summarize the database?
+
+SQL Query:
+
+LLM OUTPUT:
+
+SELECT t.table_name,
+       c.reltuples::bigint AS estimated_row_count,
+       t.table_type
+FROM information_schema.tables t
+JOIN pg_class c
+  ON c.relname = t.table_name
+ AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'store')
+WHERE t.table_schema = 'store';
+
+TOKEN COUNT:
+input tokens: 500
+output tokens: 418
+total tokens: 918
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 1946
+OUTPUT TOKENS : 870
+TOTAL         : 2816
+=======================================

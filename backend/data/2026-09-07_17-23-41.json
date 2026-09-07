@@ -1,0 +1,94 @@
+{
+  "columns": [
+    "month_year",
+    "total_orders",
+    "total_revenue"
+  ],
+  "rows": [
+    {
+      "month_year": "Jan-2023",
+      "total_orders": 744,
+      "total_revenue": 33453.28
+    },
+    {
+      "month_year": "Feb-2023",
+      "total_orders": 693,
+      "total_revenue": 30887.6
+    },
+    {
+      "month_year": "Mar-2023",
+      "total_orders": 822,
+      "total_revenue": 35970.92
+    },
+    {
+      "month_year": "Apr-2023",
+      "total_orders": 796,
+      "total_revenue": 36117.04
+    },
+    {
+      "month_year": "May-2023",
+      "total_orders": 753,
+      "total_revenue": 33419.53
+    },
+    {
+      "month_year": "Jun-2023",
+      "total_orders": 736,
+      "total_revenue": 33902.61
+    },
+    {
+      "month_year": "Jul-2023",
+      "total_orders": 824,
+      "total_revenue": 36348.99
+    },
+    {
+      "month_year": "Aug-2023",
+      "total_orders": 748,
+      "total_revenue": 35212.25
+    },
+    {
+      "month_year": "Sep-2023",
+      "total_orders": 766,
+      "total_revenue": 34827.77
+    },
+    {
+      "month_year": "Oct-2023",
+      "total_orders": 784,
+      "total_revenue": 36159.31
+    },
+    {
+      "month_year": "Nov-2023",
+      "total_orders": 735,
+      "total_revenue": 33726.62
+    },
+    {
+      "month_year": "Dec-2023",
+      "total_orders": 720,
+      "total_revenue": 34048.28
+    },
+    {
+      "month_year": "Jan-2024",
+      "total_orders": 767,
+      "total_revenue": 33389.48
+    },
+    {
+      "month_year": "Feb-2024",
+      "total_orders": 726,
+      "total_revenue": 33042.45
+    },
+    {
+      "month_year": "Mar-2024",
+      "total_orders": 712,
+      "total_revenue": 33536.63
+    },
+    {
+      "month_year": "Apr-2024",
+      "total_orders": 685,
+      "total_revenue": 30502.13
+    },
+    {
+      "month_year": "May-2024",
+      "total_orders": 380,
+      "total_revenue": 15964.26
+    }
+  ]
+}

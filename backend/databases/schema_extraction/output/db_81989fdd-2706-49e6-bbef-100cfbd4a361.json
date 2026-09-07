@@ -1,0 +1,427 @@
+{
+  "database_id": "db_81989fdd-2706-49e6-bbef-100cfbd4a361",
+  "database_name": "kelostats",
+  "database_type": "postgres",
+  "user_id": "b14eb44f-c6d4-49d6-8018-a6dc44815009",
+  "schema_name": "store",
+  "tables": [
+    {
+      "table_name": "global_superstore",
+      "number_of_rows": 51290,
+      "number_of_columns": 24,
+      "column_wise_summary": [
+        {
+          "column_name": "row_id",
+          "data_type": "INTEGER",
+          "null_percentage": 0.0,
+          "unique_percentage": 100.0,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            32298,
+            26341,
+            25330,
+            13524,
+            47221
+          ],
+          "min_value": 1,
+          "max_value": 51290
+        },
+        {
+          "column_name": "order_id",
+          "data_type": "VARCHAR(100)",
+          "null_percentage": 0.0,
+          "unique_percentage": 48.81,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 25035,
+          "categories": [
+            "CA-2014-100111",
+            "TO-2014-9950",
+            "MX-2014-166541",
+            "IN-2013-42311",
+            "IN-2012-41261"
+          ]
+        },
+        {
+          "column_name": "order_date",
+          "data_type": "DATE",
+          "null_percentage": 0.0,
+          "unique_percentage": 2.79,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            "2012-07-31",
+            "2013-02-05",
+            "2013-10-17",
+            "2013-01-28",
+            "2013-11-05"
+          ],
+          "min_date": "2011-01-01",
+          "max_date": "2014-12-31"
+        },
+        {
+          "column_name": "ship_date",
+          "data_type": "DATE",
+          "null_percentage": 0.0,
+          "unique_percentage": 2.85,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            "2012-07-31",
+            "2013-02-07",
+            "2013-10-18",
+            "2013-01-30",
+            "2013-11-06"
+          ],
+          "min_date": "2011-01-03",
+          "max_date": "2015-01-07"
+        },
+        {
+          "column_name": "ship_mode",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.01,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 4,
+          "categories": [
+            "Standard Class",
+            "Second Class",
+            "First Class",
+            "Same Day"
+          ]
+        },
+        {
+          "column_name": "customer_id",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 0.0,
+          "unique_percentage": 3.1,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 1590,
+          "categories": [
+            "PO-18850",
+            "BE-11335",
+            "JG-15805",
+            "SW-20755",
+            "EM-13960"
+          ]
+        },
+        {
+          "column_name": "customer_name",
+          "data_type": "VARCHAR(255)",
+          "null_percentage": 0.0,
+          "unique_percentage": 1.55,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 795,
+          "categories": [
+            "Muhammed Yedwab",
+            "Steven Ward",
+            "Gary Hwang",
+            "Bill Eplett",
+            "Patrick O'Brill"
+          ]
+        },
+        {
+          "column_name": "segment",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.01,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 3,
+          "categories": [
+            "Consumer",
+            "Corporate",
+            "Home Office"
+          ]
+        },
+        {
+          "column_name": "city",
+          "data_type": "VARCHAR(150)",
+          "null_percentage": 0.0,
+          "unique_percentage": 7.09,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 3636,
+          "categories": [
+            "New York City",
+            "Los Angeles",
+            "Philadelphia",
+            "San Francisco",
+            "Santo Domingo"
+          ]
+        },
+        {
+          "column_name": "state",
+          "data_type": "VARCHAR(150)",
+          "null_percentage": 0.0,
+          "unique_percentage": 2.13,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 1094,
+          "categories": [
+            "California",
+            "England",
+            "New York",
+            "Texas",
+            "Ile-de-France"
+          ]
+        },
+        {
+          "column_name": "country",
+          "data_type": "VARCHAR(150)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.29,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 147,
+          "categories": [
+            "United States",
+            "Australia",
+            "France",
+            "Mexico",
+            "Germany"
+          ]
+        },
+        {
+          "column_name": "postal_code",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 80.51,
+          "unique_percentage": 1.23,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            "10024.0",
+            "95823.0",
+            "28027.0",
+            "22304.0",
+            "42420.0"
+          ],
+          "min_value": "10009.0",
+          "max_value": "99301.0"
+        },
+        {
+          "column_name": "market",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.01,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 7,
+          "categories": [
+            "APAC",
+            "LATAM",
+            "EU",
+            "US",
+            "EMEA"
+          ]
+        },
+        {
+          "column_name": "region",
+          "data_type": "VARCHAR(100)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.03,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 13,
+          "categories": [
+            "Central",
+            "South",
+            "EMEA",
+            "North",
+            "Africa"
+          ]
+        },
+        {
+          "column_name": "product_id",
+          "data_type": "VARCHAR(100)",
+          "null_percentage": 0.0,
+          "unique_percentage": 20.07,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 10292,
+          "categories": [
+            "OFF-AR-10003651",
+            "OFF-AR-10003829",
+            "OFF-BI-10003708",
+            "OFF-BI-10002799",
+            "FUR-CH-10003354"
+          ]
+        },
+        {
+          "column_name": "category",
+          "data_type": "VARCHAR(100)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.01,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 3,
+          "categories": [
+            "Office Supplies",
+            "Technology",
+            "Furniture"
+          ]
+        },
+        {
+          "column_name": "sub_category",
+          "data_type": "VARCHAR(100)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.03,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 17,
+          "categories": [
+            "Binders",
+            "Storage",
+            "Art",
+            "Paper",
+            "Chairs"
+          ]
+        },
+        {
+          "column_name": "product_name",
+          "data_type": "TEXT",
+          "null_percentage": 0.0,
+          "unique_percentage": 7.39,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 3788,
+          "categories": [
+            "Staples",
+            "Cardinal Index Tab, Clear",
+            "Eldon File Cart, Single Width",
+            "Rogers File Cart, Single Width",
+            "Ibico Index Tab, Clear"
+          ]
+        },
+        {
+          "column_name": "sales",
+          "data_type": "NUMERIC(12, 4)",
+          "null_percentage": 0.0,
+          "unique_percentage": 44.83,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            2309.65,
+            3709.395,
+            5175.171,
+            2892.51,
+            2832.96
+          ],
+          "min_value": 0.444,
+          "max_value": 22638.48
+        },
+        {
+          "column_name": "quantity",
+          "data_type": "INTEGER",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.03,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            7,
+            9,
+            9,
+            5,
+            8
+          ],
+          "min_value": 1,
+          "max_value": 14
+        },
+        {
+          "column_name": "discount",
+          "data_type": "NUMERIC(6, 4)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.05,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            0.0,
+            0.1,
+            0.1,
+            0.1,
+            0.0
+          ],
+          "min_value": 0.0,
+          "max_value": 0.85
+        },
+        {
+          "column_name": "profit",
+          "data_type": "NUMERIC(12, 4)",
+          "null_percentage": 0.0,
+          "unique_percentage": 47.91,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            762.1845,
+            -288.765,
+            919.971,
+            -96.54,
+            311.52
+          ],
+          "min_value": -6599.978,
+          "max_value": 8399.976
+        },
+        {
+          "column_name": "shipping_cost",
+          "data_type": "NUMERIC(12, 4)",
+          "null_percentage": 0.0,
+          "unique_percentage": 19.57,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": false,
+          "sample_values": [
+            933.57,
+            923.63,
+            915.49,
+            910.16,
+            903.04
+          ],
+          "min_value": 0.0,
+          "max_value": 933.57
+        },
+        {
+          "column_name": "order_priority",
+          "data_type": "VARCHAR(50)",
+          "null_percentage": 0.0,
+          "unique_percentage": 0.01,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_categorical": true,
+          "distinct_count": 4,
+          "categories": [
+            "Medium",
+            "High",
+            "Critical",
+            "Low"
+          ]
+        }
+      ]
+    }
+  ]
+}

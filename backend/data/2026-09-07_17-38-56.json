@@ -1,0 +1,68 @@
+{
+  "columns": [
+    "metric",
+    "value"
+  ],
+  "rows": [
+    {
+      "metric": "Total Restaurants",
+      "value": "120"
+    },
+    {
+      "metric": "Distinct Cuisines",
+      "value": "6"
+    },
+    {
+      "metric": "Cities Served",
+      "value": "6"
+    },
+    {
+      "metric": "Average Restaurant Rating",
+      "value": "4.01"
+    },
+    {
+      "metric": "Total Menu Items",
+      "value": "400"
+    },
+    {
+      "metric": "Average Menu Item Price",
+      "value": "22.59"
+    },
+    {
+      "metric": "Total Customers",
+      "value": "1500"
+    },
+    {
+      "metric": "Distinct Customer Cities",
+      "value": "6"
+    },
+    {
+      "metric": "Total Orders",
+      "value": "5000"
+    },
+    {
+      "metric": "Average Items per Order",
+      "value": "2.48"
+    },
+    {
+      "metric": "Total Order Items",
+      "value": "12391"
+    },
+    {
+      "metric": "Average Order Value",
+      "value": "112.10"
+    },
+    {
+      "metric": "Orders Delivered",
+      "value": "1717"
+    },
+    {
+      "metric": "Orders Late",
+      "value": "1671"
+    },
+    {
+      "metric": "Orders Cancelled",
+      "value": "1612"
+    }
+  ]
+}

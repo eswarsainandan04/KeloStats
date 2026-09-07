@@ -1,0 +1,44 @@
+{
+  "columns": [
+    "metric",
+    "value"
+  ],
+  "rows": [
+    {
+      "metric": "Total Sales",
+      "value": "12,642,501.91"
+    },
+    {
+      "metric": "Total Profit",
+      "value": "1,467,457.29"
+    },
+    {
+      "metric": "Average Discount",
+      "value": "0.14%"
+    },
+    {
+      "metric": "Total Orders",
+      "value": "25035"
+    },
+    {
+      "metric": "Total Customers",
+      "value": "1590"
+    },
+    {
+      "metric": "Total Products",
+      "value": "10292"
+    },
+    {
+      "metric": "Top Category by Sales",
+      "value": "Technology"
+    },
+    {
+      "metric": "Top Sub-Category by Sales",
+      "value": "Phones"
+    },
+    {
+      "metric": "Top Product by Sales",
+      "value": "Apple Smart Phone, Full Size"
+    }
+  ]
+}

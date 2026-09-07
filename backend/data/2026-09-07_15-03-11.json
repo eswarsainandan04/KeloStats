@@ -1,0 +1,72 @@
+{
+  "columns": [
+    "metric",
+    "value"
+  ],
+  "rows": [
+    {
+      "metric": "Total Sales",
+      "value": "12642501.9108"
+    },
+    {
+      "metric": "Total Profit",
+      "value": "1467457.2922"
+    },
+    {
+      "metric": "Average Discount",
+      "value": "0.1429"
+    },
+    {
+      "metric": "Total Quantity",
+      "value": "178312"
+    },
+    {
+      "metric": "Total Shipping Cost",
+      "value": "1352820.6900"
+    },
+    {
+      "metric": "Top Category - Technology",
+      "value": "4744557.4990"
+    },
+    {
+      "metric": "Top Category - Furniture",
+      "value": "4110874.1863"
+    },
+    {
+      "metric": "Top Category - Office Supplies",
+      "value": "3787070.2255"
+    },
+    {
+      "metric": "Top Segment by Profit - Consumer",
+      "value": "749239.7824"
+    },
+    {
+      "metric": "Top Segment by Profit - Corporate",
+      "value": "441208.3292"
+    },
+    {
+      "metric": "Top Segment by Profit - Home Office",
+      "value": "277009.1806"
+    },
+    {
+      "metric": "Discount 0.0000 Profit",
+      "value": "1770695.2732"
+    },
+    {
+      "metric": "Discount 0.0020 Profit",
+      "value": "57976.5814"
+    },
+    {
+      "metric": "Discount 0.0700 Profit",
+      "value": "21148.5033"
+    },
+    {
+      "metric": "Discount 0.1000 Profit",
+      "value": "259064.1770"
+    },
+    {
+      "metric": "Discount 0.1500 Profit",
+      "value": "27375.9035"
+    }
+  ]
+}
