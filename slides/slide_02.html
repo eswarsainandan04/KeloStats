@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 52px at 1920px -> 52 / 19.2 = 2.71cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 32px at 1920px -> 32 / 19.2 = 1.67cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 5.000%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 32px at 1920px -> 32 / 19.2 = 1.67cqw) */
+    .topic-text {
+      position: absolute;
+      left: 12.000%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>

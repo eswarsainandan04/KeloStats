@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 01 - Cover Slide</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Background Vector Dot Matrix Layer (42% width) */
+    .svg-layer {
+      position: absolute;
+      right: 0px;
+      top: 0px;
+      width: 42%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Main Title (PowerPoint size: 88px at 1920px -> 88 / 19.2 = 4.58cqw) */
+    .main-title {
+      position: absolute;
+      left: 8.625%;
+      top: 27.500%;
+      width: auto;
+      max-width: 60%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(88 / 19.2 * 1cqw);
+      font-weight: 800;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      z-index: 2;
+    }
+
+    /* Signature Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 8.625%;
+      top: 45.500%;
+      width: 7.125%;
+      height: 1.000%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Company Name (PowerPoint size: 36px at 1920px -> 36 / 19.2 = 1.88cqw) */
+    .company-name {
+      position: absolute;
+      left: 8.625%;
+      top: 51.500%;
+      width: 52.50%;
+      font-family: Georgia, Cambria, 'Times New Roman', serif;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 400;
+      color: #505050;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Author / Presenter (PowerPoint size: 20px at 1920px -> 20 / 19.2 = 1.04cqw) */
+    .author-name {
+      position: absolute;
+      left: 8.625%;
+      top: 59.500%;
+      width: 52.50%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(20 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #777777;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Strategic Plan Subtitle (PowerPoint size: 16px at 1920px -> 16 / 19.2 = 0.83cqw) */
+    .subtitle-text {
+      position: absolute;
+      left: 8.625%;
+      top: 65.500%;
+      width: 52.50%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(16 / 19.2 * 1cqw);
+      font-weight: 400;
+      color: #777777;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 01 Presentation Canvas -->
+  <div id="slide_01" class="slide-canvas">
+
+    <!-- 1. Background Dot Matrix Graphic (Non-text / Vector Asset) -->
+    <div id="semicircular_dot_matrix" class="svg-layer">
+      <svg viewBox="0 0 540 750" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="coverDotPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="12" cy="12" r="2.5" fill="#FF5148" opacity="0.45"/>
+          </pattern>
+          <radialGradient id="coverDotMaskGrad" cx="100%" cy="50%" r="85%">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.95"/>
+            <stop offset="65%" stop-color="#fff" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+          </radialGradient>
+          <mask id="coverDotMask">
+            <rect width="540" height="750" fill="url(#coverDotMaskGrad)"/>
+          </mask>
+        </defs>
+        <rect width="540" height="750" fill="url(#coverDotPattern)" mask="url(#coverDotMask)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Main Title (Editable Text) -->
+    <h1 id="main_title" class="main-title" data-editable="text">Pitch Deck</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="accent_line" class="accent-bar"></div>
+
+    <!-- 4. Company Name (Editable Text) -->
+    <div id="company_name" class="company-name" data-editable="text">Ingoude Company</div>
+
+    <!-- 5. Author (Editable Text) -->
+    <div id="author" class="author-name" data-editable="text">HARPER RUSSO</div>
+
+    <!-- 6. Subtitle (Editable Text) -->
+    <div id="subtitle" class="subtitle-text" data-editable="text">ANNUAL STRATEGIC GROWTH & ENTERPRISE PLAN • 2026</div>
+
+  </div>
+
+</body>
+</html>

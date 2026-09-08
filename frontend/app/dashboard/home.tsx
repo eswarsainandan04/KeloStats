@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DatabasesPage from "./databases";
 import DocumentsPage from "./documents";
+import TemplatesPage from "./templates";
+import NavBar from "./NavBar";
 import { API_BASE_URL } from "@/lib/config";
 
 interface DatabaseItem {
@@ -47,11 +49,7 @@ export default function DashboardHome() {
   const router = useRouter();
 
   // Active navigation tab (default: 'home')
-  const [activeTab, setActiveTab] = useState<"home" | "databases" | "documents">("home");
-
-  // Profile dropdown open/close state
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"home" | "databases" | "documents" | "templates">("home");
 
   // User details from session
   const [user, setUser] = useState<{ full_name: string; email: string } | null>(null);
@@ -194,15 +192,6 @@ export default function DashboardHome() {
     }
 
     fetchWorkspaces();
-
-    // Close dropdown on outside click
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -332,160 +321,28 @@ export default function DashboardHome() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-orange-100 selection:text-orange-600">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col md:flex-row font-sans selection:bg-orange-100 selection:text-orange-600">
       {/* ========================================================================= */}
-      {/* TOP HORIZONTAL NAVIGATION BAR */}
+      {/* CANVA-STYLE VERTICAL SLIDE BAR NAVIGATION */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
-          {/* Left: Brand Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-[#FF5148] flex items-center justify-center shadow-sm">
-              <span className="font-extrabold text-white text-lg">K</span>
-            </div>
-            <span className="font-extrabold text-xl tracking-tight text-slate-900">
-              Kelo<span className="text-[#FF5148]">Stats</span>
-            </span>
-          </Link>
-
-          {/* Center: Horizontal Navigation Links (Default: Home) */}
-          <nav className="flex items-center gap-2 sm:gap-6">
-            <button
-              onClick={() => setActiveTab("home")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-                activeTab === "home"
-                  ? "bg-orange-50 text-[#FF5148] border border-orange-200/70"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span>Home</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("databases")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-                activeTab === "databases"
-                  ? "bg-orange-50 text-[#FF5148] border border-orange-200/70"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-              </svg>
-              <span>Databases</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("documents")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-                activeTab === "documents"
-                  ? "bg-orange-50 text-[#FF5148] border border-orange-200/70"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Documents</span>
-            </button>
-          </nav>
-
-          {/* Right: Profile Area with Full Name & Email below it, and Dropdown Logout */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-3 p-1.5 pr-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all text-left"
-            >
-              <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 text-[#FF5148] font-bold text-sm flex items-center justify-center shrink-0">
-                {getInitials(user?.full_name)}
-              </div>
-
-              <div className="hidden md:flex flex-col">
-                <span className="text-sm font-bold text-slate-800 leading-tight">
-                  {user?.full_name || "User"}
-                </span>
-                <span className="text-xs text-slate-400 font-normal leading-tight">
-                  {user?.email || "user@company.com"}
-                </span>
-              </div>
-
-              <svg
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                  dropdownOpen ? "rotate-180 text-[#FF5148]" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-3 border-b border-slate-100">
-                  <p className="text-sm font-bold text-slate-800">{user?.full_name || "User"}</p>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email || "user@company.com"}</p>
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Active Account</span>
-                  </div>
-                </div>
-
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setActiveTab("home");
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors"
-                  >
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>My Profile</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab("databases");
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors"
-                  >
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                    </svg>
-                    <span>Database Settings</span>
-                  </button>
-                </div>
-
-                <div className="border-t border-slate-100 pt-1">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2.5 transition-colors"
-                  >
-                    <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <NavBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        handleLogout={handleLogout}
+        handleOpenCreateProject={handleOpenCreateProject}
+        workspaces={workspaces}
+        onSelectProject={handleEditWorkspace}
+      />
 
       {/* ========================================================================= */}
-      {/* MAIN BODY CONTENT */}
+      {/* MAIN BODY CONTENT WRAPPER */}
       {/* ========================================================================= */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {/* TAB 1: HOME */}
-        {activeTab === "home" && (
+      <div className={`flex-1 flex flex-col min-w-0 min-h-screen ${activeTab === "templates" ? "bg-[#f4f6f9]" : "bg-white"}`}>
+        {activeTab !== "templates" && (
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-8">
+            {/* TAB 1: HOME */}
+            {activeTab === "home" && (
           <div className="space-y-8 animate-in fade-in duration-200">
             {/* Action Banner */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-2xl bg-gradient-to-r from-orange-50 via-white to-orange-50/40 border border-orange-200/60 shadow-sm">
@@ -775,6 +632,15 @@ export default function DashboardHome() {
         {/* TAB 3: DOCUMENTS (RAG) */}
         {activeTab === "documents" && <DocumentsPage />}
       </main>
+        )}
+
+        {/* TAB 4: TEMPLATES (Full width and native background) */}
+        {activeTab === "templates" && (
+          <div className="flex-1 w-full min-h-screen flex flex-col">
+            <TemplatesPage onNavigateTab={(tab) => setActiveTab(tab)} />
+          </div>
+        )}
+      </div>
 
       {/* ========================================================================= */}
       {/* BIG POPUP MODAL: CREATE PROJECT (STEP 1: NAME -> STEP 2: DB -> STEP 3: TEMPLATE) */}

@@ -357,11 +357,9 @@ function WorkspaceContent() {
         {/* Left: Brand & Breadcrumbs */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#FF5148] flex items-center justify-center shadow-sm">
-              <span className="font-extrabold text-white text-base">K</span>
-            </div>
+ 
             <span className="font-extrabold text-base tracking-tight text-slate-900 hidden sm:inline">
-              Kelo<span className="text-[#FF5148]">Stats</span>
+              <span className="text-[#FF5148]">KeloStats</span>
             </span>
           </Link>
           <span className="text-slate-300">/</span>
