@@ -1,0 +1,1106 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"now improve this PPT Design with adding some canva design & icons"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The user requests enhancements to a PowerPoint presentation, which falls under the platform's presentation design capabilities."
+}
+
+TOKEN COUNT:
+input tokens: 490
+output tokens: 115
+total tokens: 605
+======================
+
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - if user requires the charts barchart, linechart, piechart,...more etc then classify as agent
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "show me the top 10 products in bar chart"
+     - "show me the line chart of sales in last 12 months"
+     - "show me the pie chart of market share"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"now improve this PPT Design with adding some canva design & icons"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "agent",
+    "reason": "User is directing an action to modify/improve a PowerPoint presentation with design elements."
+}
+
+TOKEN COUNT:
+input tokens: 541
+output tokens: 115
+total tokens: 656
+======================
+
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+You are the PPT Task Classification Agent for KeloStats, an enterprise AI analytics platform connected to an enterprise relational database.
+        Your job is to determine whether a presentation request requires querying the database via the SQL pipeline (sql_required: true) or is a direct visual/textual EDIT on an existing slide canvas without database data (sql_required: false).
+
+        RULES:
+        1. sql_required: true (DEFAULT for presentation creation and data analysis):
+            - Any command to create, generate, analyze, discuss, summarize, or present business topics, performance, trends, or insights (e.g., 'disscuss a trend analysis summary in PPT', 'generate slide on top products', 'create presentation for Q3 churn', 'build a deck on revenue', 'present category breakdown').
+            - Even high-level executive summaries or business analyses (like SWOT, market trends, performance reviews) MUST query the database to ground the slide in real business facts and metrics.
+
+        2. sql_required: false (ONLY for direct slide styling, layout adjustment, or simple edits):
+            - The user is asking to modify the visual appearance, styling, or existing wording of the currently open slide canvas.
+            - Examples: 'change title to...', 'make background dark navy', 'restyle cards with purple border', 'increase font size', 'change button color', 'remove second card', 'edit this slide to fix typo'.
+
+        Output:
+        just return true or false, nothing else.
+
+        User Query:
+        "now improve this PPT Design with adding some canva design & icons"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 393
+output tokens: 68
+total tokens: 461
+======================
+
+======================
+Node: PPT Direct Edit - PPT General Agent
+LLM INPUT:
+
+You are KeloStats AI Slide Editor & Design Architect, a world-class presentation designer inspired by Canva, Pitch, Linear, and elite creative studios.
+
+Your mission is to edit, restyle, refine, improve content, or redesign presentation slides WITHOUT requiring SQL database queries. You operate directly on the provided slide HTML based on the user's instruction.
+
+==============================================================================
+CORE EDITING & DESIGN GUIDELINES:
+==============================================================================
+
+1. DIRECT EDITING & CONTENT IMPROVEMENT:
+   - When the user asks to change, update, or improve text (titles, subtitles, card headers, descriptions, bullet points, tags, or callouts):
+     * Modify the requested text directly while preserving surrounding styling, tags, and visual hierarchy.
+     * Polish rough notes, drafts, or suggestions into clear, high-impact, executive-ready presentation copy.
+     * Ensure typography hierarchy remains crisp: bold titles, clean subtitles, and readable body text.
+
+2. STYLING, THEMES & VISUAL REFINEMENT:
+   - When the user asks to change styles, colors, or themes (e.g., "dark mode", "change accent color to purple", "modern minimal theme", "gradient background"):
+     * Update CSS background colors, gradients, card backgrounds, text contrast, borders, and accent highlights consistently across the entire slide.
+     * Ensure strong visual contrast and accessibility (e.g., high-contrast text on dark backgrounds, clean borders on cards).
+     * Enhance cards and containers with modern aesthetics (glassmorphism, subtle borders, rounded corners, soft shadows).
+
+3. LAYOUT & STRUCTURAL REFINEMENT:
+   - When the user asks to adjust layout (e.g., "swap columns", "remove the chart", "add a stat card", "arrange as bento grid", "make it 3 cards"):
+     * Re-architect the layout using responsive CSS Grid or Flexbox.
+     * Ensure all cards and elements breathe naturally with balanced padding, gaps, and margins.
+     * If removing an element, cleanly remove it and expand remaining cards to fill the canvas harmoniously.
+     * If adding an element, match its styling to the existing slide cards and design language.
+
+4. PRESERVE EXISTING SLIDE STRUCTURE & BRAND IDENTITY:
+   - IMPORTANT: Unless explicitly instructed to replace or delete everything, PRESERVE the existing content, cards, charts, icons, and structures from the provided slide.
+   - Do NOT discard or wipe out unrelated cards or sections when performing targeted edits.
+   - Maintain a cohesive color palette and visual tone.
+
+5. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must strictly maintain the 16:9 aspect ratio and responsive scaling:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the slide scales seamlessly to any screen resolution.
+   - Elements must NEVER overflow, collide, clip, or overlap.
+
+6. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - If Chart.js or any `<script>` is present in the slide, preserve its functionality.
+   - Inside `<script>` tags, NEVER use CSS functions like `calc(...)` in JavaScript variables or config objects.
+   - Output ONLY pure, executable HTML code. Do NOT wrap in markdown code fences (no ```html).
+
+==============================================================================
+INPUT:
+----------
+
+USER PROMPT:
+now improve this PPT Design with adding some canva design & icons
+
+CURRENT SLIDE / TEMPLATE HTML:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slide – Global Superstore Overview</title>
+<style>
+  body{
+    margin:0;
+    padding:24px;
+    min-height:100vh;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:Arial,Helvetica,sans-serif;
+  }
+  .slide-canvas{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    background:#fff;
+    overflow:hidden;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+    container-type:inline-size;
+  }
+  .slide-canvas *{box-sizing:border-box;margin:0;padding:0;}
+  .dot-cluster{
+    position:absolute;
+    right:4.5%;
+    top:8.667%;
+    width:6.6%;
+    height:8.8%;
+    pointer-events:none;
+    z-index:1;
+  }
+  .slide-title{
+    position:absolute;
+    left:6.375%;
+    top:11%;
+    width:78.75%;
+    height:8%;
+    font-size:calc(52/19.2*1cqw);
+    font-weight:700;
+    color:#000;
+    line-height:1.1;
+  }
+  .accent-bar{
+    position:absolute;
+    left:6.375%;
+    top:20.667%;
+    width:7.125%;
+    height:0.867%;
+    background:#FF5148;
+    z-index:2;
+  }
+  .region-grid{
+    position:absolute;
+    left:6.375%;
+    top:30%;
+    width:87%;
+    height:60%;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:1.5cqw;
+    overflow:hidden;
+  }
+  .region-card{
+    background:#f5f5f5;
+    border-radius:8px;
+    padding:1cqw;
+    box-shadow:0 2px 4px rgba(0,0,0,.1);
+    display:flex;
+    flex-direction:column;
+  }
+  .region-name{
+    font-size:calc(28/19.2*1cqw);
+    font-weight:600;
+    color:#111;
+    margin-bottom:0.5cqw;
+  }
+  .metric{
+    font-size:calc(20/19.2*1cqw);
+    color:#333;
+    margin:0.3cqw 0;
+  }
+  .metric span{font-weight:600;color:#000;}
+</style>
+</head>
+<body>
+<div class="slide-canvas">
+  <div class="dot-cluster">
+    <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+        </pattern>
+      </defs>
+      <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+    </svg>
+  </div>
+  <h1 class="slide-title">Global Superstore Overview</h1>
+  <div class="accent-bar"></div>
+
+  <div class="region-grid">
+    <div class="region-card">
+      <div class="region-name">Central</div>
+      <div class="metric">Sales: <span>$2,822,302.52</span></div>
+      <div class="metric">Profit: <span>$311,403.98</span></div>
+      <div class="metric">Avg Discount: <span>13.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">South</div>
+      <div class="metric">Sales: <span>$1,600,907.04</span></div>
+      <div class="metric">Profit: <span>$140,355.77</span></div>
+      <div class="metric">Avg Discount: <span>14.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">North</div>
+      <div class="metric">Sales: <span>$1,248,165.60</span></div>
+      <div class="metric">Profit: <span>$194,597.95</span></div>
+      <div class="metric">Avg Discount: <span>9.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Oceania</div>
+      <div class="metric">Sales: <span>$1,100,184.61</span></div>
+      <div class="metric">Profit: <span>$120,089.11</span></div>
+      <div class="metric">Avg Discount: <span>15.3%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Southeast Asia</div>
+      <div class="metric">Sales: <span>$884,423.17</span></div>
+      <div class="metric">Profit: <span>$17,852.33</span></div>
+      <div class="metric">Avg Discount: <span>27.2%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">North Asia</div>
+      <div class="metric">Sales: <span>$848,309.78</span></div>
+      <div class="metric">Profit: <span>$165,578.42</span></div>
+      <div class="metric">Avg Discount: <span>4.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">EMEA</div>
+      <div class="metric">Sales: <span>$806,161.31</span></div>
+      <div class="metric">Profit: <span>$43,897.97</span></div>
+      <div class="metric">Avg Discount: <span>19.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Africa</div>
+      <div class="metric">Sales: <span>$783,773.21</span></div>
+      <div class="metric">Profit: <span>$88,871.63</span></div>
+      <div class="metric">Avg Discount: <span>15.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Central Asia</div>
+      <div class="metric">Sales: <span>$752,826.57</span></div>
+      <div class="metric">Profit: <span>$132,480.19</span></div>
+      <div class="metric">Avg Discount: <span>6.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">West</div>
+      <div class="metric">Sales: <span>$725,457.82</span></div>
+      <div class="metric">Profit: <span>$108,418.45</span></div>
+      <div class="metric">Avg Discount: <span>10.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">East</div>
+      <div class="metric">Sales: <span>$678,781.24</span></div>
+      <div class="metric">Profit: <span>$91,522.78</span></div>
+      <div class="metric">Avg Discount: <span>14.5%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Caribbean</div>
+      <div class="metric">Sales: <span>$324,280.86</span></div>
+      <div class="metric">Profit: <span>$34,571.32</span></div>
+      <div class="metric">Avg Discount: <span>13.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name">Canada</div>
+      <div class="metric">Sales: <span>$66,928.17</span></div>
+      <div class="metric">Profit: <span>$17,817.39</span></div>
+      <div class="metric">Avg Discount: <span>0.0%</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slide – Global Superstore Overview</title>
+<style>
+  body{
+    margin:0;
+    padding:24px;
+    min-height:100vh;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  .slide-canvas{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    background:linear-gradient(135deg,#1e3a8a,#0f172a);
+    overflow:hidden;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+    container-type:inline-size;
+    border-radius:1cqw;
+  }
+  .slide-canvas *{box-sizing:border-box;margin:0;padding:0;}
+  .dot-cluster{
+    position:absolute;
+    right:4.5%;
+    top:8.667%;
+    width:6.6%;
+    height:8.8%;
+    pointer-events:none;
+    z-index:1;
+  }
+  .slide-title{
+    position:absolute;
+    left:6.375%;
+    top:11%;
+    width:78.75%;
+    font-size:calc(52/19.2*1cqw);
+    font-weight:700;
+    color:#fff;
+    line-height:1.1;
+    z-index:2;
+  }
+  .accent-bar{
+    position:absolute;
+    left:6.375%;
+    top:20.667%;
+    width:7.125%;
+    height:0.867%;
+    background:#FF5148;
+    z-index:2;
+  }
+  .region-grid{
+    position:absolute;
+    left:6.375%;
+    top:30%;
+    width:87%;
+    height:60%;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:1.5cqw;
+    overflow:hidden;
+    z-index:2;
+  }
+  .region-card{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:1cqw;
+    padding:1cqw;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+    backdrop-filter:blur(8px);
+    display:flex;
+    flex-direction:column;
+    gap:0.5cqw;
+    color:#fff;
+    transition:transform .2s,box-shadow .2s;
+  }
+  .region-card:hover{
+    transform:translateY(-0.3cqw);
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .region-name{
+    display:flex;
+    align-items:center;
+    font-size:calc(28/19.2*1cqw);
+    font-weight:600;
+    margin-bottom:0.3cqw;
+    gap:0.5cqw;
+  }
+  .region-name svg{
+    width:calc(24/19.2*1cqw);
+    height:auto;
+    fill:#FF5148;
+    flex-shrink:0;
+  }
+  .metric{
+    font-size:calc(20/19.2*1cqw);
+    color:#e0e0e0;
+  }
+  .metric span{
+    font-weight:600;
+    color:#fff;
+  }
+</style>
+</head>
+<body>
+<div class="slide-canvas">
+  <div class="dot-cluster">
+    <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+        </pattern>
+      </defs>
+      <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+    </svg>
+  </div>
+  <h1 class="slide-title">Global Superstore Overview</h1>
+  <div class="accent-bar"></div>
+
+  <div class="region-grid">
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central</div>
+      <div class="metric">Sales: <span>$2,822,302.52</span></div>
+      <div class="metric">Profit: <span>$311,403.98</span></div>
+      <div class="metric">Avg Discount: <span>13.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>South</div>
+      <div class="metric">Sales: <span>$1,600,907.04</span></div>
+      <div class="metric">Profit: <span>$140,355.77</span></div>
+      <div class="metric">Avg Discount: <span>14.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North</div>
+      <div class="metric">Sales: <span>$1,248,165.60</span></div>
+      <div class="metric">Profit: <span>$194,597.95</span></div>
+      <div class="metric">Avg Discount: <span>9.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Oceania</div>
+      <div class="metric">Sales: <span>$1,100,184.61</span></div>
+      <div class="metric">Profit: <span>$120,089.11</span></div>
+      <div class="metric">Avg Discount: <span>15.3%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Southeast Asia</div>
+      <div class="metric">Sales: <span>$884,423.17</span></div>
+      <div class="metric">Profit: <span>$17,852.33</span></div>
+      <div class="metric">Avg Discount: <span>27.2%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North Asia</div>
+      <div class="metric">Sales: <span>$848,309.78</span></div>
+      <div class="metric">Profit: <span>$165,578.42</span></div>
+      <div class="metric">Avg Discount: <span>4.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>EMEA</div>
+      <div class="metric">Sales: <span>$806,161.31</span></div>
+      <div class="metric">Profit: <span>$43,897.97</span></div>
+      <div class="metric">Avg Discount: <span>19.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Africa</div>
+      <div class="metric">Sales: <span>$783,773.21</span></div>
+      <div class="metric">Profit: <span>$88,871.63</span></div>
+      <div class="metric">Avg Discount: <span>15.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central Asia</div>
+      <div class="metric">Sales: <span>$752,826.57</span></div>
+      <div class="metric">Profit: <span>$132,480.19</span></div>
+      <div class="metric">Avg Discount: <span>6.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>West</div>
+      <div class="metric">Sales: <span>$725,457.82</span></div>
+      <div class="metric">Profit: <span>$108,418.45</span></div>
+      <div class="metric">Avg Discount: <span>10.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>East</div>
+      <div class="metric">Sales: <span>$678,781.24</span></div>
+      <div class="metric">Profit: <span>$91,522.78</span></div>
+      <div class="metric">Avg Discount: <span>14.5%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Caribbean</div>
+      <div class="metric">Sales: <span>$324,280.86</span></div>
+      <div class="metric">Profit: <span>$34,571.32</span></div>
+      <div class="metric">Avg Discount: <span>13.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Canada</div>
+      <div class="metric">Sales: <span>$66,928.17</span></div>
+      <div class="metric">Profit: <span>$17,817.39</span></div>
+      <div class="metric">Avg Discount: <span>0.0%</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 2810
+output tokens: 4526
+total tokens: 7336
+======================
+
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slide – Global Superstore Overview</title>
+<style>
+  body{
+    margin:0;
+    padding:24px;
+    min-height:100vh;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  .slide-canvas{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    background:linear-gradient(135deg,#1e3a8a,#0f172a);
+    overflow:hidden;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+    container-type:inline-size;
+    border-radius:1cqw;
+  }
+  .slide-canvas *{box-sizing:border-box;margin:0;padding:0;}
+  .dot-cluster{
+    position:absolute;
+    right:4.5%;
+    top:8.667%;
+    width:6.6%;
+    height:8.8%;
+    pointer-events:none;
+    z-index:1;
+  }
+  .slide-title{
+    position:absolute;
+    left:6.375%;
+    top:11%;
+    width:78.75%;
+    font-size:calc(52/19.2*1cqw);
+    font-weight:700;
+    color:#fff;
+    line-height:1.1;
+    z-index:2;
+  }
+  .accent-bar{
+    position:absolute;
+    left:6.375%;
+    top:20.667%;
+    width:7.125%;
+    height:0.867%;
+    background:#FF5148;
+    z-index:2;
+  }
+  .region-grid{
+    position:absolute;
+    left:6.375%;
+    top:30%;
+    width:87%;
+    height:60%;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:1.5cqw;
+    overflow:hidden;
+    z-index:2;
+  }
+  .region-card{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:1cqw;
+    padding:1cqw;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+    backdrop-filter:blur(8px);
+    display:flex;
+    flex-direction:column;
+    gap:0.5cqw;
+    color:#fff;
+    transition:transform .2s,box-shadow .2s;
+  }
+  .region-card:hover{
+    transform:translateY(-0.3cqw);
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .region-name{
+    display:flex;
+    align-items:center;
+    font-size:calc(28/19.2*1cqw);
+    font-weight:600;
+    margin-bottom:0.3cqw;
+    gap:0.5cqw;
+  }
+  .region-name svg{
+    width:calc(24/19.2*1cqw);
+    height:auto;
+    fill:#FF5148;
+    flex-shrink:0;
+  }
+  .metric{
+    font-size:calc(20/19.2*1cqw);
+    color:#e0e0e0;
+  }
+  .metric span{
+    font-weight:600;
+    color:#fff;
+  }
+</style>
+</head>
+<body>
+<div class="slide-canvas">
+  <div class="dot-cluster">
+    <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+        </pattern>
+      </defs>
+      <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+    </svg>
+  </div>
+  <h1 class="slide-title">Global Superstore Overview</h1>
+  <div class="accent-bar"></div>
+
+  <div class="region-grid">
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central</div>
+      <div class="metric">Sales: <span>$2,822,302.52</span></div>
+      <div class="metric">Profit: <span>$311,403.98</span></div>
+      <div class="metric">Avg Discount: <span>13.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>South</div>
+      <div class="metric">Sales: <span>$1,600,907.04</span></div>
+      <div class="metric">Profit: <span>$140,355.77</span></div>
+      <div class="metric">Avg Discount: <span>14.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North</div>
+      <div class="metric">Sales: <span>$1,248,165.60</span></div>
+      <div class="metric">Profit: <span>$194,597.95</span></div>
+      <div class="metric">Avg Discount: <span>9.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Oceania</div>
+      <div class="metric">Sales: <span>$1,100,184.61</span></div>
+      <div class="metric">Profit: <span>$120,089.11</span></div>
+      <div class="metric">Avg Discount: <span>15.3%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Southeast Asia</div>
+      <div class="metric">Sales: <span>$884,423.17</span></div>
+      <div class="metric">Profit: <span>$17,852.33</span></div>
+      <div class="metric">Avg Discount: <span>27.2%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North Asia</div>
+      <div class="metric">Sales: <span>$848,309.78</span></div>
+      <div class="metric">Profit: <span>$165,578.42</span></div>
+      <div class="metric">Avg Discount: <span>4.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>EMEA</div>
+      <div class="metric">Sales: <span>$806,161.31</span></div>
+      <div class="metric">Profit: <span>$43,897.97</span></div>
+      <div class="metric">Avg Discount: <span>19.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Africa</div>
+      <div class="metric">Sales: <span>$783,773.21</span></div>
+      <div class="metric">Profit: <span>$88,871.63</span></div>
+      <div class="metric">Avg Discount: <span>15.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central Asia</div>
+      <div class="metric">Sales: <span>$752,826.57</span></div>
+      <div class="metric">Profit: <span>$132,480.19</span></div>
+      <div class="metric">Avg Discount: <span>6.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>West</div>
+      <div class="metric">Sales: <span>$725,457.82</span></div>
+      <div class="metric">Profit: <span>$108,418.45</span></div>
+      <div class="metric">Avg Discount: <span>10.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>East</div>
+      <div class="metric">Sales: <span>$678,781.24</span></div>
+      <div class="metric">Profit: <span>$91,522.78</span></div>
+      <div class="metric">Avg Discount: <span>14.5%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Caribbean</div>
+      <div class="metric">Sales: <span>$324,280.86</span></div>
+      <div class="metric">Profit: <span>$34,571.32</span></div>
+      <div class="metric">Avg Discount: <span>13.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Canada</div>
+      <div class="metric">Sales: <span>$66,928.17</span></div>
+      <div class="metric">Profit: <span>$17,817.39</span></div>
+      <div class="metric">Avg Discount: <span>0.0%</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide – Global Superstore Overview</title>
+<style>
+  body{
+    margin:0;
+    padding:24px;
+    min-height:100vh;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  .slide-canvas{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    background:linear-gradient(135deg,#1e3a8a,#0f172a);
+    overflow:hidden;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+    container-type:inline-size;
+    border-radius:1cqw;
+  }
+  .slide-canvas *{box-sizing:border-box;margin:0;padding:0;}
+  .dot-cluster{
+    position:absolute;
+    right:4.5%;
+    top:8.667%;
+    width:6.6%;
+    height:8.8%;
+    pointer-events:none;
+    z-index:1;
+  }
+  .slide-title{
+    position:absolute;
+    left:6.375%;
+    top:11%;
+    width:78.75%;
+    font-size:calc(52/19.2*1cqw);
+    font-weight:700;
+    color:#fff;
+    line-height:1.1;
+    z-index:2;
+  }
+  .accent-bar{
+    position:absolute;
+    left:6.375%;
+    top:20.667%;
+    width:7.125%;
+    height:0.867%;
+    background:#FF5148;
+    z-index:2;
+  }
+  .region-grid{
+    position:absolute;
+    left:6.375%;
+    top:30%;
+    width:87%;
+    height:60%;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:1.5cqw;
+    overflow:hidden;
+    z-index:2;
+  }
+  .region-card{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:1cqw;
+    padding:1cqw;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+    backdrop-filter:blur(8px);
+    display:flex;
+    flex-direction:column;
+    gap:0.5cqw;
+    color:#fff;
+    transition:transform .2s,box-shadow .2s;
+  }
+  .region-card:hover{
+    transform:translateY(-0.3cqw);
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+  }
+  .region-name{
+    display:flex;
+    align-items:center;
+    font-size:calc(28/19.2*1cqw);
+    font-weight:600;
+    margin-bottom:0.3cqw;
+    gap:0.5cqw;
+  }
+  .region-name svg{
+    width:calc(24/19.2*1cqw);
+    height:auto;
+    fill:#FF5148;
+    flex-shrink:0;
+  }
+  .metric{
+    font-size:calc(20/19.2*1cqw);
+    color:#e0e0e0;
+  }
+  .metric span{
+    font-weight:600;
+    color:#fff;
+  }
+</style>
+</head>
+<body>
+<div class="slide-canvas">
+  <div class="dot-cluster">
+    <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+        </pattern>
+      </defs>
+      <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+    </svg>
+  </div>
+  <h1 class="slide-title">Global Superstore Overview</h1>
+  <div class="accent-bar"></div>
+
+  <div class="region-grid">
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central</div>
+      <div class="metric">Sales: <span>$2,822,302.52</span></div>
+      <div class="metric">Profit: <span>$311,403.98</span></div>
+      <div class="metric">Avg Discount: <span>13.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>South</div>
+      <div class="metric">Sales: <span>$1,600,907.04</span></div>
+      <div class="metric">Profit: <span>$140,355.77</span></div>
+      <div class="metric">Avg Discount: <span>14.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North</div>
+      <div class="metric">Sales: <span>$1,248,165.60</span></div>
+      <div class="metric">Profit: <span>$194,597.95</span></div>
+      <div class="metric">Avg Discount: <span>9.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Oceania</div>
+      <div class="metric">Sales: <span>$1,100,184.61</span></div>
+      <div class="metric">Profit: <span>$120,089.11</span></div>
+      <div class="metric">Avg Discount: <span>15.3%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Southeast Asia</div>
+      <div class="metric">Sales: <span>$884,423.17</span></div>
+      <div class="metric">Profit: <span>$17,852.33</span></div>
+      <div class="metric">Avg Discount: <span>27.2%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>North Asia</div>
+      <div class="metric">Sales: <span>$848,309.78</span></div>
+      <div class="metric">Profit: <span>$165,578.42</span></div>
+      <div class="metric">Avg Discount: <span>4.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>EMEA</div>
+      <div class="metric">Sales: <span>$806,161.31</span></div>
+      <div class="metric">Profit: <span>$43,897.97</span></div>
+      <div class="metric">Avg Discount: <span>19.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Africa</div>
+      <div class="metric">Sales: <span>$783,773.21</span></div>
+      <div class="metric">Profit: <span>$88,871.63</span></div>
+      <div class="metric">Avg Discount: <span>15.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Central Asia</div>
+      <div class="metric">Sales: <span>$752,826.57</span></div>
+      <div class="metric">Profit: <span>$132,480.19</span></div>
+      <div class="metric">Avg Discount: <span>6.7%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>West</div>
+      <div class="metric">Sales: <span>$725,457.82</span></div>
+      <div class="metric">Profit: <span>$108,418.45</span></div>
+      <div class="metric">Avg Discount: <span>10.9%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>East</div>
+      <div class="metric">Sales: <span>$678,781.24</span></div>
+      <div class="metric">Profit: <span>$91,522.78</span></div>
+      <div class="metric">Avg Discount: <span>14.5%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Caribbean</div>
+      <div class="metric">Sales: <span>$324,280.86</span></div>
+      <div class="metric">Profit: <span>$34,571.32</span></div>
+      <div class="metric">Avg Discount: <span>13.6%</span></div>
+    </div>
+    <div class="region-card">
+      <div class="region-name"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>Canada</div>
+      <div class="metric">Sales: <span>$66,928.17</span></div>
+      <div class="metric">Profit: <span>$17,817.39</span></div>
+      <div class="metric">Avg Discount: <span>0.0%</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 5052
+output tokens: 4359
+total tokens: 9411
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 9286
+OUTPUT TOKENS : 9183
+TOTAL         : 18469
+=======================================

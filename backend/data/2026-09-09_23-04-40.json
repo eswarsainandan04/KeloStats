@@ -1,0 +1,95 @@
+{
+  "columns": [
+    "category",
+    "order_year",
+    "total_sales",
+    "total_profit",
+    "total_quantity"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "order_year": 2011,
+      "total_sales": 756192.384,
+      "total_profit": 53696.9264,
+      "total_quantity": 6309
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2012,
+      "total_sales": 858902.5581,
+      "total_profit": 58132.834,
+      "total_quantity": 7279
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2013,
+      "total_sales": 1117723.5534,
+      "total_profit": 84062.9005,
+      "total_quantity": 9700
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2014,
+      "total_sales": 1378055.6908,
+      "total_profit": 89312.0629,
+      "total_quantity": 11666
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2011,
+      "total_sales": 675606.4502,
+      "total_profit": 85996.5343,
+      "total_quantity": 18976
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2012,
+      "total_sales": 795094.627,
+      "total_profit": 103305.5078,
+      "total_quantity": 23135
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2013,
+      "total_sales": 1010717.6419,
+      "total_profit": 149245.7358,
+      "total_quantity": 29147
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2014,
+      "total_sales": 1305651.5064,
+      "total_profit": 179926.0564,
+      "total_quantity": 36924
+    },
+    {
+      "category": "Technology",
+      "order_year": 2011,
+      "total_sales": 827652.0613,
+      "total_profit": 109247.3508,
+      "total_quantity": 6158
+    },
+    {
+      "category": "Technology",
+      "order_year": 2012,
+      "total_sales": 1023441.5098,
+      "total_profit": 145976.9378,
+      "total_quantity": 7697
+    },
+    {
+      "category": "Technology",
+      "order_year": 2013,
+      "total_sales": 1277305.2544,
+      "total_profit": 173626.5942,
+      "total_quantity": 9289
+    },
+    {
+      "category": "Technology",
+      "order_year": 2014,
+      "total_sales": 1616158.6735,
+      "total_profit": 234927.8513,
+      "total_quantity": 12032
+    }
+  ]
+}

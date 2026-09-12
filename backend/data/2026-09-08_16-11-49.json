@@ -1,0 +1,24 @@
+{
+  "columns": [
+    "category",
+    "total_sales",
+    "total_profit"
+  ],
+  "rows": [
+    {
+      "category": "Technology",
+      "total_sales": 4744557.499,
+      "total_profit": 663778.7341
+    },
+    {
+      "category": "Furniture",
+      "total_sales": 4110874.1863,
+      "total_profit": 285204.7238
+    },
+    {
+      "category": "Office Supplies",
+      "total_sales": 3787070.2255,
+      "total_profit": 518473.8343
+    }
+  ]
+}

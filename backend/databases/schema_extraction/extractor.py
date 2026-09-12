@@ -471,3 +471,9 @@ def _insert_schema_db(db_id: str, schema_payload: Dict[str, Any]) -> None:
     except Exception as e:
         print(f"[!] Warning: Could not insert schema JSON into database table: {e}")
 
+
+
+
+
+
+ 

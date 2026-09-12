@@ -1,0 +1,31 @@
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+analyze the user query and understand the query whether it is requred SQL or not it user query is aking simple request on editing, styling, designing, improve content in the ppt withot sql then reutrn a simple word called sql_requred: false
+else sql_requred: true
+
+output:
+just reutrn true/false that it nothing else
+
+User Query:
+"make the background dark navy and update font size"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 161
+output tokens: 158
+total tokens: 319
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 161
+OUTPUT TOKENS : 158
+TOTAL         : 319
+=======================================

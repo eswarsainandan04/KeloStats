@@ -1,0 +1,62 @@
+======================
+Node 0: Query Reformulation - Query Reformulation Agent
+LLM INPUT:
+
+You are the Query Reformulation Agent for KeloStats, an enterprise AI analytics and presentation platform.
+
+Your task is to reformulate the user's latest query by resolving ambiguous pronouns, references, and missing context using the recent conversation history.
+
+CONVERSATION HISTORY (Chronological User and AI messages):
+User: what is machine learning
+Ai: Machine Learning is a field of artificial intelligence focused on building models that learn patterns from data.
+
+LATEST USER QUERY:
+"what it's advantages"
+
+INSTRUCTIONS:
+1. Analyze the latest user query in context of the conversation history.
+2. If the user query uses referential pronouns (e.g. "it", "it's", "its", "that", "this", "these", "those", "they", "them", etc.) or elliptical phrases ("what are the advantages?", "show that in a chart", "give more details", "compare them", "explain it", "why?") without an explicit topic name:
+   - Identify the specific entity, topic, metric, table, or concept being referred to from the conversation history.
+   - Rewrite the query into a fully standalone, unambiguous, self-contained question or instruction.
+   - Example 1:
+     User: "what is machine learning"
+     AI: "Machine Learning is a subset of artificial intelligence..."
+     User: "what it's advantages"
+     Output: "What are the advantages of Machine Learning?"
+   - Example 2:
+     User: "show total revenue by region for 2024"
+     AI: "Here is the revenue table by region..."
+     User: "plot that in a bar chart"
+     Output: "Plot total revenue by region for 2024 in a bar chart"
+3. Preserve the user's exact intent, constraints, and requested format (e.g. ppt, slide, table, chart, numbers).
+4. If the latest query already contains an explicit topic or does not refer to past context, return the query as is.
+5. Do NOT answer the question or generate analysis. ONLY return the rewritten query.
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown code fences or conversational text outside the JSON.
+{
+    "reformulated_query": "<the rewritten, self-contained user query>",
+    "reason": "<one sentence explanation of what was resolved>"
+}
+
+LLM OUTPUT:
+
+{
+    "reformulated_query": "What are the advantages of Machine Learning?",
+    "reason": "Resolved the pronoun 'it' to refer to 'Machine Learning' from the previous question."
+}
+
+TOKEN COUNT:
+input tokens: 546
+output tokens: 136
+total tokens: 682
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 546
+OUTPUT TOKENS : 136
+TOTAL         : 682
+=======================================

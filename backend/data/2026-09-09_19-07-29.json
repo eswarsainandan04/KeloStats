@@ -1,0 +1,92 @@
+{
+  "columns": [
+    "customer_name",
+    "total_quantity"
+  ],
+  "rows": [
+    {
+      "customer_name": "Zuschuss Carroll",
+      "total_quantity": 1
+    },
+    {
+      "customer_name": "Michael Granlund",
+      "total_quantity": 1
+    },
+    {
+      "customer_name": "Matthew Grinstein",
+      "total_quantity": 1
+    },
+    {
+      "customer_name": "Denny Blanton",
+      "total_quantity": 2
+    },
+    {
+      "customer_name": "Ken Black",
+      "total_quantity": 2
+    },
+    {
+      "customer_name": "Barry Gonzalez",
+      "total_quantity": 2
+    },
+    {
+      "customer_name": "Tanja Norvell",
+      "total_quantity": 3
+    },
+    {
+      "customer_name": "Michael Grace",
+      "total_quantity": 3
+    },
+    {
+      "customer_name": "Bradley Drucker",
+      "total_quantity": 4
+    },
+    {
+      "customer_name": "Robert Barroso",
+      "total_quantity": 4
+    },
+    {
+      "customer_name": "Roy Collins",
+      "total_quantity": 4
+    },
+    {
+      "customer_name": "Caroline Jumper",
+      "total_quantity": 4
+    },
+    {
+      "customer_name": "Carol Triggs",
+      "total_quantity": 4
+    },
+    {
+      "customer_name": "Maureen Fritzler",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Harold Ryan",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Noah Childs",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Karen Daniels",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Rob Williams",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Nancy Lomonaco",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Mark Packer",
+      "total_quantity": 5
+    },
+    {
+      "customer_name": "Fred Harton",
+      "total_quantity": 5
+    }
+  ]
+}

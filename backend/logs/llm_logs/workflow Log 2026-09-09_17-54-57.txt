@@ -1,0 +1,32 @@
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+analyze the user query and understand the query whether it is requred SQL or not.
+        - If user query is asking simple request on editing, styling, designing, formatting, or improving content in the ppt without SQL (e.g., change title, change color, make dark mode, update font, restyle cards, fix text) -> return sql_requred: false
+        - Else (if user query requires database data, metrics, sales, revenue, numbers, tables, or analytics to create or present slides) -> return sql_requred: true
+
+        output:
+        just reutrn true/false that it nothing else
+
+        User Query:
+        "restyle the slide cards with purple border and white text"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 222
+output tokens: 75
+total tokens: 297
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 222
+OUTPUT TOKENS : 75
+TOTAL         : 297
+=======================================

@@ -234,9 +234,12 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
       const projectId = data.project_id || "";
       const projName = encodeURIComponent(data.project_name || projectName.trim());
 
+      const selectedDb = availableDbs.find((d) => d.db_id === selectedDbId);
+      const dbDispName = encodeURIComponent(selectedDb?.display_name || selectedDb?.database_name || "");
+
       // Redirect directly to workspace
       router.push(
-        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${targetTemplateForModal.template_id}&project_id=${projectId}&project_name=${projName}`
+        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${targetTemplateForModal.template_id}&project_id=${projectId}&project_name=${projName}&display_name=${dbDispName}`
       );
     } catch (err: any) {
       console.error("Project creation error:", err);
@@ -340,7 +343,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
           {loadingSlides ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-4">
               <div className="w-10 h-10 border-3 border-orange-200 border-t-[#FF5148] rounded-full animate-spin" />
-              <p className="text-sm font-medium text-slate-500">Loading slide presentation codes from S3...</p>
+              <p className="text-sm font-medium text-slate-500">Loading...</p>
             </div>
           ) : slideError ? (
             <div className="p-8 bg-white border border-rose-200 rounded-2xl text-center max-w-md mx-auto shadow-sm">

@@ -42,9 +42,13 @@ flowchart TD
 
     %% Node 0B: Query Decision Agent
     subgraph S0B["Layer 0B: Task Decision"]
-        NODE_0B["🧠 <b>Node 0B: Query Decision Agent</b><br>Classifies in-scope task: normal_qa vs agent (slide build)"]:::agentNode
-        NODE_0B --> NODE1
+        NODE_0B["🧠 <b>Node 0B: Query Decision Agent</b><br>Classifies: normal_qa vs agent<br>Sub-agent: QueryDecisionClassifyAgent (sql_required: true/false)"]:::agentNode
+        DECIDE_SQL{"SQL Required?"}:::decisionNode
+        NODE_0B --> DECIDE_SQL
     end
+
+    DECIDE_SQL -->|"Yes (normal_qa or data slide)"| NODE1
+    DECIDE_SQL -->|"No (Direct slide edit/styling)"| NODE6
 
     %% Node 1: Schema Input Layer
     subgraph S1["Layer 1: Schema Ingestion & Context"]
@@ -166,6 +170,7 @@ The state passed across all LangGraph nodes is strictly typed:
 | `classification_reason` | `Optional[str]` | Explanation from `QueryClassificationAgent` |
 | `decision` | `Optional[str]` | `"normal_qa"` (direct data question) \| `"agent"` (generate/edit slides) |
 | `decision_reason` | `Optional[str]` | Explanation from `QueryDecisionAgent` |
+| `sql_required` | `Optional[bool]` | `True` if database SQL execution is required; `False` if direct slide editing/styling without SQL |
 | `llm_prompt_text` | `Optional[str]` | Rich formatted schema text with columns, types, sample categories, min/max |
 | `verification_status` | `Optional[str]` | `"SCHEMA_MATCH"` \| `"RETRIEVAL_REQUIRED"` |
 | `verification_reason` | `Optional[str]` | Reasoning provided by `QueryVerifyAgent` |
@@ -190,10 +195,13 @@ The state passed across all LangGraph nodes is strictly typed:
      - `greet`: Handled by `handle_greet_node` with a dynamic AI welcoming response.
      - `out_of_scope`: Handled by `handle_out_of_scope_node` explaining analytical capabilities.
      - `in_scope`: Passes to task decision.
-3. **`query_decision_node` (`QueryDecisionAgent`)**:
+3. **`query_decision_node` (`QueryDecisionAgent` & `QueryDecisionClassifyAgent`)**:
    - Distinguishes user intent:
-     - `normal_qa`: Direct inquiry asking for numbers, summaries, or telemetry.
-     - `agent`: Directive to generate, redesign, or update presentation slides.
+     - `normal_qa`: Direct inquiry asking for numbers, summaries, or telemetry (`sql_required=True`).
+     - `agent`: Directive to generate, redesign, restyle, or update presentation slides.
+   - For `agent` queries, `QueryDecisionClassifyAgent` classifies whether database SQL is required:
+     - `sql_required: False`: Direct editing, styling, formatting, or text improvements without SQL &rarr; **Routes directly to `ppt_generation_node`**, bypassing `schema_input`, `verification_agent`, and `sql_writer`. Uses `ppt_general_agent_prompt.txt`.
+     - `sql_required: True`: Slide generation requiring database records &rarr; **Routes to `schema_input_node`** to execute the SQL data pipeline. Uses `ppt_theme_prompt.txt`.
 
 ### Layer 1 & 2: Schema Context & Verification
 1. **`schema_input_node`**:
@@ -224,14 +232,14 @@ The state passed across all LangGraph nodes is strictly typed:
    - Performs up to 3 iterative repair attempts.
    - Re-executes repaired query and routes state back to normal execution pipelines.
 
-### Why Decision Routing Branches After the SQL Pipeline
+### Dual-Route Decision Routing in LangGraph
 
 > [!NOTE]
-> 1. **Early Intent Classification (Node 0B)**: `QueryDecisionAgent` determines whether the query requires a direct text answer (`normal_qa`) or a presentation slide (`agent`).
-> 2. **Shared Ground-Truth Engine (Layers 1-4)**: Both direct answers and presentation slides require real, verified database records. Hence, both paths pass through the same schema verification, SQL generation, and self-healing repair execution engine.
-> 3. **Post-SQL Branching**: Once SQL execution completes and data rows are stored in `backend/data/{timestamp}.json`, LangGraph evaluates `state["decision"]` to branch downstream:
+> 1. **Early Intent & SQL Triage (Node 0B)**: `QueryDecisionAgent` identifies `normal_qa` vs `agent`. If `agent`, `QueryDecisionClassifyAgent` determines if SQL data is needed (`sql_required: true/false`).
+> 2. **Direct PPT Route (Bypasses SQL)**: When `decision == 'agent'` and `sql_required is False` (e.g., "change slide title", "make background dark navy", "restyle cards"), LangGraph routes directly from Node 0B to **Node 6 (`ppt_generation_node`)**, eliminating unnecessary database schema lookups, SQL generation, and latency.
+> 3. **Data-Driven Route (Executes SQL)**: When `sql_required is True`, queries pass through schema verification, SQL generation, and execution. Afterwards:
 >    - `normal_qa` &rarr; **Node 5 (Answer Generator)** for natural language answers.
->    - `agent` &rarr; **Node 6 (PPT Generator)** & **Node 7 (HTML Validator)** for 16:9 presentation slides.
+>    - `agent` &rarr; **Node 6 (PPT Generator)** & **Node 7 (HTML Validator)** with retrieved data rows.
 
 ### Layer 5 & 6: Conversational QA & Slide Synthesis
 1. **`answer_generator_node` (`AnswerGeneratorAgent`)**:
@@ -239,6 +247,9 @@ The state passed across all LangGraph nodes is strictly typed:
    - Formulates natural language explanations, key metrics, and bulleted takeaways grounded solely in retrieved database rows.
 2. **`ppt_generation_node` (`PPTGenerationAgent`)**:
    - Triggered when `decision == "agent"`.
+   - **Dual Prompt Selection**:
+     - `sql_required: False`: Uses [ppt_general_agent_prompt.txt](file:///c:/Kelostats/backend/Agents/prompts/ppt_general_agent_prompt.txt) for direct editing, styling, layout refinement, and copywriting improvements without SQL data.
+     - `sql_required: True`: Uses [ppt_theme_prompt.txt](file:///c:/Kelostats/backend/Agents/prompts/ppt_theme_prompt.txt) with `retrieved_data` records to synthesize new data visualizations.
    - **Dynamic Manifest Resolution**: Uses `workspace/{user_id}/{project_id}/manifest.json` to identify active slide UUID (`{uuid}.html`).
    - **Case 1 (Empty Slide)**: If the target slide has no content, inherits theme, color palette, and layout from the previous content slide.
    - **Case 2 (Slide with Content)**: Uses existing slide canvas as template to update text, tables, and charts.

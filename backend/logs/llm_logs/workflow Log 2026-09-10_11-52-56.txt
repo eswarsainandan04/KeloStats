@@ -1,0 +1,57 @@
+======================
+Node 0: Init Reformulation Check - Init Reformulation Agent
+LLM INPUT:
+
+You are a query analysis agent.
+    Determine whether the user query contains ambiguous pronouns or referential phrases without an explicit standalone topic name.
+
+    Rules:
+    - If user query contains pronouns such as: "it's", "it", "that", "those", "this", "these", "they", "them", "its", "their", "the same", "above" or elliptical follow-ups without an explicit standalone topic/entity name, then is_reformulation = "True".
+        Examples needing reformulation:
+        - "what it's advantages" -> True
+        - "what are its benefits?" -> True
+        - "show that in a chart" -> True
+        - "tell me more about those" -> True
+        - "compare it with last month" -> True
+        - "why is that happening?" -> True
+        - "can you put this on a slide?" -> True
+
+- Else (if the user query already contains an explicit standalone topic, is self-contained, or does not rely on past conversation context), then is_reformulation = "False".
+  Examples NOT needing reformulation:
+  - "what is machine learning" -> False
+  - "show total revenue by region in 2024" -> False
+  - "list top 5 customers by sales" -> False
+  - "generate 5 slides on renewable energy" -> False
+    - "hello" -> False
+
+USER QUERY:
+"what it's advantages"
+
+RESPONSE FORMAT:
+Respond ONLY with valid JSON:
+{
+    "is_reformulation": "True" | "False",
+    "reason": "<short explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "is_reformulation": "True",
+    "reason": "The query uses the pronoun \"it\" without specifying the entity, making the request ambiguous."
+}
+
+TOKEN COUNT:
+input tokens: 407
+output tokens: 88
+total tokens: 495
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 407
+OUTPUT TOKENS : 88
+TOTAL         : 495
+=======================================

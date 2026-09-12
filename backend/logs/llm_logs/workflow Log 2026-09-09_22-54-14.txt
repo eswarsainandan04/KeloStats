@@ -1,0 +1,1132 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"generate a bar chart on categories"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The request asks to generate a bar chart, which pertains to data visualization and business analytics."
+}
+
+TOKEN COUNT:
+input tokens: 483
+output tokens: 86
+total tokens: 569
+======================
+
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - if user requires the charts barchart, linechart, piechart,...more etc then classify as agent
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "show me the top 10 products in bar chart"
+     - "show me the line chart of sales in last 12 months"
+     - "show me the pie chart of market share"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"generate a bar chart on categories"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "agent",
+    "reason": "The user is commanding the creation of a bar chart, which falls under the 'agent' category."
+}
+
+TOKEN COUNT:
+input tokens: 534
+output tokens: 113
+total tokens: 647
+======================
+
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+You are the PPT Task Classification Agent for KeloStats, an enterprise AI analytics platform connected to an enterprise relational database.
+        Your job is to determine whether a presentation request requires querying the database via the SQL pipeline (sql_required: true) or is a direct visual/textual EDIT on an existing slide canvas without database data (sql_required: false).
+
+        RULES:
+        1. sql_required: true (DEFAULT for presentation creation and data analysis):
+            - Any command to create, generate, analyze, discuss, summarize, or present business topics, performance, trends, or insights (e.g., 'disscuss a trend analysis summary in PPT', 'generate slide on top products', 'create presentation for Q3 churn', 'build a deck on revenue', 'present category breakdown').
+            - Even high-level executive summaries or business analyses (like SWOT, market trends, performance reviews) MUST query the database to ground the slide in real business facts and metrics.
+
+        2. sql_required: false (ONLY for direct slide styling, layout adjustment, or simple edits):
+            - The user is asking to modify the visual appearance, styling, or existing wording of the currently open slide canvas.
+            - Examples: 'change title to...', 'make background dark navy', 'restyle cards with purple border', 'increase font size', 'change button color', 'remove second card', 'edit this slide to fix typo'.
+
+        Output:
+        just return true or false, nothing else.
+
+        User Query:
+        "generate a bar chart on categories"
+
+LLM OUTPUT:
+
+true
+
+TOKEN COUNT:
+input tokens: 386
+output tokens: 111
+total tokens: 497
+======================
+
+======================
+Node 2 - Verification Agent
+LLM INPUT:
+
+You are an expert database query validator for an AI analytics and presentation platform. Your task is to verify how the user query should be processed against the provided database schema context.
+
+Note: The user query may be a direct analytical question or a presentation/slide directive (e.g., "Generate a slide on...", "Present on...", "Build a deck for...", "Do it in ppt", "Analyze the database and create a dashboard slide with charts"). Any request asking to analyze, summarize, compare, or visualize data from the database is ALWAYS valid.
+
+You must categorize the query into one of two classifications:
+
+1. "SCHEMA_MATCH":
+   - The query can be queried or aggregated directly from the database schema tables and columns.
+   - Includes all general metrics, aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY), date ranges, comparisons, multi-chart summaries, and presentation dashboards based on available tables.
+   - Default to "SCHEMA_MATCH" whenever the query focuses on analyzing the database or generating metrics from available tables.
+
+2. "RETRIEVAL_REQUIRED":
+   - The user query specifically targets concrete entity values, product names, customer names, restaurant names, city names, or specific categories that are NOT explicitly listed in the schema sample values and must be looked up or verified from the database first before writing the final SQL query.
+   - Example: The schema has `restaurant_name` or `customer_name`, and the user asks for a specific name like "Pizza Hut" or "Harsha Vardhan" whose exact spelling needs database retrieval.
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: kelostats
+Dialect: PostgreSQL
+Schema: store
+
+TABLE: global_superstore
+Rows: 51290
+
+Columns:
+- row_id | INTEGER | PK | not_null | range: 1-51290 | samples: 32298, 26341, 25330, 13524, 47221
+- order_id | VARCHAR(100) | categorical | unique: 48.81% | distinct: 25035 | categories: "CA-2014-100111", "TO-2014-9950", "MX-2014-166541", "IN-2013-42311", "IN-2012-41261",..+25030
+- order_date | DATE | unique: 2.79% | range: "2011-01-01"-"2014-12-31" | samples: "2012-07-31", "2013-02-05", "2013-10-17", "2013-01-28", "2013-11-05"
+- ship_date | DATE | unique: 2.85% | range: "2011-01-03"-"2015-01-07" | samples: "2012-07-31", "2013-02-07", "2013-10-18", "2013-01-30", "2013-11-06"
+- ship_mode | VARCHAR(50) | categorical | unique: 0.01% | distinct: 4 | categories: "Standard Class", "Second Class", "First Class", "Same Day"
+- customer_id | VARCHAR(50) | categorical | unique: 3.1% | distinct: 1590 | categories: "PO-18850", "BE-11335", "JG-15805", "SW-20755", "EM-13960",..+1585
+- customer_name | VARCHAR(255) | categorical | unique: 1.55% | distinct: 795 | categories: "Muhammed Yedwab", "Steven Ward", "Gary Hwang", "Bill Eplett", "Patrick O'Brill",..+790
+- segment | VARCHAR(50) | categorical | unique: 0.01% | distinct: 3 | categories: "Consumer", "Corporate", "Home Office"
+- city | VARCHAR(150) | categorical | unique: 7.09% | distinct: 3636 | categories: "New York City", "Los Angeles", "Philadelphia", "San Francisco", "Santo Domingo",..+3631
+- state | VARCHAR(150) | categorical | unique: 2.13% | distinct: 1094 | categories: "California", "England", "New York", "Texas", "Ile-de-France",..+1089
+- country | VARCHAR(150) | categorical | unique: 0.29% | distinct: 147 | categories: "United States", "Australia", "France", "Mexico", "Germany",..+142
+- postal_code | VARCHAR(50) | unique: 1.23% | range: 10009.0-99301.0 | samples: "10024.0", "95823.0", "28027.0", "22304.0", "42420.0"
+- market | VARCHAR(50) | categorical | unique: 0.01% | distinct: 7 | categories: "APAC", "LATAM", "EU", "US", "EMEA",..+2
+- region | VARCHAR(100) | categorical | unique: 0.03% | distinct: 13 | categories: "Central", "South", "EMEA", "North", "Africa",..+8
+- product_id | VARCHAR(100) | categorical | unique: 20.07% | distinct: 10292 | categories: "OFF-AR-10003651", "OFF-AR-10003829", "OFF-BI-10003708", "OFF-BI-10002799", "FUR-CH-10003354",..+10287
+- category | VARCHAR(100) | categorical | unique: 0.01% | distinct: 3 | categories: "Office Supplies", "Technology", "Furniture"
+- sub_category | VARCHAR(100) | categorical | unique: 0.03% | distinct: 17 | categories: "Binders", "Storage", "Art", "Paper", "Chairs",..+12
+- product_name | TEXT | categorical | unique: 7.39% | distinct: 3788 | categories: "Staples", "Cardinal Index Tab, Clear", "Eldon File Cart, Single Width", "Rogers File Cart, Single Width", "Ibico Index Tab, Clear",..+3783
+- sales | NUMERIC(12,4) | unique: 44.83% | range: 0.444-22638.48 | samples: 2309.65, 3709.395, 5175.171, 2892.51, 2832.96
+- quantity | INTEGER | unique: 0.03% | range: 1-14 | samples: 7, 9, 9, 5, 8
+- discount | NUMERIC(6,4) | unique: 0.05% | range: 0-0.85 | samples: 0, 0.1, 0.1, 0.1, 0
+- profit | NUMERIC(12,4) | unique: 47.91% | range: -6599.978-8399.976 | samples: 762.1845, -288.765, 919.971, -96.54, 311.52
+- shipping_cost | NUMERIC(12,4) | unique: 19.57% | range: 0-933.57 | samples: 933.57, 923.63, 915.49, 910.16, 903.04
+- order_priority | VARCHAR(50) | categorical | unique: 0.01% | distinct: 4 | categories: "Medium", "High", "Critical", "Low"
+
+
+User Natural Language Query:
+generate a bar chart on categories
+
+INSTRUCTIONS:
+- Analyze carefully against the schema context.
+- Output ONLY a valid JSON object in the following format without markdown, without backticks, and without thinking:
+- Provide only executable json format
+
+{
+  "status": "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED",
+  "reason": "Brief, clear explanation of the classification"
+}
+
+LLM OUTPUT:
+
+{
+  "status": "SCHEMA_MATCH",
+  "reason": "The request asks for a bar chart summarizing data by the 'category' column, which exists in the schema and can be aggregated directly without needing to look up specific entity values."
+}
+
+TOKEN COUNT:
+input tokens: 1808
+output tokens: 165
+total tokens: 1973
+======================
+
+======================
+Node 3A - SQL Writer Agent
+LLM INPUT:
+
+You are an expert postgres developer. Your task is to write a single valid and executable master SQL query for dashboards and KPIs based on the database schema context.
+
+Rules:
+1. Carefully inspect the schema context (tables, columns, types, primary/foreign keys).
+2. Use proper joins based on the identified foreign key relationships.
+3. Use exact column names, table names, and schema qualifications according to postgres.
+4. Strictly follow the user's natural language request.
+5. CRITICAL OUTPUT INSTRUCTIONS:
+   - Return ONLY the raw executable SQL query.
+   - Do NOT output any thinking process, chain-of-thought, or <think>...</think> blocks.
+   - Do NOT output markdown code blocks (no ```sql), no JSON, no conversational text, and no explanations.
+   - Begin your response directly with the first SQL keyword (e.g. SELECT, WITH).
+
+6. VALUE MATCHING & WHERE CLAUSE RULES:
+   - If a retrieved search keywords markdown table is provided below, those exact entity values were verified and retrieved directly from the database table. You MUST use these exact retrieved values in the WHERE condition (e.g. WHERE column = 'Exact Value' or WHERE column IN ('Value 1', 'Value 2')) to write the master SQL query.
+   - If the requested value exactly matches a known database value in schema context, use =.
+   - If not found in schema context or retrieved table, use case-insensitive partial matching appropriate for postgres (e.g. ILIKE '%term%' in PostgreSQL, LIKE '%term%' in MySQL, LOWER(column) LIKE '%term%' in Oracle SQL).
+
+7. STRICT READ-ONLY GUARDRAIL RULE:
+   - You MUST generate ONLY read-only SELECT or WITH queries.
+   - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
+
+
+
+
+STRICT & 100% FOLLOW RULES:
+
+- Ensure the retrieved rows are compact and presentation-ready for PowerPoint slides, dashboards, and charts.
+- The query MUST produce between 10 and 30 rows only.
+- Do NOT use an arbitrary LIMIT to cut off data; achieve the 10–30 row target through proper grouping and aggregation.
+- When the user does not specify an explicit date, time, or numerical filter, the query MUST span the complete range from MIN to MAX without truncating or cutting off any period. Adjust the aggregation granularity (e.g., group by year, quarter, month, or interval buckets) so the entire timeline or distribution from minimum to maximum fits naturally within 10 to 30 continuous summary rows.
+- For categorical columns, inspect the 'distinct' count in the schema: aggregate and order by metric to return the top 10–20 categories for bar charts, pie charts, and rankings if no specific filter is requested.
+
+
+Retrieved Schema Context:
+DATABASE SCHEMA
+
+Database: kelostats
+Dialect: PostgreSQL
+Schema: store
+
+TABLE: global_superstore
+Rows: 51290
+
+Columns:
+- row_id | INTEGER | PK | not_null | range: 1-51290 | samples: 32298, 26341, 25330, 13524, 47221
+- order_id | VARCHAR(100) | categorical | unique: 48.81% | distinct: 25035 | categories: "CA-2014-100111", "TO-2014-9950", "MX-2014-166541", "IN-2013-42311", "IN-2012-41261",..+25030
+- order_date | DATE | unique: 2.79% | range: "2011-01-01"-"2014-12-31" | samples: "2012-07-31", "2013-02-05", "2013-10-17", "2013-01-28", "2013-11-05"
+- ship_date | DATE | unique: 2.85% | range: "2011-01-03"-"2015-01-07" | samples: "2012-07-31", "2013-02-07", "2013-10-18", "2013-01-30", "2013-11-06"
+- ship_mode | VARCHAR(50) | categorical | unique: 0.01% | distinct: 4 | categories: "Standard Class", "Second Class", "First Class", "Same Day"
+- customer_id | VARCHAR(50) | categorical | unique: 3.1% | distinct: 1590 | categories: "PO-18850", "BE-11335", "JG-15805", "SW-20755", "EM-13960",..+1585
+- customer_name | VARCHAR(255) | categorical | unique: 1.55% | distinct: 795 | categories: "Muhammed Yedwab", "Steven Ward", "Gary Hwang", "Bill Eplett", "Patrick O'Brill",..+790
+- segment | VARCHAR(50) | categorical | unique: 0.01% | distinct: 3 | categories: "Consumer", "Corporate", "Home Office"
+- city | VARCHAR(150) | categorical | unique: 7.09% | distinct: 3636 | categories: "New York City", "Los Angeles", "Philadelphia", "San Francisco", "Santo Domingo",..+3631
+- state | VARCHAR(150) | categorical | unique: 2.13% | distinct: 1094 | categories: "California", "England", "New York", "Texas", "Ile-de-France",..+1089
+- country | VARCHAR(150) | categorical | unique: 0.29% | distinct: 147 | categories: "United States", "Australia", "France", "Mexico", "Germany",..+142
+- postal_code | VARCHAR(50) | unique: 1.23% | range: 10009.0-99301.0 | samples: "10024.0", "95823.0", "28027.0", "22304.0", "42420.0"
+- market | VARCHAR(50) | categorical | unique: 0.01% | distinct: 7 | categories: "APAC", "LATAM", "EU", "US", "EMEA",..+2
+- region | VARCHAR(100) | categorical | unique: 0.03% | distinct: 13 | categories: "Central", "South", "EMEA", "North", "Africa",..+8
+- product_id | VARCHAR(100) | categorical | unique: 20.07% | distinct: 10292 | categories: "OFF-AR-10003651", "OFF-AR-10003829", "OFF-BI-10003708", "OFF-BI-10002799", "FUR-CH-10003354",..+10287
+- category | VARCHAR(100) | categorical | unique: 0.01% | distinct: 3 | categories: "Office Supplies", "Technology", "Furniture"
+- sub_category | VARCHAR(100) | categorical | unique: 0.03% | distinct: 17 | categories: "Binders", "Storage", "Art", "Paper", "Chairs",..+12
+- product_name | TEXT | categorical | unique: 7.39% | distinct: 3788 | categories: "Staples", "Cardinal Index Tab, Clear", "Eldon File Cart, Single Width", "Rogers File Cart, Single Width", "Ibico Index Tab, Clear",..+3783
+- sales | NUMERIC(12,4) | unique: 44.83% | range: 0.444-22638.48 | samples: 2309.65, 3709.395, 5175.171, 2892.51, 2832.96
+- quantity | INTEGER | unique: 0.03% | range: 1-14 | samples: 7, 9, 9, 5, 8
+- discount | NUMERIC(6,4) | unique: 0.05% | range: 0-0.85 | samples: 0, 0.1, 0.1, 0.1, 0
+- profit | NUMERIC(12,4) | unique: 47.91% | range: -6599.978-8399.976 | samples: 762.1845, -288.765, 919.971, -96.54, 311.52
+- shipping_cost | NUMERIC(12,4) | unique: 19.57% | range: 0-933.57 | samples: 933.57, 923.63, 915.49, 910.16, 903.04
+- order_priority | VARCHAR(50) | categorical | unique: 0.01% | distinct: 4 | categories: "Medium", "High", "Critical", "Low"
+
+
+User Natural Language Query:
+generate a bar chart on categories
+
+SQL Query:
+
+LLM OUTPUT:
+
+SELECT
+    category,
+    EXTRACT(YEAR FROM order_date) AS order_year,
+    SUM(sales) AS total_sales
+FROM store.global_superstore
+GROUP BY category, order_year
+ORDER BY category, order_year;
+
+TOKEN COUNT:
+input tokens: 2010
+output tokens: 550
+total tokens: 2560
+======================
+
+======================
+Node: PPT Generation - PPT Generation Agent
+LLM INPUT:
+
+You are KeloStats AI Master Slide Designer, a world-class presentation architect inspired by Canva, Pitch, Linear, and elite design studios.
+
+Your mission is to generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+
+
+STRICT RULES FOR HTML SLIDE GENERATION:
+
+1. Inherit Theme & Brand Styling: You will receive the current/previous HTML PPT slide code; based on that, inherit its visual THEME (Canva-inspired modern design aesthetics, typography, color palette, gradients, and card styles).
+2. Integrate Retrieved Database Records: You will receive retrieved database table rows based on the user query; accurately and meaningfully incorporate the fetched data, metrics, and insights into the HTML structure.
+3. Clean & High-Impact Markup: Generate clean, high-impact, presentation-ready HTML/CSS slide code based on the user's instruction and the retrieved database records.
+4. Slide Canvas Layout Container: Use canvas layout structures for the PPT design, wrapping slide content in a 16:9 canvas container (`<div class="slide-canvas">` and `<canvas id="...">` for graphics/Chart.js) adhering strictly to `width: 100%; aspect-ratio: 16 / 9; overflow: hidden; position: relative;`.
+5. Dynamic Design Freedom: You have complete freedom to dynamically design the slide presentation layout (e.g., bento grids, split columns, stat/metric callout cards, comparison tables) to best communicate the data.
+6. Creative UI Presentation Polish: Be creative and design with the finesse of an elite UI/PPT presentation expert—ensure clear visual hierarchy, elegant contrast, modern card containers, and executive polish.
+7. Chart.js for Dashboards: For dashboard and metrics-related queries, implement Chart.js inside `<script>` paired with an appropriately sized `<canvas id="...">` element, ensuring the charts look beautiful, modern, legible, and well-designed.
+8. Presentation Slides, Not Websites: When generating HTML code, remember this is a presentation slide, NOT a website. Do not add website elements like scrollbars, dropdowns, interactive form buttons, hyperlinked navigation bars, or footers.
+9. Strict 16:9 Content Fitting (No Overflow): Make sure the content fits cleanly within the 16:9 ratio PPT slide without clipping or overflowing; if the retrieved data is large, prioritize and display what is most impactful and important.
+10. Flawless & Presentable Delivery: Make the slide look stunning, professional, and presentation-ready. Return pure executable HTML code only (no conversational markdown or wrapping code blocks).
+
+==============================================================================
+INPUT:
+----------
+
+USER PROMPT:
+generate a bar chart on categories
+
+RETRIEVED CONTEXT FROM DB:
+{
+  "columns": [
+    "category",
+    "order_year",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "order_year": 2011.0,
+      "total_sales": 756192.384
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2012.0,
+      "total_sales": 858902.5581
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2013.0,
+      "total_sales": 1117723.5534
+    },
+    {
+      "category": "Furniture",
+      "order_year": 2014.0,
+      "total_sales": 1378055.6908
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2011.0,
+      "total_sales": 675606.4502
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2012.0,
+      "total_sales": 795094.627
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2013.0,
+      "total_sales": 1010717.6419
+    },
+    {
+      "category": "Office Supplies",
+      "order_year": 2014.0,
+      "total_sales": 1305651.5064
+    },
+    {
+      "category": "Technology",
+      "order_year": 2011.0,
+      "total_sales": 827652.0613
+    },
+    {
+      "category": "Technology",
+      "order_year": 2012.0,
+      "total_sales": 1023441.5098
+    },
+    {
+      "category": "Technology",
+      "order_year": 2013.0,
+      "total_sales": 1277305.2544
+    },
+    {
+      "category": "Technology",
+      "order_year": 2014.0,
+      "total_sales": 1616158.6735
+    }
+  ]
+}
+
+CURRENT SLIDE/PREVIOUS SLIDE TEMPLATE (for brand theme inheritance):
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (Standard 16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title (PowerPoint size: 52px at 1920px -> 52 / 19.2 = 2.71cqw) */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Number Labels (PowerPoint size: 32px at 1920px -> 32 / 19.2 = 1.67cqw) */
+    .topic-number {
+      position: absolute;
+      left: 6.375%;
+      width: 5.000%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #FF5148;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Topic Headings (PowerPoint size: 32px at 1920px -> 32 / 19.2 = 1.67cqw) */
+    .topic-text {
+      position: absolute;
+      left: 12.000%;
+      width: 78.750%;
+      height: 6.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(32 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.2;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Rows vertical distribution */
+    .row-1 { top: 30.667%; }
+    .row-2 { top: 43.333%; }
+    .row-3 { top: 56.000%; }
+    .row-4 { top: 68.667%; }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Right Dot Cluster Graphic (Non-text / Vector Asset) -->
+    <div id="top_right_dot_cluster" class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- 2. Section Title (Editable Text) -->
+    <h1 id="toc_title" class="slide-title" data-editable="text">Table of Contents</h1>
+
+    <!-- 3. Accent Line (Vector Shape) -->
+    <div id="toc_accent_line" class="accent-bar"></div>
+
+    <!-- Topic 01 -->
+    <div id="topic_01_num" class="topic-number row-1" data-editable="text">01.</div>
+    <div id="topic_01_text" class="topic-text row-1" data-editable="text">Executive Summary & Market Opportunity</div>
+
+    <!-- Topic 02 -->
+    <div id="topic_02_num" class="topic-number row-2" data-editable="text">02.</div>
+    <div id="topic_02_text" class="topic-text row-2" data-editable="text">Product Architecture & Technology</div>
+
+    <!-- Topic 03 -->
+    <div id="topic_03_num" class="topic-number row-3" data-editable="text">03.</div>
+    <div id="topic_03_text" class="topic-text row-3" data-editable="text">Financial Trajectory & Traction</div>
+
+    <!-- Topic 04 -->
+    <div id="topic_04_num" class="topic-number row-4" data-editable="text">04.</div>
+    <div id="topic_04_text" class="topic-text row-4" data-editable="text">Strategic Roadmap & Execution Plan</div>
+
+  </div>
+
+</body>
+</html>
+
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide - Category Sales Bar Chart</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    #chartCanvas {
+      position: absolute;
+      left: 6.375%;
+      top: 30.667%;
+      width: 87.25%;
+      height: 60%;
+    }
+  </style>
+</head>
+<body>
+  <div id="slide_category_sales" class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">Category Sales by Year</h1>
+    <div class="accent-bar"></div>
+
+    <canvas id="chartCanvas"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+
+    const data = {
+      labels: ['Furniture', 'Office Supplies', 'Technology'],
+      datasets: [
+        {
+          label: '2011',
+          data: [756192.384, 675606.4502, 827652.0613],
+          backgroundColor: '#4F46E5'
+        },
+        {
+          label: '2012',
+          data: [858902.5581, 795094.627, 1023441.5098],
+          backgroundColor: '#6366F1'
+        },
+        {
+          label: '2013',
+          data: [1117723.5534, 1010717.6419, 1277305.2544],
+          backgroundColor: '#818CF8'
+        },
+        {
+          label: '2014',
+          data: [1378055.6908, 1305651.5064, 1616158.6735],
+          backgroundColor: '#A5B4FC'
+        }
+      ]
+    };
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { font: { size: 14 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': $' + Number(context.parsed.y).toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: false,
+            title: { display: true, text: 'Category', font: { size: 16 } }
+          },
+          y: {
+            stacked: false,
+            title: { display: true, text: 'Total Sales (USD)', font: { size: 16 } },
+            ticks: {
+              callback: function(value) {
+                return '$' + (value/1000).toLocaleString() + 'k';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 2530
+output tokens: 1634
+total tokens: 4164
+======================
+
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide - Category Sales Bar Chart</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    #chartCanvas {
+      position: absolute;
+      left: 6.375%;
+      top: 30.667%;
+      width: 87.25%;
+      height: 60%;
+    }
+  </style>
+</head>
+<body>
+  <div id="slide_category_sales" class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">Category Sales by Year</h1>
+    <div class="accent-bar"></div>
+
+    <canvas id="chartCanvas"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+
+    const data = {
+      labels: ['Furniture', 'Office Supplies', 'Technology'],
+      datasets: [
+        {
+          label: '2011',
+          data: [756192.384, 675606.4502, 827652.0613],
+          backgroundColor: '#4F46E5'
+        },
+        {
+          label: '2012',
+          data: [858902.5581, 795094.627, 1023441.5098],
+          backgroundColor: '#6366F1'
+        },
+        {
+          label: '2013',
+          data: [1117723.5534, 1010717.6419, 1277305.2544],
+          backgroundColor: '#818CF8'
+        },
+        {
+          label: '2014',
+          data: [1378055.6908, 1305651.5064, 1616158.6735],
+          backgroundColor: '#A5B4FC'
+        }
+      ]
+    };
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { font: { size: 14 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': $' + Number(context.parsed.y).toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: false,
+            title: { display: true, text: 'Category', font: { size: 16 } }
+          },
+          y: {
+            stacked: false,
+            title: { display: true, text: 'Total Sales (USD)', font: { size: 16 } },
+            ticks: {
+              callback: function(value) {
+                return '$' + (value/1000).toLocaleString() + 'k';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide - Category Sales Bar Chart</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    #chartCanvas {
+      position: absolute;
+      left: 6.375%;
+      top: 30.667%;
+      width: 87.25%;
+      height: 60%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="slide_category_sales" class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">Category Sales by Year</h1>
+    <div class="accent-bar"></div>
+
+    <canvas id="chartCanvas"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+
+    const data = {
+      labels: ['Furniture', 'Office Supplies', 'Technology'],
+      datasets: [
+        {
+          label: '2011',
+          data: [756192.384, 675606.4502, 827652.0613],
+          backgroundColor: '#4F46E5'
+        },
+        {
+          label: '2012',
+          data: [858902.5581, 795094.627, 1023441.5098],
+          backgroundColor: '#6366F1'
+        },
+        {
+          label: '2013',
+          data: [1117723.5534, 1010717.6419, 1277305.2544],
+          backgroundColor: '#818CF8'
+        },
+        {
+          label: '2014',
+          data: [1378055.6908, 1305651.5064, 1616158.6735],
+          backgroundColor: '#A5B4FC'
+        }
+      ]
+    };
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { font: { size: 14 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': $' + Number(context.parsed.y).toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: false,
+            title: { display: true, text: 'Category', font: { size: 16 } }
+          },
+          y: {
+            stacked: false,
+            title: { display: true, text: 'Total Sales (USD)', font: { size: 16 } },
+            ticks: {
+              callback: function(value) {
+                return '$' + (value / 1000).toLocaleString() + 'k';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 2087
+output tokens: 1627
+total tokens: 3714
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 9838
+OUTPUT TOKENS : 4286
+TOTAL         : 14124
+=======================================

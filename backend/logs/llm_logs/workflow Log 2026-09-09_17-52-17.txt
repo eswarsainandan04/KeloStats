@@ -1,0 +1,65 @@
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - if user requires the charts barchart, linechart, piechart,...more etc then classify as agent
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "show me the top 10 products in bar chart"
+     - "show me the line chart of sales in last 12 months"
+     - "show me the pie chart of market share"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"restyle the slide cards with purple border and white text"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "agent",
+    "reason": "The request directs a styling change to slide elements, which is an imperative action to modify a presentation."
+}
+
+TOKEN COUNT:
+input tokens: 539
+output tokens: 118
+total tokens: 657
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 539
+OUTPUT TOKENS : 118
+TOTAL         : 657
+=======================================

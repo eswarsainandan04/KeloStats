@@ -6,6 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
 import ChatInterface from "./ChatInterface";
 import Chart from "chart.js/auto";
+import ChartDataLabels from "chartjs-plugin-datalabels";
+
+// Register ChartDataLabels globally so LLM-generated slides can use it
+Chart.register(ChartDataLabels);
 
 interface SlideData {
   slide_number: number;
@@ -23,6 +27,7 @@ function WorkspaceContent() {
   const projectId = searchParams.get("project_id") || "project_default";
   const projectName = searchParams.get("project_name") || "Presentation Project";
   const databaseId = searchParams.get("database_id") || searchParams.get("db_id") || "";
+  const databaseDisplayName = searchParams.get("display_name") || searchParams.get("database_display_name") || searchParams.get("db_name") || "";
 
   // Dynamic slides loaded directly from Supabase S3 JSON files
   const [slides, setSlides] = useState<SlideData[]>([]);
@@ -303,21 +308,30 @@ function WorkspaceContent() {
 
           // Build a safe execution context where getElementById resolves inside the container
           // and SafeChart automatically destroys any existing charts before instantiation
-          const runner = new Function("Chart", "container", `
+          const runner = new Function("Chart", "ChartDataLabels", "container", `
             const getCanvas = (id) => container.querySelector('#' + id) || container.querySelector('canvas') || window.document.getElementById(id);
-            const document = {
-              ...window.document,
-              getElementById: (id) => container.querySelector('#' + id) || window.document.getElementById(id),
-              querySelector: (sel) => container.querySelector(sel) || window.document.querySelector(sel),
-              querySelectorAll: (sel) => container.querySelectorAll(sel)
-            };
+            const document = new Proxy(window.document, {
+              get(target, prop, receiver) {
+                if (prop === 'getElementById') {
+                  return (id) => container.querySelector('#' + id) || target.getElementById(id);
+                }
+                if (prop === 'querySelector') {
+                  return (sel) => container.querySelector(sel) || target.querySelector(sel);
+                }
+                if (prop === 'querySelectorAll') {
+                  return (sel) => container.querySelectorAll(sel);
+                }
+                const val = Reflect.get(target, prop, receiver);
+                return typeof val === 'function' ? val.bind(target) : val;
+              }
+            });
             try {
               ${scriptContent}
             } catch (innerErr) {
               console.warn("Slide inline script execution notice:", innerErr);
             }
           `);
-          runner(SafeChart, container);
+          runner(SafeChart, ChartDataLabels, container);
         } catch (evalErr) {
           console.warn("Could not compile slide script:", evalErr);
         }
@@ -402,7 +416,7 @@ function WorkspaceContent() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              <span>Loading slide JSONs from Supabase S3...</span>
+              <span>Loading...</span>
             </span>
           )}
         </div>
@@ -495,10 +509,10 @@ function WorkspaceContent() {
             </div>
 
             {/* Thumbnails Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 min-w-[240px]">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 min-w-[240px] custom-chat-scrollbar">
               {loading ? (
                 <div className="py-12 text-center text-xs text-slate-400">
-                  Loading slides...
+                  Loading...
                 </div>
               ) : slides.length === 0 ? (
                 <div className="py-12 text-center text-xs text-slate-400 px-2">
@@ -674,8 +688,7 @@ function WorkspaceContent() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  <p className="text-sm font-semibold text-slate-700">Loading slide JSONs...</p>
-                  <p className="text-xs text-slate-400 mt-1">Rendering dynamic presentation from Supabase S3</p>
+                  <p className="text-sm font-semibold text-slate-700">Loading...</p>
                 </div>
               ) : loadError ? (
                 <div className="p-8 max-w-md bg-white rounded-2xl shadow-sm border border-red-200 text-center">
@@ -763,6 +776,7 @@ function WorkspaceContent() {
                 projectId={projectId}
                 userId={userId}
                 databaseId={databaseId}
+                databaseDisplayName={databaseDisplayName}
                 slideNumber={currentSlide?.slide_number ?? (activeSlideIndex + 1)}
                 totalSlides={slides.length}
                 onSelectSlide={(slideNum) => {

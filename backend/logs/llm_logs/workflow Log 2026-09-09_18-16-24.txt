@@ -1,0 +1,40 @@
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+You are the PPT Task Classification Agent for KeloStats, an enterprise AI analytics platform connected to an enterprise relational database.
+Your job is to determine whether a presentation request requires querying the database via the SQL pipeline (sql_required: true) or is a direct visual/textual EDIT on an existing slide canvas without database data (sql_required: false).
+
+RULES:
+1. sql_required: true (DEFAULT for presentation creation and data analysis):
+   - Any command to create, generate, analyze, discuss, summarize, or present business topics, performance, trends, or insights (e.g., 'disscuss a trend analysis summary in PPT', 'generate slide on top products', 'create presentation for Q3 churn', 'build a deck on revenue', 'present category breakdown').
+   - Even high-level executive summaries or business analyses (like SWOT, market trends, performance reviews) MUST query the database to ground the slide in real business facts and metrics.
+
+2. sql_required: false (ONLY for direct slide styling, layout adjustment, or simple edits):
+   - The user is asking to modify the visual appearance, styling, or existing wording of the currently open slide canvas.
+   - Examples: 'change title to...', 'make background dark navy', 'restyle cards with purple border', 'increase font size', 'change button color', 'remove second card', 'edit this slide to fix typo'.
+
+Output:
+just return true or false, nothing else.
+
+User Query:
+"change the title of this slide to Executive Summary"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 376
+output tokens: 46
+total tokens: 422
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 376
+OUTPUT TOKENS : 46
+TOTAL         : 422
+=======================================

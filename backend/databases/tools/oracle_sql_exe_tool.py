@@ -20,5 +20,6 @@ def execute_oracle_tool(db_info: Dict[str, Any], sql_query: str) -> List[Any]:
         if schema:
             conn.execute(text(f'ALTER SESSION SET CURRENT_SCHEMA = "{schema}"'))
         result = conn.execute(text(sql_query))
-        rows = [row[0] for row in result.fetchall() if row[0] is not None]
+        columns = list(result.keys())
+        rows = [{col: val for col, val in zip(columns, row)} for row in result.fetchall()]
         return rows

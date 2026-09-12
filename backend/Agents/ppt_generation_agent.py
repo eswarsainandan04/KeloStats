@@ -15,7 +15,9 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parent / "prompts" / "ppt_theme_prompt.txt"
+THEME_PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parent / "prompts" / "ppt_theme_prompt.txt"
+GENERAL_PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parent / "prompts" / "ppt_general_agent_prompt.txt"
+PROMPT_TEMPLATE_PATH = THEME_PROMPT_TEMPLATE_PATH
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -314,51 +316,57 @@ def _clean_html_response(raw_response: str) -> str:
 
 def PPTGenerationAgent(
     user_query: str,
-    retrived_rows: Union[Dict[str, Any], List[Any], str],
+    retrived_rows: Optional[Union[Dict[str, Any], List[Any], str]] = None,
     slide_number: int = 1,
     project_id: Optional[str] = None,
     user_id: Optional[str] = None,
-    html_code: Optional[str] = None
+    html_code: Optional[str] = None,
+    sql_required: bool = True
 ) -> str:
     """
     PPT Generation Agent:
-    - Receives user query, retrieved database records, target slide number, and slide template HTML.
-    - Instructs LLM using ppt_theme_prompt.txt to generate executable HTML code adhering to the template theme.
-    - Replaces the empty slide code and saves to Supabase S3 under workspace/{user_id}/{project_id}/slides/{current_slide}.html.
+    - If sql_required is True: Uses retrieved database records and ppt_theme_prompt.txt to generate data-driven slides.
+    - If sql_required is False: Skips SQL rows and uses ppt_general_agent_prompt.txt for direct editing, styling,
+      and improving existing presentation slides.
+    - Saves updated HTML to Supabase S3 under workspace/{user_id}/{project_id}/slides/{current_slide}.html.
     - Returns executable HTML code.
 
     :param user_query: The user prompt / instruction for the presentation slide
-    :param retrived_rows: The data records returned from SQL execution
+    :param retrived_rows: The data records returned from SQL execution (ignored if sql_required=False)
     :param slide_number: Target slide index (e.g. 1, 2, 3...)
     :param project_id: Optional project identifier for S3 sync and retrieval
     :param user_id: Optional user identifier for S3 path resolution
     :param html_code: Explicit template HTML string (if not provided, retrieved dynamically via GetHTMLCode)
+    :param sql_required: True to use SQL rows + ppt_theme_prompt.txt; False to use ppt_general_agent_prompt.txt
     :return: Pure executable HTML slide markup
     """
     cleaned_query = (user_query or "").strip()
 
-    # 1. Format retrieved_rows to clean JSON string
-    if isinstance(retrived_rows, (dict, list)):
-        if isinstance(retrived_rows, dict) and "rows" in retrived_rows:
-            all_rows = retrived_rows.get("rows") or []
-            if len(all_rows) > 50:
-                truncated_payload = {
-                    "columns": retrived_rows.get("columns", []),
-                    "total_rows_count": len(all_rows),
-                    "showing_first_50_rows": all_rows[:50]
-                }
-                data_str = json.dumps(truncated_payload, indent=2, default=str)
+    # 1. Format retrieved_rows to clean JSON string (only if sql_required)
+    if sql_required and retrived_rows is not None:
+        if isinstance(retrived_rows, (dict, list)):
+            if isinstance(retrived_rows, dict) and "rows" in retrived_rows:
+                all_rows = retrived_rows.get("rows") or []
+                if len(all_rows) > 50:
+                    truncated_payload = {
+                        "columns": retrived_rows.get("columns", []),
+                        "total_rows_count": len(all_rows),
+                        "showing_first_50_rows": all_rows[:50]
+                    }
+                    data_str = json.dumps(truncated_payload, indent=2, default=str)
+                else:
+                    data_str = json.dumps(retrived_rows, indent=2, default=str)
+            elif isinstance(retrived_rows, list) and len(retrived_rows) > 50:
+                data_str = json.dumps({
+                    "total_rows_count": len(retrived_rows),
+                    "showing_first_50_rows": retrived_rows[:50]
+                }, indent=2, default=str)
             else:
                 data_str = json.dumps(retrived_rows, indent=2, default=str)
-        elif isinstance(retrived_rows, list) and len(retrived_rows) > 50:
-            data_str = json.dumps({
-                "total_rows_count": len(retrived_rows),
-                "showing_first_50_rows": retrived_rows[:50]
-            }, indent=2, default=str)
         else:
-            data_str = json.dumps(retrived_rows, indent=2, default=str)
+            data_str = str(retrived_rows or "{}")
     else:
-        data_str = str(retrived_rows or "{}")
+        data_str = "{}"
 
     # 2. Determine template HTML code if not provided
     template_html = html_code
@@ -381,19 +389,32 @@ def PPTGenerationAgent(
         else:
             template_html = "<!-- Default Presentation Slide Canvas -->"
 
-    # 3. Read prompt template
-    if not PROMPT_TEMPLATE_PATH.exists():
-        raise FileNotFoundError(f"PPT generation prompt template not found at: {PROMPT_TEMPLATE_PATH}")
+    # 3. Read prompt template based on sql_required
+    if not sql_required:
+        prompt_path = GENERAL_PROMPT_TEMPLATE_PATH
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"General PPT prompt template not found at: {prompt_path}")
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            prompt_template = f.read()
 
-    with open(PROMPT_TEMPLATE_PATH, "r", encoding="utf-8") as f:
-        prompt_template = f.read()
+        populated_prompt = (
+            prompt_template
+            .replace("{{Prompt}}", cleaned_query)
+            .replace("{{html_code}}", template_html)
+        )
+    else:
+        prompt_path = THEME_PROMPT_TEMPLATE_PATH
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"PPT generation prompt template not found at: {prompt_path}")
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            prompt_template = f.read()
 
-    populated_prompt = (
-        prompt_template
-        .replace("{{Prompt}}", cleaned_query)
-        .replace("{{retrived_rows}}", data_str)
-        .replace("{{html_code}}", template_html)
-    )
+        populated_prompt = (
+            prompt_template
+            .replace("{{Prompt}}", cleaned_query)
+            .replace("{{retrived_rows}}", data_str)
+            .replace("{{html_code}}", template_html)
+        )
 
     base_url = os.getenv("PPT_GENERATION_LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
     api_key = os.getenv("PPT_GENERATION_LLM_API_KEY", "")
@@ -437,9 +458,11 @@ def PPTGenerationAgent(
             # Log interaction to workflow logger
             try:
                 from logs.llm_logger import log_agent_call
+                node_label = "Node: PPT Generation" if sql_required else "Node: PPT Direct Edit"
+                agent_label = "PPT Generation Agent" if sql_required else "PPT General Agent"
                 log_agent_call(
-                    node_name="Node: PPT Generation",
-                    agent_name="PPT Generation Agent",
+                    node_name=node_label,
+                    agent_name=agent_label,
                     llm_input=populated_prompt,
                     llm_output=raw_content,
                     usage=usage

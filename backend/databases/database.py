@@ -1,5 +1,6 @@
 import os
 import uuid
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -337,6 +338,98 @@ def get_database_info_endpoint(user_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch databases: {str(exc)}"
+        )
+
+
+@router.get("/schema", summary="Get database schema and tables metadata from user_databases table")
+def get_database_schema_endpoint(
+    database_id: Optional[str] = Query(None, description="Database ID"),
+    db_id: Optional[str] = Query(None, description="Alternative parameter for database ID"),
+):
+    """
+    Fetches the extracted database schema and tables information stored in the
+    'schema' JSON column of the 'user_databases' table.
+    Accessible via:
+      GET /api/databases/schema?database_id=...
+      GET /api/database/schema?database_id=...
+    """
+    target_id = (database_id or db_id or "").strip()
+    if not target_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="database_id is required."
+        )
+
+    try:
+        sql = text("""
+            SELECT db_id, database_type, database_name, display_name, schema_name, service_name, schema
+            FROM user_databases
+            WHERE db_id = :db_id
+            LIMIT 1;
+        """)
+
+        with app_db_engine.connect() as conn:
+            row = conn.execute(sql, {"db_id": target_id}).fetchone()
+
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Database with ID '{target_id}' was not found."
+            )
+
+        db_id_val, db_type, db_name, disp_name, schema_name, srv_name, schema_col = row
+
+        # Parse schema column from user_databases table
+        schema_data = None
+        if schema_col is not None:
+            if isinstance(schema_col, dict):
+                schema_data = schema_col
+            elif isinstance(schema_col, str) and schema_col.strip():
+                try:
+                    schema_data = json.loads(schema_col)
+                except Exception as parse_err:
+                    print(f"[!] Error parsing schema JSON string from DB: {parse_err}")
+
+        # Fallback to local output/{db_id}.json file if not found in database column
+        if not schema_data:
+            local_file = Path(__file__).resolve().parent / "schema_extraction" / "output" / f"{target_id}.json"
+            if local_file.exists():
+                try:
+                    with open(local_file, "r", encoding="utf-8") as f:
+                        schema_data = json.load(f)
+                except Exception as f_err:
+                    print(f"[!] Error reading local schema file: {f_err}")
+
+        if not schema_data:
+            return {
+                "status": "not_found",
+                "message": "No schema has been extracted for this database yet.",
+                "database_id": target_id,
+                "database_name": (disp_name or "").strip() or db_name or srv_name or "Database",
+                "database_type": db_type,
+                "tables": [],
+                "total_tables": 0
+            }
+
+        tables = schema_data.get("tables", [])
+
+        return {
+            "status": "success",
+            "database_id": target_id,
+            "database_name": (disp_name or "").strip() or db_name or srv_name or schema_data.get("database_name", "Database"),
+            "database_type": db_type or schema_data.get("database_type"),
+            "schema_name": schema_name or schema_data.get("schema_name"),
+            "service_name": srv_name or schema_data.get("service_name"),
+            "total_tables": len(tables),
+            "tables": tables,
+            "schema": schema_data
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch schema: {str(exc)}"
         )
 
 

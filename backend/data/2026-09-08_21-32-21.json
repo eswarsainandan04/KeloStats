@@ -1,0 +1,74 @@
+{
+  "columns": [
+    "category",
+    "sub_category",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "sub_category": "Chairs",
+      "total_sales": 1501681.7642
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Bookcases",
+      "total_sales": 1466572.2418
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Tables",
+      "total_sales": 757041.9244
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Furnishings",
+      "total_sales": 385578.2559
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Storage",
+      "total_sales": 1127085.8614
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Appliances",
+      "total_sales": 1011064.305
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Binders",
+      "total_sales": 461911.5057
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Art",
+      "total_sales": 372091.9659
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Paper",
+      "total_sales": 244291.7194
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Phones",
+      "total_sales": 1706824.1392
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Copiers",
+      "total_sales": 1509436.2742
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Machines",
+      "total_sales": 779060.0671
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Accessories",
+      "total_sales": 749237.0185
+    }
+  ]
+}

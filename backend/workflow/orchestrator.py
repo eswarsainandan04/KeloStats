@@ -19,12 +19,19 @@ from Agents.retrival_agent import RetrievalAgent
 from Agents.sql_writer_agent import SQLWriterAgent, _execute_and_save_master_data
 from Agents.query_verification_agent import QueryVerifyAgent
 from Agents.sql_repair_agent import SQLRepairAgent
+from Agents.query_reformulate_agent import (
+    QueryReformulateAgent,
+    init_reformulation
+)
 from Agents.query_classication_agent import (
     QueryClassificationAgent,
     handle_greet,
     handle_out_of_scope
 )
-from Agents.quey_decision_agent import QueryDecisionAgent
+from Agents.quey_decision_agent import (
+    QueryDecisionAgent,
+    QueryDecisionClassifyAgent
+)
 from Agents.answer_generator_agent import AnswerGeneratorAgent
 from Agents.ppt_generation_agent import (
     PPTGenerationAgent,
@@ -49,6 +56,9 @@ class KelostatsGraphState(TypedDict):
     State passed across LangGraph nodes.
     """
     user_query: str
+    original_user_query: Optional[str]
+    reformulated_query: Optional[str]
+    is_reformulated: Optional[bool]
     database_id: Optional[str]
     project_id: Optional[str]
     user_id: Optional[str]
@@ -57,6 +67,7 @@ class KelostatsGraphState(TypedDict):
     classification_reason: Optional[str]
     decision: Optional[str]               # "normal_qa" | "agent"
     decision_reason: Optional[str]
+    sql_required: Optional[bool]          # True if SQL pipeline needed, False for direct PPT edit
     llm_prompt_text: Optional[str]
     verification_status: Optional[str]  # "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED"
     verification_reason: Optional[str]
@@ -87,6 +98,40 @@ def save_user_message_node(state: KelostatsGraphState) -> Dict[str, Any]:
 
     return {
         "status": "USER_MESSAGE_RECORDED"
+    }
+
+
+def query_reformulate_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 0: QueryReformulateAgent
+    Evaluates whether the user query contains ambiguous referential pronouns (e.g. 'it', 'that', 'those', 'this').
+    If so, reformulates the query using recent conversation history from the chat_messages table.
+    The updated query is then passed to QueryClassificationAgent and all downstream agents.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    print(f"\n[LangGraph - Node 0: Query Reformulation] Checking query: '{user_query}' for project: '{project_id}'...")
+
+    result = QueryReformulateAgent(
+        user_query=user_query,
+        project_id=project_id
+    )
+
+    reformulated = result.get("reformulated_query") or user_query
+    is_reformulated = result.get("is_reformulated", False)
+    reason = result.get("reason", "")
+
+    if is_reformulated:
+        print(f"[+] [LangGraph - Node 0: Query Reformulation] Query reformulated to: '{reformulated}' (Reason: {reason})")
+    else:
+        print(f"[*] [LangGraph - Node 0: Query Reformulation] Query retained as-is: '{user_query}' (Reason: {reason})")
+
+    return {
+        "user_query": reformulated,
+        "original_user_query": user_query,
+        "reformulated_query": reformulated if is_reformulated else None,
+        "is_reformulated": is_reformulated,
+        "status": "QUERY_REFORMULATED" if is_reformulated else "QUERY_RETAINED"
     }
 
 
@@ -141,7 +186,9 @@ def query_decision_node(state: KelostatsGraphState) -> Dict[str, Any]:
     Node 0B: QueryDecisionAgent
     Classifies in-scope query into:
     - 'normal_qa': Direct question/inquiry asking for numbers or metrics
-    - 'agent': Action command or directive to create/generate presentation slides
+    - 'agent': Action command or directive to create/generate/edit presentation slides
+      If 'agent', QueryDecisionClassifyAgent evaluates whether SQL is required (sql_required=True)
+      or if it's a direct edit/styling request without SQL (sql_required=False).
     """
     user_query = state.get("user_query") or ""
     print(f"\n[LangGraph - Node 0B: Query Decision] Classifying task type (normal_qa vs agent)...")
@@ -149,11 +196,13 @@ def query_decision_node(state: KelostatsGraphState) -> Dict[str, Any]:
     decision_res = QueryDecisionAgent(user_query=user_query)
     decision = decision_res.get("decision", "normal_qa").lower().strip()
     reason = decision_res.get("reason", "")
-    print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | reason='{reason}'")
+    sql_required = decision_res.get("sql_required", True)
+    print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | sql_required={sql_required} | reason='{reason}'")
 
     return {
         "decision": decision,
         "decision_reason": reason,
+        "sql_required": sql_required,
         "status": f"DECISION_{decision.upper()}"
     }
 
@@ -329,7 +378,7 @@ def sql_repair_node(state: KelostatsGraphState) -> Dict[str, Any]:
     except Exception as repair_err:
         print(f"[!] [LangGraph - SQL Repair Node] SQL Repair failed after retries: {repair_err}")
         return {
-            "final_output": f"SQL Execution & Repair Failed: {str(repair_err)}",
+            "final_output": "Sorry, I cant help you rght now",
             "status": "SQL_EXECUTION_FAILED"
         }
 
@@ -407,24 +456,30 @@ def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
     """
     Node 6: PPTGenerationAgent
     Triggered when decision == 'agent'.
-    1. Existing SQL workflow has already executed and populated state['retrieved_data'].
-    2. Calls GetHTMLCode(project_id, slide_number, user_id) from S3: workspace/{user_id}/{project_id}/slides/slide_{slide_number:02d}.html
+    - If sql_required is True: SQL workflow has executed and populated state['retrieved_data'].
+      Uses ppt_theme_prompt.txt.
+    - If sql_required is False: Bypasses SQL pipeline. Direct slide edit/styling/content improvement.
+      Uses ppt_general_agent_prompt.txt without SQL rows.
+    1. Calls GetHTMLCode(project_id, slide_number, user_id) from S3: workspace/{user_id}/{project_id}/slides/slide_{slide_number:02d}.html
        - Case 1 (Empty Slide): If current slide is empty ppt slide (no content in canvas),
          retrieves previous slide code (slide_{slide_number - 1:02d}.html) and sends it as template to LLM.
        - Case 2 (Slide with Content): If current slide has content,
          sends current slide code (slide_{slide_number:02d}.html) as template to LLM.
-    3. Invokes PPTGenerationAgent(user_query, retrieved_rows, slide_number, project_id, user_id)
-       to generate HTML slide and replaces the existing code at:
-       workspace/{user_id}/{project_id}/slides/slide_{slide_number:02d}.html in Supabase S3.
-    4. Sets final_output to a friendly chat confirmation (DO NOT return raw HTML code in chat!).
+    2. Invokes PPTGenerationAgent(user_query, retrieved_rows, slide_number, project_id, user_id, template_html, sql_required)
+       to generate/update HTML slide and replaces the existing code in Supabase S3.
+    3. Sets final_output to a friendly chat confirmation (DO NOT return raw HTML code in chat!).
     """
     user_query = state.get("user_query") or ""
-    retrieved_data = state.get("retrieved_data") or {}
+    sql_required = state.get("sql_required")
+    if sql_required is None:
+        sql_required = True
+
+    retrieved_data = state.get("retrieved_data") or {} if sql_required else None
     slide_number = int(state.get("slide_number") or 1)
     project_id = state.get("project_id")
     user_id = state.get("user_id")
 
-    print(f"\n[LangGraph - Node 6: PPT Generation Node] Processing Slide {slide_number}...")
+    print(f"\n[LangGraph - Node 6: PPT Generation Node] Processing Slide {slide_number} (sql_required={sql_required})...")
 
     # 1. Retrieve current slide code from S3
     current_html = GetHTMLCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
@@ -453,14 +508,21 @@ def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
         slide_number=slide_number,
         project_id=project_id,
         user_id=user_id,
-        html_code=template_html
+        html_code=template_html,
+        sql_required=sql_required
     )
-    print(f"[+] [LangGraph - PPT Generation Node] Presentation slide {slide_number} generated successfully!")
+    action_verb = "generated" if sql_required else "updated"
+    print(f"[+] [LangGraph - PPT Generation Node] Presentation slide {slide_number} {action_verb} successfully!")
 
     # Chat message for the user - Clean conversational response, NEVER raw HTML code!
-    chat_confirmation = (
-        f"✨ I've designed Slide {slide_number} based on your data and updated your presentation canvas."
-    )
+    if not sql_required:
+        chat_confirmation = (
+            f"✨ I've updated Slide {slide_number} according to your design instructions and refreshed your presentation canvas."
+        )
+    else:
+        chat_confirmation = (
+            f"✨ I've designed Slide {slide_number} based on your data and updated your presentation canvas."
+        )
 
     return {
         "generated_slide_html": generated_html,
@@ -546,6 +608,25 @@ def decide_classification_route(state: KelostatsGraphState) -> str:
     elif intent == "out_of_scope":
         return "handle_out_of_scope"
     return "query_decision"
+
+
+def decide_decision_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the route from query_decision:
+    - If decision == 'agent' and sql_required is False:
+        Skips the SQL pipeline (schema_input, verification_agent, sql_writer)
+        and routes directly to ppt_generation for direct slide editing/styling.
+    - Otherwise (normal_qa or agent with sql_required == True):
+        Routes to schema_input to execute the SQL data pipeline.
+    """
+    decision = (state.get("decision") or "normal_qa").lower().strip()
+    sql_required = state.get("sql_required")
+
+    if decision == "agent" and sql_required is False:
+        print("[*] [LangGraph Routing] Direct PPT edit/style command detected (sql_required=False). Bypassing SQL pipeline -> ppt_generation.")
+        return "ppt_generation"
+
+    return "schema_input"
 
 
 def decide_verification_route(state: KelostatsGraphState) -> str:
@@ -659,6 +740,7 @@ def build_kelostats_workflow():
 
     # 1. Add all nodes
     workflow.add_node("save_user_message", save_user_message_node)
+    workflow.add_node("query_reformulate", query_reformulate_node)
     workflow.add_node("query_classification", query_classification_node)
     workflow.add_node("handle_greet", handle_greet_node)
     workflow.add_node("handle_out_of_scope", handle_out_of_scope_node)
@@ -673,9 +755,10 @@ def build_kelostats_workflow():
     workflow.add_node("validate_html_code", validate_html_code_node)
     workflow.add_node("save_ai_response", save_ai_response_node)
 
-    # 2. Set entry point to save_user_message, then proceed to query_classification
+    # 2. Set entry point to save_user_message -> query_reformulate -> query_classification
     workflow.set_entry_point("save_user_message")
-    workflow.add_edge("save_user_message", "query_classification")
+    workflow.add_edge("save_user_message", "query_reformulate")
+    workflow.add_edge("query_reformulate", "query_classification")
 
     # 3. Conditional routing from query_classification
     workflow.add_conditional_edges(
@@ -692,8 +775,17 @@ def build_kelostats_workflow():
     workflow.add_edge("handle_greet", "save_ai_response")
     workflow.add_edge("handle_out_of_scope", "save_ai_response")
 
-    # 5. Connect query_decision to schema_input
-    workflow.add_edge("query_decision", "schema_input")
+    # 5. Conditional routing from query_decision:
+    # If decision == 'agent' and sql_required is False -> directly to ppt_generation (bypasses SQL pipeline)
+    # Else -> schema_input (runs SQL data pipeline)
+    workflow.add_conditional_edges(
+        "query_decision",
+        decide_decision_route,
+        {
+            "schema_input": "schema_input",
+            "ppt_generation": "ppt_generation"
+        }
+    )
 
     # 6. Connect schema_input to verification_agent
     workflow.add_edge("schema_input", "verification_agent")
@@ -772,6 +864,9 @@ def run_orchestrator(
 
     initial_state: KelostatsGraphState = {
         "user_query": user_query,
+        "original_user_query": user_query,
+        "reformulated_query": None,
+        "is_reformulated": False,
         "database_id": database_id,
         "project_id": project_id,
         "user_id": user_id,
@@ -780,6 +875,7 @@ def run_orchestrator(
         "classification_reason": None,
         "decision": None,
         "decision_reason": None,
+        "sql_required": None,
         "llm_prompt_text": None,
         "verification_status": None,
         "verification_reason": None,
@@ -795,7 +891,43 @@ def run_orchestrator(
 
     try:
         result = kelostats_graph.invoke(initial_state)
+        # Ensure final_output is never empty or a technical exception string
+        final_output = result.get("final_output")
+        if not final_output or "LLM API Error" in str(final_output) or "SQL Execution & Repair Failed" in str(final_output):
+            result["final_output"] = "Sorry, I cant help you rght now"
         return result
+    except Exception as exc:
+        print(f"[!] [LangGraph Orchestrator] Execution caught exception: {exc}")
+        fallback_msg = "Sorry, I cant help you rght now"
+        if project_id:
+            try:
+                save_chat_message(project_id=project_id, role="AI", message=fallback_msg)
+            except Exception as save_err:
+                print(f"[!] Warning persisting fallback message: {save_err}")
+
+        return {
+            "user_query": user_query,
+            "database_id": database_id,
+            "project_id": project_id,
+            "user_id": user_id,
+            "slide_number": slide_number or 1,
+            "classification_intent": None,
+            "classification_reason": None,
+            "decision": None,
+            "decision_reason": None,
+            "sql_required": None,
+            "llm_prompt_text": None,
+            "verification_status": None,
+            "verification_reason": None,
+            "retrieved_markdown_table": None,
+            "generated_sql": None,
+            "sql_error": str(exc),
+            "retrieved_data": None,
+            "retrieved_rows_count": 0,
+            "generated_slide_html": None,
+            "final_output": fallback_msg,
+            "status": "FAILED"
+        }
     finally:
         log_file = logger_session.save()
         print(f"[+] [LangGraph Orchestrator] Workflow log saved to: {log_file}")
@@ -866,32 +998,51 @@ def workflow_query_endpoint(payload: QueryWorkflowRequest):
         )
 
         slide_num_result = graph_result.get("slide_number") or target_slide_number
+        final_text = graph_result.get("final_output") or "Sorry, I cant help you rght now"
 
         return {
-            "status": graph_result.get("status"),
+            "status": graph_result.get("status") or "COMPLETED",
             "intent": graph_result.get("classification_intent"),
             "decision": graph_result.get("decision"),
+            "original_query": graph_result.get("original_user_query") or payload.user_query,
+            "reformulated_query": graph_result.get("reformulated_query"),
+            "is_reformulated": graph_result.get("is_reformulated") or False,
+            "sql_required": graph_result.get("sql_required"),
             "verification_status": graph_result.get("verification_status"),
             "verification_reason": graph_result.get("verification_reason"),
             "generated_sql": graph_result.get("generated_sql"),
-            "retrieved_rows_count": graph_result.get("retrieved_rows_count"),
-            "output": graph_result.get("final_output"),
+            "retrieved_rows_count": graph_result.get("retrieved_rows_count") or 0,
+            "output": final_text,
             "slide_html": graph_result.get("generated_slide_html"),
             "slide_number": slide_num_result,
             "slide_filename": f"slide_{slide_num_result:02d}.html",
             "database_id": target_db_id,
             "project_id": target_project_id
         }
-    except RuntimeError as run_err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(run_err)
-        )
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"LangGraph execution failed: {str(exc)}"
-        )
+        print(f"[!] [workflow_query_endpoint] Caught error: {exc}")
+        fallback_msg = "Sorry, I cant help you rght now"
+        if target_project_id:
+            try:
+                save_chat_message(project_id=target_project_id, role="AI", message=fallback_msg)
+            except Exception:
+                pass
+        return {
+            "status": "FAILED",
+            "intent": None,
+            "decision": None,
+            "sql_required": None,
+            "verification_status": None,
+            "verification_reason": None,
+            "generated_sql": None,
+            "retrieved_rows_count": 0,
+            "output": fallback_msg,
+            "slide_html": None,
+            "slide_number": target_slide_number,
+            "slide_filename": f"slide_{target_slide_number:02d}.html",
+            "database_id": target_db_id,
+            "project_id": target_project_id
+        }
 
 
 # ==========================================

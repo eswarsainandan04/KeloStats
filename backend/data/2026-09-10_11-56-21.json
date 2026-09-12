@@ -1,0 +1,94 @@
+{
+  "columns": [
+    "category",
+    "sub_category",
+    "product_count"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "sub_category": "Bookcases",
+      "product_count": 559
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Chairs",
+      "product_count": 619
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Furnishings",
+      "product_count": 684
+    },
+    {
+      "category": "Furniture",
+      "sub_category": "Tables",
+      "product_count": 366
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Appliances",
+      "product_count": 558
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Art",
+      "product_count": 673
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Binders",
+      "product_count": 742
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Envelopes",
+      "product_count": 585
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Fasteners",
+      "product_count": 571
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Labels",
+      "product_count": 584
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Paper",
+      "product_count": 781
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Storage",
+      "product_count": 648
+    },
+    {
+      "category": "Office Supplies",
+      "sub_category": "Supplies",
+      "product_count": 548
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Accessories",
+      "product_count": 664
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Copiers",
+      "product_count": 520
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Machines",
+      "product_count": 499
+    },
+    {
+      "category": "Technology",
+      "sub_category": "Phones",
+      "product_count": 692
+    }
+  ]
+}

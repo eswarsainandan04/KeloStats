@@ -1,0 +1,123 @@
+{
+  "columns": [
+    "quarter_start",
+    "total_sales",
+    "total_profit",
+    "avg_discount",
+    "total_quantity"
+  ],
+  "rows": [
+    {
+      "quarter_start": "2011-01-01T00:00:00+05:30",
+      "total_sales": 335780.0131,
+      "total_profit": 36043.2761,
+      "avg_discount": 0.1446088888888889,
+      "total_quantity": 4523
+    },
+    {
+      "quarter_start": "2011-04-01T00:00:00+05:30",
+      "total_sales": 478870.9804,
+      "total_profit": 48501.4,
+      "avg_discount": 0.15764435759648265,
+      "total_quantity": 7145
+    },
+    {
+      "quarter_start": "2011-07-01T00:00:00+05:30",
+      "total_sales": 613306.3658,
+      "total_profit": 65075.5553,
+      "avg_discount": 0.13988701030927836,
+      "total_quantity": 8516
+    },
+    {
+      "quarter_start": "2011-10-01T00:00:00+05:30",
+      "total_sales": 831493.5362,
+      "total_profit": 99320.5801,
+      "avg_discount": 0.1499521410579345,
+      "total_quantity": 11259
+    },
+    {
+      "quarter_start": "2012-01-01T00:00:00+05:30",
+      "total_sales": 399367.7083,
+      "total_profit": 43394.6513,
+      "avg_discount": 0.1465766871165644,
+      "total_quantity": 5555
+    },
+    {
+      "quarter_start": "2012-04-01T00:00:00+05:30",
+      "total_sales": 625592.8594,
+      "total_profit": 81650.8248,
+      "avg_discount": 0.14272844663881504,
+      "total_quantity": 8842
+    },
+    {
+      "quarter_start": "2012-07-01T00:00:00+05:30",
+      "total_sales": 737768.8935,
+      "total_profit": 86935.4477,
+      "avg_discount": 0.1381585160202361,
+      "total_quantity": 10344
+    },
+    {
+      "quarter_start": "2012-10-01T00:00:00+05:30",
+      "total_sales": 914709.2337,
+      "total_profit": 95434.3558,
+      "avg_discount": 0.14044188537761115,
+      "total_quantity": 13370
+    },
+    {
+      "quarter_start": "2013-01-01T00:00:00+05:30",
+      "total_sales": 565019.5881,
+      "total_profit": 74006.8306,
+      "avg_discount": 0.13646057692307692,
+      "total_quantity": 7201
+    },
+    {
+      "quarter_start": "2013-04-01T00:00:00+05:30",
+      "total_sales": 834839.4934,
+      "total_profit": 93436.1459,
+      "avg_discount": 0.14319395017793593,
+      "total_quantity": 11823
+    },
+    {
+      "quarter_start": "2013-07-01T00:00:00+05:30",
+      "total_sales": 933036.987,
+      "total_profit": 98793.1634,
+      "avg_discount": 0.1405181526302791,
+      "total_quantity": 13979
+    },
+    {
+      "quarter_start": "2013-10-01T00:00:00+05:30",
+      "total_sales": 1072850.3812,
+      "total_profit": 140699.0906,
+      "avg_discount": 0.13957096323871568,
+      "total_quantity": 15133
+    },
+    {
+      "quarter_start": "2014-01-01T00:00:00+05:30",
+      "total_sales": 689206.6838,
+      "total_profit": 85110.3467,
+      "avg_discount": 0.13897520058351567,
+      "total_quantity": 9326
+    },
+    {
+      "quarter_start": "2014-04-01T00:00:00+05:30",
+      "total_sales": 932986.9706,
+      "total_profit": 101514.4618,
+      "avg_discount": 0.14804016654420768,
+      "total_quantity": 13903
+    },
+    {
+      "quarter_start": "2014-07-01T00:00:00+05:30",
+      "total_sales": 1196482.8665,
+      "total_profit": 149558.2186,
+      "avg_discount": 0.13666903765690377,
+      "total_quantity": 16298
+    },
+    {
+      "quarter_start": "2014-10-01T00:00:00+05:30",
+      "total_sales": 1481189.3498,
+      "total_profit": 167982.9435,
+      "avg_discount": 0.1473577455281809,
+      "total_quantity": 21095
+    }
+  ]
+}

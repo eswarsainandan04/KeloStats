@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers
-from databases.database import router as database_router
+from databases.database import router as database_router, get_database_schema_endpoint
 from databases.schema_extraction.schema_input import router as schema_router
 from workflow.orchestrator import router as workflow_router
 from signup.signup import router as signup_router
@@ -32,6 +32,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(database_router)
+app.add_api_route("/api/database/schema", get_database_schema_endpoint, methods=["GET"], tags=["Databases"])
 app.include_router(schema_router)
 app.include_router(workflow_router)
 app.include_router(signup_router)

@@ -1,0 +1,16 @@
+{
+  "columns": [
+    "schema_name",
+    "table_count"
+  ],
+  "rows": [
+    {
+      "schema_name": "public",
+      "table_count": 5
+    },
+    {
+      "schema_name": "store",
+      "table_count": 1
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "columns": [
+    "field",
+    "type",
+    "character_maximum_length",
+    "numeric_precision",
+    "numeric_scale"
+  ],
+  "rows": [
+    {
+      "field": "row_id",
+      "type": "integer",
+      "character_maximum_length": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0
+    },
+    {
+      "field": "order_id",
+      "type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "order_date",
+      "type": "date",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "ship_date",
+      "type": "date",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "ship_mode",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "customer_id",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "customer_name",
+      "type": "character varying",
+      "character_maximum_length": 255,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "segment",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "city",
+      "type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "state",
+      "type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "country",
+      "type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "postal_code",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "market",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "region",
+      "type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "product_id",
+      "type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "category",
+      "type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "sub_category",
+      "type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "product_name",
+      "type": "text",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null
+    },
+    {
+      "field": "sales",
+      "type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4
+    },
+    {
+      "field": "quantity",
+      "type": "integer",
+      "character_maximum_length": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0
+    },
+    {
+      "field": "discount",
+      "type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 6,
+      "numeric_scale": 4
+    },
+    {
+      "field": "profit",
+      "type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4
+    },
+    {
+      "field": "shipping_cost",
+      "type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4
+    },
+    {
+      "field": "order_priority",
+      "type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "columns": [
+    "category",
+    "year",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "year": 2011.0,
+      "total_sales": 756192.384
+    },
+    {
+      "category": "Furniture",
+      "year": 2012.0,
+      "total_sales": 858902.5581
+    },
+    {
+      "category": "Furniture",
+      "year": 2013.0,
+      "total_sales": 1117723.5534
+    },
+    {
+      "category": "Furniture",
+      "year": 2014.0,
+      "total_sales": 1378055.6908
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2011.0,
+      "total_sales": 675606.4502
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2012.0,
+      "total_sales": 795094.627
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2013.0,
+      "total_sales": 1010717.6419
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2014.0,
+      "total_sales": 1305651.5064
+    },
+    {
+      "category": "Technology",
+      "year": 2011.0,
+      "total_sales": 827652.0613
+    },
+    {
+      "category": "Technology",
+      "year": 2012.0,
+      "total_sales": 1023441.5098
+    },
+    {
+      "category": "Technology",
+      "year": 2013.0,
+      "total_sales": 1277305.2544
+    },
+    {
+      "category": "Technology",
+      "year": 2014.0,
+      "total_sales": 1616158.6735
+    }
+  ]
+}

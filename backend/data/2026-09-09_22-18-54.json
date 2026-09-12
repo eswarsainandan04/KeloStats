@@ -1,0 +1,204 @@
+{
+  "columns": [
+    "column_name",
+    "data_type",
+    "character_maximum_length",
+    "numeric_precision",
+    "numeric_scale",
+    "is_nullable"
+  ],
+  "rows": [
+    {
+      "column_name": "row_id",
+      "data_type": "integer",
+      "character_maximum_length": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "order_id",
+      "data_type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "order_date",
+      "data_type": "date",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "ship_date",
+      "data_type": "date",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "ship_mode",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "customer_id",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "customer_name",
+      "data_type": "character varying",
+      "character_maximum_length": 255,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "segment",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "city",
+      "data_type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "state",
+      "data_type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "country",
+      "data_type": "character varying",
+      "character_maximum_length": 150,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "postal_code",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "market",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "region",
+      "data_type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "product_id",
+      "data_type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "category",
+      "data_type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "sub_category",
+      "data_type": "character varying",
+      "character_maximum_length": 100,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "product_name",
+      "data_type": "text",
+      "character_maximum_length": null,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "sales",
+      "data_type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "quantity",
+      "data_type": "integer",
+      "character_maximum_length": null,
+      "numeric_precision": 32,
+      "numeric_scale": 0,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "discount",
+      "data_type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 6,
+      "numeric_scale": 4,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "profit",
+      "data_type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "shipping_cost",
+      "data_type": "numeric",
+      "character_maximum_length": null,
+      "numeric_precision": 12,
+      "numeric_scale": 4,
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "order_priority",
+      "data_type": "character varying",
+      "character_maximum_length": 50,
+      "numeric_precision": null,
+      "numeric_scale": null,
+      "is_nullable": "YES"
+    }
+  ]
+}

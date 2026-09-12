@@ -1,0 +1,121 @@
+{
+  "columns": [
+    "order_year",
+    "segment",
+    "total_sales",
+    "total_profit",
+    "avg_discount",
+    "total_quantity",
+    "order_count"
+  ],
+  "rows": [
+    {
+      "order_year": 2011.0,
+      "segment": "Consumer",
+      "total_sales": 1173671.2761,
+      "total_profit": 117337.4939,
+      "avg_discount": 0.1509041852560017,
+      "total_quantity": 16455,
+      "order_count": 2362
+    },
+    {
+      "order_year": 2011.0,
+      "segment": "Corporate",
+      "total_sales": 691662.6426,
+      "total_profit": 84746.9358,
+      "avg_discount": 0.1440783022319795,
+      "total_quantity": 9663,
+      "order_count": 1343
+    },
+    {
+      "order_year": 2011.0,
+      "segment": "Home Office",
+      "total_sales": 394116.9768,
+      "total_profit": 46856.3818,
+      "avg_discount": 0.14718998716302953,
+      "total_quantity": 5325,
+      "order_count": 785
+    },
+    {
+      "order_year": 2012.0,
+      "segment": "Consumer",
+      "total_sales": 1463760.2984,
+      "total_profit": 165799.1916,
+      "avg_discount": 0.14106793431287815,
+      "total_quantity": 20259,
+      "order_count": 2856
+    },
+    {
+      "order_year": 2012.0,
+      "segment": "Corporate",
+      "total_sales": 774459.5719,
+      "total_profit": 90556.6998,
+      "avg_discount": 0.1381537053979872,
+      "total_quantity": 11296,
+      "order_count": 1619
+    },
+    {
+      "order_year": 2012.0,
+      "segment": "Home Office",
+      "total_sales": 439218.8246,
+      "total_profit": 51059.3882,
+      "avg_discount": 0.14736037934668073,
+      "total_quantity": 6556,
+      "order_count": 954
+    },
+    {
+      "order_year": 2013.0,
+      "segment": "Consumer",
+      "total_sales": 1729255.3036,
+      "total_profit": 208427.7338,
+      "avg_discount": 0.1388278098998731,
+      "total_quantity": 24601,
+      "order_count": 3436
+    },
+    {
+      "order_year": 2013.0,
+      "segment": "Corporate",
+      "total_sales": 1064973.4239,
+      "total_profit": 125707.9394,
+      "avg_discount": 0.14313483947681332,
+      "total_quantity": 14685,
+      "order_count": 2106
+    },
+    {
+      "order_year": 2013.0,
+      "segment": "Home Office",
+      "total_sales": 611517.7222,
+      "total_profit": 72799.5573,
+      "avg_discount": 0.13951737914502596,
+      "total_quantity": 8850,
+      "order_count": 1279
+    },
+    {
+      "order_year": 2014.0,
+      "segment": "Consumer",
+      "total_sales": 2141262.5401,
+      "total_profit": 257675.3631,
+      "avg_discount": 0.14518522663682148,
+      "total_quantity": 30842,
+      "order_count": 4450
+    },
+    {
+      "order_year": 2014.0,
+      "segment": "Corporate",
+      "total_sales": 1293601.8836,
+      "total_profit": 140196.7542,
+      "avg_discount": 0.1451707597851113,
+      "total_quantity": 17921,
+      "order_count": 2605
+    },
+    {
+      "order_year": 2014.0,
+      "segment": "Home Office",
+      "total_sales": 865001.447,
+      "total_profit": 106293.8533,
+      "avg_discount": 0.135395390070922,
+      "total_quantity": 11859,
+      "order_count": 1669
+    }
+  ]
+}

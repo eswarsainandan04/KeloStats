@@ -5,9 +5,13 @@ CATEGORIES AND CRITERIA:
 1. "agent":
    - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
    - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - if user requires the charts barchart, linechart, piechart,...more etc then classify as agent
    - Examples:
      - "Generate a slide on top selling products"
      - "Present on Q3 customer churn"
+     - "show me the top 10 products in bar chart"
+     - "show me the line chart of sales in last 12 months"
+     - "show me the pie chart of market share"
      - "Do it in ppt"
      - "Build a 3-slide presentation about regional sales"
      - "Create an executive deck comparing profit by category"

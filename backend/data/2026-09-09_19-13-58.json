@@ -1,0 +1,36 @@
+{
+  "columns": [
+    "first_letter",
+    "table_count"
+  ],
+  "rows": [
+    {
+      "first_letter": "c",
+      "table_count": 1
+    },
+    {
+      "first_letter": "g",
+      "table_count": 1
+    },
+    {
+      "first_letter": "p",
+      "table_count": 64
+    },
+    {
+      "first_letter": "s",
+      "table_count": 4
+    },
+    {
+      "first_letter": "t",
+      "table_count": 1
+    },
+    {
+      "first_letter": "u",
+      "table_count": 2
+    },
+    {
+      "first_letter": "w",
+      "table_count": 1
+    }
+  ]
+}

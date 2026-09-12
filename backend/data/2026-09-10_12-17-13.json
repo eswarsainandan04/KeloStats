@@ -1,0 +1,82 @@
+{
+  "columns": [
+    "category",
+    "year",
+    "total_sales",
+    "percent_of_total"
+  ],
+  "rows": [
+    {
+      "category": "Furniture",
+      "year": 2011.0,
+      "total_sales": 756192.384,
+      "percent_of_total": 5.98
+    },
+    {
+      "category": "Furniture",
+      "year": 2012.0,
+      "total_sales": 858902.5581,
+      "percent_of_total": 6.79
+    },
+    {
+      "category": "Furniture",
+      "year": 2013.0,
+      "total_sales": 1117723.5534,
+      "percent_of_total": 8.84
+    },
+    {
+      "category": "Furniture",
+      "year": 2014.0,
+      "total_sales": 1378055.6908,
+      "percent_of_total": 10.9
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2011.0,
+      "total_sales": 675606.4502,
+      "percent_of_total": 5.34
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2012.0,
+      "total_sales": 795094.627,
+      "percent_of_total": 6.29
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2013.0,
+      "total_sales": 1010717.6419,
+      "percent_of_total": 7.99
+    },
+    {
+      "category": "Office Supplies",
+      "year": 2014.0,
+      "total_sales": 1305651.5064,
+      "percent_of_total": 10.33
+    },
+    {
+      "category": "Technology",
+      "year": 2011.0,
+      "total_sales": 827652.0613,
+      "percent_of_total": 6.55
+    },
+    {
+      "category": "Technology",
+      "year": 2012.0,
+      "total_sales": 1023441.5098,
+      "percent_of_total": 8.1
+    },
+    {
+      "category": "Technology",
+      "year": 2013.0,
+      "total_sales": 1277305.2544,
+      "percent_of_total": 10.1
+    },
+    {
+      "category": "Technology",
+      "year": 2014.0,
+      "total_sales": 1616158.6735,
+      "percent_of_total": 12.78
+    }
+  ]
+}

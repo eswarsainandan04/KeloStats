@@ -1,0 +1,72 @@
+{
+  "columns": [
+    "quarter",
+    "product_count"
+  ],
+  "rows": [
+    {
+      "quarter": "2011-01-01T00:00:00+05:30",
+      "product_count": 10
+    },
+    {
+      "quarter": "2011-04-01T00:00:00+05:30",
+      "product_count": 12
+    },
+    {
+      "quarter": "2011-07-01T00:00:00+05:30",
+      "product_count": 13
+    },
+    {
+      "quarter": "2011-10-01T00:00:00+05:30",
+      "product_count": 31
+    },
+    {
+      "quarter": "2012-01-01T00:00:00+05:30",
+      "product_count": 7
+    },
+    {
+      "quarter": "2012-04-01T00:00:00+05:30",
+      "product_count": 23
+    },
+    {
+      "quarter": "2012-07-01T00:00:00+05:30",
+      "product_count": 26
+    },
+    {
+      "quarter": "2012-10-01T00:00:00+05:30",
+      "product_count": 22
+    },
+    {
+      "quarter": "2013-01-01T00:00:00+05:30",
+      "product_count": 12
+    },
+    {
+      "quarter": "2013-04-01T00:00:00+05:30",
+      "product_count": 24
+    },
+    {
+      "quarter": "2013-07-01T00:00:00+05:30",
+      "product_count": 28
+    },
+    {
+      "quarter": "2013-10-01T00:00:00+05:30",
+      "product_count": 24
+    },
+    {
+      "quarter": "2014-01-01T00:00:00+05:30",
+      "product_count": 14
+    },
+    {
+      "quarter": "2014-04-01T00:00:00+05:30",
+      "product_count": 18
+    },
+    {
+      "quarter": "2014-07-01T00:00:00+05:30",
+      "product_count": 32
+    },
+    {
+      "quarter": "2014-10-01T00:00:00+05:30",
+      "product_count": 39
+    }
+  ]
+}

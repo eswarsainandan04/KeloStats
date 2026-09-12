@@ -1,0 +1,673 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"I dont see any legend in this ppt frame, do one thing reduce the chart size & add the legend in presentation"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The user asks to adjust a chart and add a legend in a PowerPoint presentation, which relates to presentation editing."
+}
+
+TOKEN COUNT:
+input tokens: 499
+output tokens: 117
+total tokens: 616
+======================
+
+======================
+Node: Query Decision - Query Decision Agent
+LLM INPUT:
+
+You are the Query Decision Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify an in-scope business/data query into either: "agent" or "normal_qa".
+
+CATEGORIES AND CRITERIA:
+1. "agent":
+   - The user query is an action command, directive, or imperative request to create, generate, present, build, design, restyle, or modify a PowerPoint presentation, deck, or slide.
+   - Triggers include phrases like: "generate this", "create a slide", "present on", "do it in ppt", "build a deck", "make a presentation", "visualize as slides", "add a slide about", "format into ppt".
+   - if user requires the charts barchart, linechart, piechart,...more etc then classify as agent
+   - Examples:
+     - "Generate a slide on top selling products"
+     - "Present on Q3 customer churn"
+     - "show me the top 10 products in bar chart"
+     - "show me the line chart of sales in last 12 months"
+     - "show me the pie chart of market share"
+     - "Do it in ppt"
+     - "Build a 3-slide presentation about regional sales"
+     - "Create an executive deck comparing profit by category"
+     - "Generate presentation about marketing telemetry"
+
+2. "normal_qa":
+   - The user query is asking a factual question, inquiry, metric lookup, or data question without commanding the creation of a presentation or slide.
+   - Examples:
+     - "What is the total revenue for 2023?"
+     - "How much did we spend on shipping last month?"
+     - "Show me the top 5 customers by sales"
+     - "Who is our top performing salesperson?"
+     - "List all orders placed in California"
+     - "What is the average discount per category?"
+     - "How many customers registered this week?"
+
+USER QUERY:
+"I dont see any legend in this ppt frame, do one thing reduce the chart size & add the legend in presentation"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "decision": "normal_qa" | "agent",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "decision": "agent",
+    "reason": "User is requesting a modification to a PowerPoint chart (reduce size and add legend), which is an action command to create/alter a presentation."
+}
+
+TOKEN COUNT:
+input tokens: 550
+output tokens: 146
+total tokens: 696
+======================
+
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+You are the PPT Task Classification Agent for KeloStats, an enterprise AI analytics platform connected to an enterprise relational database.
+        Your job is to determine whether a presentation request requires querying the database via the SQL pipeline (sql_required: true) or is a direct visual/textual EDIT on an existing slide canvas without database data (sql_required: false).
+
+        RULES:
+        1. sql_required: true (DEFAULT for presentation creation and data analysis):
+            - Any command to create, generate, analyze, discuss, summarize, or present business topics, performance, trends, or insights (e.g., 'disscuss a trend analysis summary in PPT', 'generate slide on top products', 'create presentation for Q3 churn', 'build a deck on revenue', 'present category breakdown').
+            - Even high-level executive summaries or business analyses (like SWOT, market trends, performance reviews) MUST query the database to ground the slide in real business facts and metrics.
+
+        2. sql_required: false (ONLY for direct slide styling, layout adjustment, or simple edits):
+            - The user is asking to modify the visual appearance, styling, or existing wording of the currently open slide canvas.
+            - Examples: 'change title to...', 'make background dark navy', 'restyle cards with purple border', 'increase font size', 'change button color', 'remove second card', 'edit this slide to fix typo'.
+
+        Output:
+        just return true or false, nothing else.
+
+        User Query:
+        "I dont see any legend in this ppt frame, do one thing reduce the chart size & add the legend in presentation"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 403
+output tokens: 77
+total tokens: 480
+======================
+
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Sub‑Category Radar Overview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background: #FF5148;
+      z-index: 2;
+    }
+    .chart-wrapper {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 70%;
+      padding: 1cqw;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .chart-legend {
+      position: absolute;
+      bottom: -2cqw;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.8cqw;
+      font-size: calc(24 / 19.2 * 1cqw);
+      color: #333;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4cqw;
+    }
+    .legend-color {
+      width: 1cqw;
+      height: 1cqw;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">Sub‑Category Performance Radar</h1>
+    <div class="accent-bar"></div>
+
+    <div class="chart-wrapper">
+      <canvas id="radarChart"></canvas>
+      <div class="chart-legend"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rows = [
+      {"sub_category":"Phones","total_sales":1706824.1392,"total_profit":216717.0058,"avg_discount":0.14584748287161156,"total_quantity":11870},
+      {"sub_category":"Copiers","total_sales":1509436.2742,"total_profit":258567.5491,"avg_discount":0.11714709851551956,"total_quantity":7454},
+      {"sub_category":"Chairs","total_sales":1501681.7642,"total_profit":140396.2675,"avg_discount":0.1631100757134537,"total_quantity":12336},
+      {"sub_category":"Bookcases","total_sales":1466572.2418,"total_profit":161924.4195,"avg_discount":0.1537577768560763,"total_quantity":8310},
+      {"sub_category":"Storage","total_sales":1127085.8614,"total_profit":108461.4898,"avg_discount":0.1384641233445345,"total_quantity":16917},
+      {"sub_category":"Appliances","total_sales":1011064.305,"total_profit":141680.5894,"avg_discount":0.14170940170940172,"total_quantity":6078},
+      {"sub_category":"Machines","total_sales":779060.0671,"total_profit":58867.873,"avg_discount":0.1695827725437416,"total_quantity":4906},
+      {"sub_category":"Tables","total_sales":757041.9244,"total_profit":-64083.3887,"avg_discount":0.29073170731707315,"total_quantity":3083},
+      {"sub_category":"Accessories","total_sales":749237.0185,"total_profit":129626.3062,"avg_discount":0.12048130081300813,"total_quantity":10946},
+      {"sub_category":"Binders","total_sales":461911.5057,"total_profit":72449.846,"avg_discount":0.17920676202860858,"total_quantity":21429},
+      {"sub_category":"Furnishings","total_sales":385578.2559,"total_profit":46967.4255,"avg_discount":0.15106624605678234,"total_quantity":11225},
+      {"sub_category":"Art","total_sales":372091.9659,"total_profit":57953.9109,"avg_discount":0.11736227728855211,"total_quantity":16301},
+      {"sub_category":"Paper","total_sales":244291.7194,"total_profit":59207.6827,"avg_discount":0.10946862634256642,"total_quantity":12822},
+      {"sub_category":"Supplies","total_sales":243074.2206,"total_profit":22583.2631,"avg_discount":0.12791752577319587,"total_quantity":8543},
+      {"sub_category":"Envelopes","total_sales":170904.3016,"total_profit":29601.1163,"avg_discount":0.13174948665297742,"total_quantity":8380},
+      {"sub_category":"Fasteners","total_sales":83242.3159,"total_profit":11525.4241,"avg_discount":0.14059504132231404,"total_quantity":8390},
+      {"sub_category":"Labels","total_sales":73404.03,"total_profit":15010.512,"avg_discount":0.12044896392939371,"total_quantity":9322}
+    ];
+
+    const labels = rows.map(r => r.sub_category);
+
+    const maxSales = Math.max(...rows.map(r => r.total_sales));
+    const maxProfit = Math.max(...rows.map(r => Math.abs(r.total_profit)));
+    const maxDiscount = Math.max(...rows.map(r => r.avg_discount));
+    const maxQty = Math.max(...rows.map(r => r.total_quantity));
+
+    const datasets = [
+      {
+        label: 'Sales (%)',
+        data: rows.map(r => (r.total_sales / maxSales) * 100),
+        backgroundColor: 'rgba(255,81,72,0.2)',
+        borderColor: '#FF5148',
+        pointBackgroundColor: '#FF5148',
+        fill: true
+      },
+      {
+        label: 'Profit (%)',
+        data: rows.map(r => (Math.abs(r.total_profit) / maxProfit) * 100),
+        backgroundColor: 'rgba(16,185,129,0.2)',
+        borderColor: '#10B981',
+        pointBackgroundColor: '#10B981',
+        fill: true
+      },
+      {
+        label: 'Discount (%)',
+        data: rows.map(r => (r.avg_discount / maxDiscount) * 100),
+        backgroundColor: 'rgba(79,70,230,0.2)',
+        borderColor: '#4F46E5',
+        pointBackgroundColor: '#4F46E5',
+        fill: true
+      },
+      {
+        label: 'Quantity (%)',
+        data: rows.map(r => (r.total_quantity / maxQty) * 100),
+        backgroundColor: 'rgba(245,158,11,0.2)',
+        borderColor: '#F59E0B',
+        pointBackgroundColor: '#F59E0B',
+        fill: true
+      }
+    ];
+
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.r.toFixed(2) + '%';
+              }
+            }
+          }
+        },
+        scales: {
+          r: {
+            suggestedMin: 0,
+            suggestedMax: 100,
+            ticks: { display: false },
+            pointLabels: { font: { size: 28 / 19.2 } }
+          }
+        }
+      }
+    });
+
+    const legendContainer = document.querySelector('.chart-legend');
+    datasets.forEach(ds => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `
+        <span class="legend-color" style="background:${ds.borderColor}"></span>
+        <span class="legend-label">${ds.label}</span>
+      `;
+      legendContainer.appendChild(item);
+    });
+  </script>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – Sub‑Category Radar Overview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background: #FF5148;
+      z-index: 2;
+    }
+    .chart-wrapper {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 70%;
+      padding: 1cqw;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .chart-legend {
+      position: absolute;
+      bottom: -2cqw;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.8cqw;
+      font-size: calc(24 / 19.2 * 1cqw);
+      color: #333;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4cqw;
+    }
+    .legend-color {
+      width: 1cqw;
+      height: 1cqw;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">Sub‑Category Performance Radar</h1>
+    <div class="accent-bar"></div>
+
+    <div class="chart-wrapper">
+      <canvas id="radarChart"></canvas>
+      <div class="chart-legend"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rows = [
+      {"sub_category":"Phones","total_sales":1706824.1392,"total_profit":216717.0058,"avg_discount":0.14584748287161156,"total_quantity":11870},
+      {"sub_category":"Copiers","total_sales":1509436.2742,"total_profit":258567.5491,"avg_discount":0.11714709851551956,"total_quantity":7454},
+      {"sub_category":"Chairs","total_sales":1501681.7642,"total_profit":140396.2675,"avg_discount":0.1631100757134537,"total_quantity":12336},
+      {"sub_category":"Bookcases","total_sales":1466572.2418,"total_profit":161924.4195,"avg_discount":0.1537577768560763,"total_quantity":8310},
+      {"sub_category":"Storage","total_sales":1127085.8614,"total_profit":108461.4898,"avg_discount":0.1384641233445345,"total_quantity":16917},
+      {"sub_category":"Appliances","total_sales":1011064.305,"total_profit":141680.5894,"avg_discount":0.14170940170940172,"total_quantity":6078},
+      {"sub_category":"Machines","total_sales":779060.0671,"total_profit":58867.873,"avg_discount":0.1695827725437416,"total_quantity":4906},
+      {"sub_category":"Tables","total_sales":757041.9244,"total_profit":-64083.3887,"avg_discount":0.29073170731707315,"total_quantity":3083},
+      {"sub_category":"Accessories","total_sales":749237.0185,"total_profit":129626.3062,"avg_discount":0.12048130081300813,"total_quantity":10946},
+      {"sub_category":"Binders","total_sales":461911.5057,"total_profit":72449.846,"avg_discount":0.17920676202860858,"total_quantity":21429},
+      {"sub_category":"Furnishings","total_sales":385578.2559,"total_profit":46967.4255,"avg_discount":0.15106624605678234,"total_quantity":11225},
+      {"sub_category":"Art","total_sales":372091.9659,"total_profit":57953.9109,"avg_discount":0.11736227728855211,"total_quantity":16301},
+      {"sub_category":"Paper","total_sales":244291.7194,"total_profit":59207.6827,"avg_discount":0.10946862634256642,"total_quantity":12822},
+      {"sub_category":"Supplies","total_sales":243074.2206,"total_profit":22583.2631,"avg_discount":0.12791752577319587,"total_quantity":8543},
+      {"sub_category":"Envelopes","total_sales":170904.3016,"total_profit":29601.1163,"avg_discount":0.13174948665297742,"total_quantity":8380},
+      {"sub_category":"Fasteners","total_sales":83242.3159,"total_profit":11525.4241,"avg_discount":0.14059504132231404,"total_quantity":8390},
+      {"sub_category":"Labels","total_sales":73404.03,"total_profit":15010.512,"avg_discount":0.12044896392939371,"total_quantity":9322}
+    ];
+
+    const labels = rows.map(r => r.sub_category);
+
+    const maxSales = Math.max(...rows.map(r => r.total_sales));
+    const maxProfit = Math.max(...rows.map(r => Math.abs(r.total_profit)));
+    const maxDiscount = Math.max(...rows.map(r => r.avg_discount));
+    const maxQty = Math.max(...rows.map(r => r.total_quantity));
+
+    const datasets = [
+      {
+        label: 'Sales (%)',
+        data: rows.map(r => (r.total_sales / maxSales) * 100),
+        backgroundColor: 'rgba(255,81,72,0.2)',
+        borderColor: '#FF5148',
+        pointBackgroundColor: '#FF5148',
+        fill: true
+      },
+      {
+        label: 'Profit (%)',
+        data: rows.map(r => (Math.abs(r.total_profit) / maxProfit) * 100),
+        backgroundColor: 'rgba(16,185,129,0.2)',
+        borderColor: '#10B981',
+        pointBackgroundColor: '#10B981',
+        fill: true
+      },
+      {
+        label: 'Discount (%)',
+        data: rows.map(r => (r.avg_discount / maxDiscount) * 100),
+        backgroundColor: 'rgba(79,70,230,0.2)',
+        borderColor: '#4F46E5',
+        pointBackgroundColor: '#4F46E5',
+        fill: true
+      },
+      {
+        label: 'Quantity (%)',
+        data: rows.map(r => (r.total_quantity / maxQty) * 100),
+        backgroundColor: 'rgba(245,158,11,0.2)',
+        borderColor: '#F59E0B',
+        pointBackgroundColor: '#F59E0B',
+        fill: true
+      }
+    ];
+
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.r.toFixed(2) + '%';
+              }
+            }
+          }
+        },
+        scales: {
+          r: {
+            suggestedMin: 0,
+            suggestedMax: 100,
+            ticks: { display: false },
+            pointLabels: { font: { size: 28 / 19.2 } }
+          }
+        }
+      }
+    });
+
+    const legendContainer = document.querySelector('.chart-legend');
+    datasets.forEach(ds => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `
+        <span class="legend-color" style="background:${ds.borderColor}"></span>
+        <span class="legend-label">${ds.label}</span>
+      `;
+      legendContainer.appendChild(item);
+    });
+  </script>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 3236
+output tokens: 2905
+total tokens: 6141
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 4688
+OUTPUT TOKENS : 3245
+TOTAL         : 7933
+=======================================

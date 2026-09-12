@@ -21,7 +21,17 @@ Rules:
    - You MUST generate ONLY read-only SELECT or WITH queries.
    - NEVER generate DELETE, ALTER, DROP, INSERT, UPDATE, TRUNCATE, CREATE, REPLACE, GRANT, or REVOKE statements under any circumstances.
 
-8. Dont try to retrive the larger data makesure the retrival should be used to represent for the PowerPoint Presentations like dashboards, Points, paragraphs, etc
+
+
+
+STRICT & 100% FOLLOW RULES:
+
+- Ensure the retrieved rows are compact and presentation-ready for PowerPoint slides, dashboards, and charts.
+- The query MUST produce between 10 and 30 rows only.
+- Do NOT use an arbitrary LIMIT to cut off data; achieve the 10–30 row target through proper grouping and aggregation.
+- When the user does not specify an explicit date, time, or numerical filter, the query MUST span the complete range from MIN to MAX without truncating or cutting off any period. Adjust the aggregation granularity (e.g., group by year, quarter, month, or interval buckets) so the entire timeline or distribution from minimum to maximum fits naturally within 10 to 30 continuous summary rows.
+- For categorical columns, inspect the 'distinct' count in the schema: aggregate and order by metric to return the top 10–20 categories for bar charts, pie charts, and rankings if no specific filter is requested.
+
 
 Retrieved Schema Context:
 {{llm_prompt_text}}

@@ -1,0 +1,74 @@
+{
+  "columns": [
+    "section",
+    "name",
+    "total_sales"
+  ],
+  "rows": [
+    {
+      "section": "Category",
+      "name": "Technology",
+      "total_sales": 4744557.499
+    },
+    {
+      "section": "Category",
+      "name": "Furniture",
+      "total_sales": 4110874.1863
+    },
+    {
+      "section": "Category",
+      "name": "Office Supplies",
+      "total_sales": 3787070.2255
+    },
+    {
+      "section": "Region",
+      "name": "Central",
+      "total_sales": 2822302.5203
+    },
+    {
+      "section": "Region",
+      "name": "South",
+      "total_sales": 1600907.041
+    },
+    {
+      "section": "Region",
+      "name": "North",
+      "total_sales": 1248165.6028
+    },
+    {
+      "section": "Region",
+      "name": "Oceania",
+      "total_sales": 1100184.612
+    },
+    {
+      "section": "Region",
+      "name": "Southeast Asia",
+      "total_sales": 884423.169
+    },
+    {
+      "section": "Sub-Category",
+      "name": "Phones",
+      "total_sales": 1706824.1392
+    },
+    {
+      "section": "Sub-Category",
+      "name": "Copiers",
+      "total_sales": 1509436.2742
+    },
+    {
+      "section": "Sub-Category",
+      "name": "Chairs",
+      "total_sales": 1501681.7642
+    },
+    {
+      "section": "Sub-Category",
+      "name": "Bookcases",
+      "total_sales": 1466572.2418
+    },
+    {
+      "section": "Sub-Category",
+      "name": "Storage",
+      "total_sales": 1127085.8614
+    }
+  ]
+}

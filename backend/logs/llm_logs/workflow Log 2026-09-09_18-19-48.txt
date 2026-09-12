@@ -1,0 +1,1247 @@
+======================
+Node: Query Classification - Query Classification Agent
+LLM INPUT:
+
+You are the Query Classification Agent for KeloStats, an AI-powered enterprise analytics and presentation platform.
+Your task is to classify the user's incoming query into exactly one of three categories: "greet", "out_of_scope", or "in_scope".
+
+CATEGORIES AND CRITERIA:
+1. "greet":
+   - The user query is a simple greeting, polite pleasantry, or conversational icebreaker, wishing good morning, afternoon, evening etc.
+   - Examples:
+     - "Hi"
+     - "Hello"
+     - "Hey there"
+     - "Good morning"
+     - "How are you?"
+     - "What's up?"
+     - "Greetings"
+
+2. "out_of_scope":
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - Examples:
+     - "Who is Narendra Modi?"
+     - "Tell me the biography of Neil Armstrong"
+     - "What is the capital of France?"
+     - "Who won the World Cup?"
+     - "Write a poem about nature"
+     - "Tell me a joke"
+     - "How to cook pasta?"
+
+3. "in_scope":
+   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - Examples:
+     - "Show me total sales by region"
+     - "What is our net profit in 2023?"
+     - "Generate a slide on customer churn"
+     - "Present on regional performance"
+     - "Do it in ppt"
+     - "List top 5 products by quantity"
+     - "How many orders were delayed?"
+
+USER QUERY:
+"add some icons in ppt"
+
+RESPONSE FORMAT:
+You must respond ONLY with a valid JSON object. Do not include markdown or reasoning outside the JSON.
+{
+    "intent": "greet" | "out_of_scope" | "in_scope",
+    "reason": "<one sentence explanation>"
+}
+
+LLM OUTPUT:
+
+{
+    "intent": "in_scope",
+    "reason": "The request is about enhancing a PowerPoint presentation, which falls under presentation creation/editing."
+}
+
+TOKEN COUNT:
+input tokens: 482
+output tokens: 92
+total tokens: 574
+======================
+
+======================
+Node: Query Decision Classify - Query Decision Classify Agent
+LLM INPUT:
+
+You are the PPT Task Classification Agent for KeloStats, an enterprise AI analytics platform connected to an enterprise relational database.
+        Your job is to determine whether a presentation request requires querying the database via the SQL pipeline (sql_required: true) or is a direct visual/textual EDIT on an existing slide canvas without database data (sql_required: false).
+
+        RULES:
+        1. sql_required: true (DEFAULT for presentation creation and data analysis):
+            - Any command to create, generate, analyze, discuss, summarize, or present business topics, performance, trends, or insights (e.g., 'disscuss a trend analysis summary in PPT', 'generate slide on top products', 'create presentation for Q3 churn', 'build a deck on revenue', 'present category breakdown').
+            - Even high-level executive summaries or business analyses (like SWOT, market trends, performance reviews) MUST query the database to ground the slide in real business facts and metrics.
+
+        2. sql_required: false (ONLY for direct slide styling, layout adjustment, or simple edits):
+            - The user is asking to modify the visual appearance, styling, or existing wording of the currently open slide canvas.
+            - Examples: 'change title to...', 'make background dark navy', 'restyle cards with purple border', 'increase font size', 'change button color', 'remove second card', 'edit this slide to fix typo'.
+
+        Output:
+        just return true or false, nothing else.
+
+        User Query:
+        "add some icons in ppt"
+
+LLM OUTPUT:
+
+false
+
+TOKEN COUNT:
+input tokens: 385
+output tokens: 121
+total tokens: 506
+======================
+
+======================
+Node: PPT Direct Edit - PPT General Agent
+LLM INPUT:
+
+You are KeloStats AI Slide Editor & Design Architect, a world-class presentation designer inspired by Canva, Pitch, Linear, and elite creative studios.
+
+Your mission is to edit, restyle, refine, improve content, or redesign presentation slides WITHOUT requiring SQL database queries. You operate directly on the provided slide HTML (<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+    }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>) based on the user's instruction (add some icons in ppt).
+
+==============================================================================
+CORE EDITING & DESIGN GUIDELINES:
+==============================================================================
+
+1. DIRECT EDITING & CONTENT IMPROVEMENT:
+   - When the user asks to change, update, or improve text (titles, subtitles, card headers, descriptions, bullet points, tags, or callouts):
+     * Modify the requested text directly while preserving surrounding styling, tags, and visual hierarchy.
+     * Polish rough notes, drafts, or suggestions into clear, high-impact, executive-ready presentation copy.
+     * Ensure typography hierarchy remains crisp: bold titles, clean subtitles, and readable body text.
+
+2. STYLING, THEMES & VISUAL REFINEMENT:
+   - When the user asks to change styles, colors, or themes (e.g., "dark mode", "change accent color to purple", "modern minimal theme", "gradient background"):
+     * Update CSS background colors, gradients, card backgrounds, text contrast, borders, and accent highlights consistently across the entire slide.
+     * Ensure strong visual contrast and accessibility (e.g., high-contrast text on dark backgrounds, clean borders on cards).
+     * Enhance cards and containers with modern aesthetics (glassmorphism, subtle borders, rounded corners, soft shadows).
+
+3. LAYOUT & STRUCTURAL REFINEMENT:
+   - When the user asks to adjust layout (e.g., "swap columns", "remove the chart", "add a stat card", "arrange as bento grid", "make it 3 cards"):
+     * Re-architect the layout using responsive CSS Grid or Flexbox.
+     * Ensure all cards and elements breathe naturally with balanced padding, gaps, and margins.
+     * If removing an element, cleanly remove it and expand remaining cards to fill the canvas harmoniously.
+     * If adding an element, match its styling to the existing slide cards and design language.
+
+4. PRESERVE EXISTING SLIDE STRUCTURE & BRAND IDENTITY:
+   - IMPORTANT: Unless explicitly instructed to replace or delete everything, PRESERVE the existing content, cards, charts, icons, and structures from <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+    }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>.
+   - Do NOT discard or wipe out unrelated cards or sections when performing targeted edits.
+   - Maintain a cohesive color palette and visual tone.
+
+5. 16:9 CANVAS SPECIFICATIONS & RESPONSIVE SCALING:
+   - The slide canvas container must strictly maintain the 16:9 aspect ratio and responsive scaling:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Use container-query relative units (`cqw`) or percentages for typography, padding, gaps, and border-radiuses so the slide scales seamlessly to any screen resolution.
+   - Elements must NEVER overflow, collide, clip, or overlap.
+
+6. CLEAN EXECUTABLE HTML & SCRIPT INTEGRITY:
+   - Output valid, standalone HTML:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - If Chart.js or any `<script>` is present in the slide, preserve its functionality.
+   - Inside `<script>` tags, NEVER use CSS functions like `calc(...)` in JavaScript variables or config objects.
+   - Output ONLY pure, executable HTML code. Do NOT wrap in markdown code fences (no ```html).
+
+==============================================================================
+INPUT:
+----------
+
+INSTRUCTION:
+add some icons in ppt
+
+CURRENT SLIDE / TEMPLATE HTML:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+    }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+----------
+
+Return executable HTML code only, nothing else.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5cqw;
+    }
+    .icon {
+      width: 1.5cqw;
+      height: 1.5cqw;
+      flex-shrink: 0;
+    }
+    .strengths h3 { color: #10B981; }
+    .weaknesses h3 { color: #FF5148; }
+    .opportunities h3 { color: #4F46E5; }
+    .threats h3 { color: #F59E0B; }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/></svg>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6l-12 12"/></svg>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M12 2a6 6 0 0 0-6 6c0 2.21 1.21 4.15 3 5.19V15a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.81c1.79-1.04 3-2.98 3-5.19a6 6 0 0 0-6-6z"/></svg>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4M12 17h.01"/></svg>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 5245
+output tokens: 2863
+total tokens: 8108
+======================
+
+======================
+Node 7: HTML Code Validation - HTML Code Validation Agent
+LLM INPUT:
+
+You are KeloStats HTML Slide Validation & Code Repair Agent, an elite automated slide quality engineer and front-end architect.
+
+Your sole mission is to thoroughly validate, repair, and optimize the provided presentation slide HTML code to guarantee flawless visual presentation, strict 16:9 alignment, and 100% bug-free browser execution.
+
+==============================================================================
+VALIDATION & CODE REPAIR DIRECTIVES:
+==============================================================================
+
+1. REPAIR BROKEN UI & OVERLAPPING ELEMENTS:
+   - Ensure elements NEVER overlap, collide, or clip each other.
+   - Cards, metric tiles, text blocks, and chart wrappers must have adequate padding, margins, and spacing.
+   - Use CSS Grid (`display: grid; grid-template-columns: ...; gap: 1.5cqw;`) or Flexbox to guarantee clean multi-column layouts.
+   - Text must wrap cleanly without overflowing its container boundaries.
+
+2. ENFORCE PPT SLIDE FRAME & 16:9 ALIGNMENT:
+   - The slide canvas container MUST strictly adhere to the 16:9 aspect ratio standard:
+     `width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; overflow: hidden; position: relative;`
+   - Margins and bounds: Content must be neatly bounded (typically `left: 6.375%`, `right: 6.375%`, utilizing ~87% of canvas width) with balanced vertical distribution.
+   - Sizing: Ensure all typography (`font-size`), padding, and gaps use container-query relative units (`cqw`) or percentages so the slide scales smoothly at any screen resolution.
+
+3. REPAIR HTML & CSS SYNTAX & MISSING TAGS:
+   - Verify that all opened HTML tags are correctly closed (e.g., `<div>`, `<span>`, `<canvas>`, `<ul>`, `<li>`, `<p>`, `<h3>`).
+   - Fix any missing quotes around attributes, unclosed strings, or malformed tags.
+   - Fix any invalid CSS declarations, unclosed curly braces, or missing semicolons inside `<style>` blocks.
+   - Ensure a complete, valid document structure:
+     `<!DOCTYPE html><html><head><style>...</style></head><body>...</body></html>`
+   - Remove any stray markdown artifacts (like `**bold**` or raw `- bullet points`) and convert them to valid HTML (`<strong>`, `<li>`).
+
+4. JAVASCRIPT & CHART.JS EXECUTION INTEGRITY (CRITICAL):
+   - ABSOLUTE BAN ON CSS FUNCTIONS IN JAVASCRIPT:
+     CSS functions like `calc(...)` are INVALID in JavaScript and cause fatal `ReferenceError: calc is not defined` errors.
+     If you encounter `calc(...)` inside `<script>` or Chart.js configs (such as `font: { size: calc(12/19.2*100) }`), rewrite it to standard JavaScript arithmetic (e.g. `font: { size: (12 / 19.2 * 100) }` or a direct number `font: { size: 12 }`).
+   - Canvas ID Matching: Ensure that every canvas referenced in JavaScript (e.g., `document.getElementById('myChart')`) has an identical corresponding `<canvas id="myChart"></canvas>` in the HTML DOM.
+   - Chart.js Library: If a `<canvas>` chart is present, ensure `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>` is included.
+   - Syntax validation: Ensure all JavaScript object literals, callbacks, and Chart configurations have balanced braces, brackets, and valid syntax.
+
+5. PRESERVE ORIGINAL CONTENT & THEME:
+   - Retain all metric numbers, labels, takeaways, charts, and colors present in the input slide.
+   - Do NOT replace data with placeholders or wipe out existing slide sections. Simply repair, align, and validate.
+
+==============================================================================
+INPUT HTML CODE:
+----------------
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5cqw;
+    }
+    .icon {
+      width: 1.5cqw;
+      height: 1.5cqw;
+      flex-shrink: 0;
+    }
+    .strengths h3 { color: #10B981; }
+    .weaknesses h3 { color: #FF5148; }
+    .opportunities h3 { color: #4F46E5; }
+    .threats h3 { color: #F59E0B; }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/></svg>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6l-12 12"/></svg>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M12 2a6 6 0 0 0-6 6c0 2.21 1.21 4.15 3 5.19V15a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.81c1.79-1.04 3-2.98 3-5.19a6 6 0 0 0-6-6z"/></svg>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4M12 17h.01"/></svg>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+==============================================================================
+OUTPUT:
+-------
+Return ONLY the executable HTML code (starting with <!DOCTYPE html> and ending with </html>).
+Do NOT wrap your output in markdown code fences (no ```html).
+Do NOT include any conversational explanations, notes, or preambles.
+
+LLM OUTPUT:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide – SWOT Analysis Summary</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #ffffff;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .slide-canvas * { box-sizing: border-box; margin:0; padding:0; }
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11%;
+      width: 78.75%;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      z-index: 2;
+    }
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      z-index: 2;
+    }
+    .swot-grid {
+      position: absolute;
+      left: 6.375%;
+      top: 30%;
+      width: 87.25%;
+      height: 60%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 1.5cqw;
+    }
+    .swot-card {
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+      border-radius: 0.8cqw;
+      padding: 1cqw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqw;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .swot-card h3 {
+      margin: 0;
+      font-size: calc(36 / 19.2 * 1cqw);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5cqw;
+    }
+    .icon {
+      width: 1.5cqw;
+      height: 1.5cqw;
+      flex-shrink: 0;
+    }
+    .strengths h3 { color: #10B981; }
+    .weaknesses h3 { color: #FF5148; }
+    .opportunities h3 { color: #4F46E5; }
+    .threats h3 { color: #F59E0B; }
+    .swot-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      font-size: calc(28 / 19.2 * 1cqw);
+      line-height: 1.4;
+    }
+    .swot-card li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5cqw;
+      margin-bottom: 0.4cqw;
+    }
+    .swot-card li::before {
+      content: "•";
+      font-weight: 700;
+      margin-top: 0.1cqw;
+    }
+    .strengths li::before { color: #10B981; }
+    .weaknesses li::before { color: #FF5148; }
+    .opportunities li::before { color: #4F46E5; }
+    .threats li::before { color: #F59E0B; }
+  </style>
+</head>
+<body>
+  <div class="slide-canvas">
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <h1 class="slide-title">SWOT Analysis Summary</h1>
+    <div class="accent-bar"></div>
+
+    <div class="swot-grid">
+      <div class="swot-card strengths">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/></svg>Strengths</h3>
+        <ul>
+          <li>Consumer segment leads sales – APAC $1.82 M, EU $1.53 M, US $1.16 M with ~12 % profit margin.</li>
+          <li>Corporate segment holds solid margins in EU (13.4 %) and US (13 %).</li>
+          <li>Home Office delivers consistent sales across all regions.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card weaknesses">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6l-12 12"/></svg>Weaknesses</h3>
+        <ul>
+          <li>EMEA markets suffer low margins – Consumer 6.3 %, Corporate 5 %, Home Office 4 %.</li>
+          <li>High average discounts (up to 19.7 % in Consumer‑EMEA) compress profitability.</li>
+          <li>Small markets (Canada) generate minimal sales volume.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card opportunities">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M12 2a6 6 0 0 0-6 6c0 2.21 1.21 4.15 3 5.19V15a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.81c1.79-1.04 3-2.98 3-5.19a6 6 0 0 0-6-6z"/></svg>Opportunities</h3>
+        <ul>
+          <li>APAC shows strong sales potential across all segments.</li>
+          <li>Consumer LATAM delivers decent margin (10.6 %) and sizable sales ($1.13 M).</li>
+          <li>Under‑penetrated Africa markets can be expanded.</li>
+        </ul>
+      </div>
+
+      <div class="swot-card threats">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4M12 17h.01"/></svg>Threats</h3>
+        <ul>
+          <li>Persistently high discount rates (>15 %) risk margin erosion.</li>
+          <li>Profit margins below 5 % in Home Office‑EMEA and Corporate‑EMEA.</li>
+          <li>Market saturation in Consumer segment may limit future growth.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+TOKEN COUNT:
+input tokens: 2947
+output tokens: 3003
+total tokens: 5950
+======================
+
+
+=======================================
+TOTAL TOKENS
+======================================
+ INPUT TOKENS : 9059
+OUTPUT TOKENS : 6079
+TOTAL         : 15138
+=======================================

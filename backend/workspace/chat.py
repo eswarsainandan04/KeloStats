@@ -103,6 +103,83 @@ def get_chat_history(project_id: str) -> List[Dict[str, Any]]:
         return []
 
 
+def get_recent_conversations(
+    project_id: str,
+    limit_user: int = 5,
+    limit_ai: int = 5,
+    exclude_last_user_query: Optional[str] = None
+) -> List[Dict[str, str]]:
+    """
+    Retrieves the most recent conversation messages from the chat_messages table:
+    up to `limit_user` User messages and `limit_ai` AI messages (past 5 recent conversations).
+    If the newest message is a User message matching `exclude_last_user_query`, it is skipped
+    so the current in-flight query is not treated as past history.
+
+    Returns the messages in chronological order (oldest to newest):
+    [{"role": "User", "message": "..."}, {"role": "AI", "message": "..."}]
+    """
+    if not project_id or not str(project_id).strip():
+        return []
+
+    clean_project_id = str(project_id).strip()
+    try:
+        with engine.connect() as conn:
+            query = text("""
+                SELECT message_id, role, message, created_at
+                FROM chat_messages
+                WHERE project_id = :project_id
+                ORDER BY created_at DESC
+                LIMIT 30;
+            """)
+            rows = conn.execute(query, {"project_id": clean_project_id}).fetchall()
+
+            if not rows:
+                return []
+
+            # If the most recent row matches the current in-flight query, skip it
+            start_idx = 0
+            if exclude_last_user_query and rows:
+                first_role = str(rows[0].role).strip().lower()
+                first_msg = str(rows[0].message).strip()
+                if first_role == "user" and first_msg == exclude_last_user_query.strip():
+                    start_idx = 1
+
+            valid_rows = rows[start_idx:]
+            user_count = 0
+            ai_count = 0
+            selected_rows = []
+
+            for r in valid_rows:
+                r_role = str(r.role).strip().lower()
+                if r_role == "user":
+                    if user_count < limit_user:
+                        selected_rows.append(r)
+                        user_count += 1
+                else:
+                    if ai_count < limit_ai:
+                        selected_rows.append(r)
+                        ai_count += 1
+
+                if user_count >= limit_user and ai_count >= limit_ai:
+                    break
+
+            # Reverse to restore chronological order (oldest to newest)
+            selected_rows.reverse()
+
+            return [
+                {
+                    "role": "User" if str(r.role).strip().lower() == "user" else "AI",
+                    "message": str(r.message or "").strip()
+                }
+                for r in selected_rows
+                if str(r.message or "").strip()
+            ]
+    except Exception as exc:
+        print(f"[-] [Chat DB] Error retrieving recent conversations for project '{clean_project_id}': {exc}")
+        return []
+
+
+
 @router.get("/{project_id}", summary="Get chat messages history for a project")
 def get_chat_messages_endpoint(project_id: str):
     """

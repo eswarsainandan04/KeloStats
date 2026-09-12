@@ -154,8 +154,9 @@ export default function DashboardHome() {
   const handleEditWorkspace = (ws: WorkspaceItem) => {
     const userId = getUserId();
     const projName = encodeURIComponent(ws.project_name || "Presentation Project");
+    const dbDispName = encodeURIComponent(ws.database_display_name || ws.database_name || "");
     router.push(
-      `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&template_id=${ws.template_id || ""}`
+      `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&template_id=${ws.template_id || ""}&display_name=${dbDispName}`
     );
   };
 
@@ -299,8 +300,11 @@ export default function DashboardHome() {
       const projectId = data.project_id || "";
       const projName = encodeURIComponent(data.project_name || projectName.trim());
 
+      const selectedDb = availableDbs.find((d) => d.db_id === selectedDbId);
+      const dbDispName = encodeURIComponent(selectedDb?.display_name || selectedDb?.database_name || "");
+
       router.push(
-        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}`
+        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}&display_name=${dbDispName}`
       );
     } catch (err: any) {
       setCreationError(err.message || "An unexpected error occurred. Please try again.");
@@ -410,7 +414,7 @@ export default function DashboardHome() {
                   <button
                     onClick={fetchWorkspaces}
                     disabled={loadingWorkspaces}
-                    title="Refresh from Supabase S3 bucket"
+                    title="Refresh"
                     className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all cursor-pointer shadow-2xs"
                   >
                     <svg className={`w-4 h-4 ${loadingWorkspaces ? "animate-spin text-[#FF5148]" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

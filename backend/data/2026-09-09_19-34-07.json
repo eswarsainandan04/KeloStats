@@ -1,0 +1,130 @@
+{
+  "columns": [
+    "sub_category",
+    "total_sales",
+    "total_profit",
+    "avg_discount",
+    "total_quantity"
+  ],
+  "rows": [
+    {
+      "sub_category": "Phones",
+      "total_sales": 1706824.1392,
+      "total_profit": 216717.0058,
+      "avg_discount": 0.14584748287161156,
+      "total_quantity": 11870
+    },
+    {
+      "sub_category": "Copiers",
+      "total_sales": 1509436.2742,
+      "total_profit": 258567.5491,
+      "avg_discount": 0.11714709851551956,
+      "total_quantity": 7454
+    },
+    {
+      "sub_category": "Chairs",
+      "total_sales": 1501681.7642,
+      "total_profit": 140396.2675,
+      "avg_discount": 0.1631100757134537,
+      "total_quantity": 12336
+    },
+    {
+      "sub_category": "Bookcases",
+      "total_sales": 1466572.2418,
+      "total_profit": 161924.4195,
+      "avg_discount": 0.1537577768560763,
+      "total_quantity": 8310
+    },
+    {
+      "sub_category": "Storage",
+      "total_sales": 1127085.8614,
+      "total_profit": 108461.4898,
+      "avg_discount": 0.1384641233445345,
+      "total_quantity": 16917
+    },
+    {
+      "sub_category": "Appliances",
+      "total_sales": 1011064.305,
+      "total_profit": 141680.5894,
+      "avg_discount": 0.14170940170940172,
+      "total_quantity": 6078
+    },
+    {
+      "sub_category": "Machines",
+      "total_sales": 779060.0671,
+      "total_profit": 58867.873,
+      "avg_discount": 0.1695827725437416,
+      "total_quantity": 4906
+    },
+    {
+      "sub_category": "Tables",
+      "total_sales": 757041.9244,
+      "total_profit": -64083.3887,
+      "avg_discount": 0.29073170731707315,
+      "total_quantity": 3083
+    },
+    {
+      "sub_category": "Accessories",
+      "total_sales": 749237.0185,
+      "total_profit": 129626.3062,
+      "avg_discount": 0.12048130081300813,
+      "total_quantity": 10946
+    },
+    {
+      "sub_category": "Binders",
+      "total_sales": 461911.5057,
+      "total_profit": 72449.846,
+      "avg_discount": 0.17920676202860858,
+      "total_quantity": 21429
+    },
+    {
+      "sub_category": "Furnishings",
+      "total_sales": 385578.2559,
+      "total_profit": 46967.4255,
+      "avg_discount": 0.15106624605678234,
+      "total_quantity": 11225
+    },
+    {
+      "sub_category": "Art",
+      "total_sales": 372091.9659,
+      "total_profit": 57953.9109,
+      "avg_discount": 0.11736227728855211,
+      "total_quantity": 16301
+    },
+    {
+      "sub_category": "Paper",
+      "total_sales": 244291.7194,
+      "total_profit": 59207.6827,
+      "avg_discount": 0.10946862634256642,
+      "total_quantity": 12822
+    },
+    {
+      "sub_category": "Supplies",
+      "total_sales": 243074.2206,
+      "total_profit": 22583.2631,
+      "avg_discount": 0.12791752577319587,
+      "total_quantity": 8543
+    },
+    {
+      "sub_category": "Envelopes",
+      "total_sales": 170904.3016,
+      "total_profit": 29601.1163,
+      "avg_discount": 0.13174948665297742,
+      "total_quantity": 8380
+    },
+    {
+      "sub_category": "Fasteners",
+      "total_sales": 83242.3159,
+      "total_profit": 11525.4241,
+      "avg_discount": 0.14059504132231404,
+      "total_quantity": 8390
+    },
+    {
+      "sub_category": "Labels",
+      "total_sales": 73404.03,
+      "total_profit": 15010.512,
+      "avg_discount": 0.12044896392939371,
+      "total_quantity": 9322
+    }
+  ]
+}

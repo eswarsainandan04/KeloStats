@@ -18,6 +18,7 @@ interface ChatInterfaceProps {
   projectId?: string;
   userId?: string;
   databaseId?: string;
+  databaseDisplayName?: string;
   slideNumber?: number;
   totalSlides?: number;
   onSelectSlide?: (slideNum: number) => void;
@@ -31,6 +32,7 @@ export default function ChatInterface({
   projectId,
   userId,
   databaseId,
+  databaseDisplayName,
   slideNumber,
   totalSlides,
   onSelectSlide,
@@ -43,7 +45,90 @@ export default function ChatInterface({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [dbDisplayName, setDbDisplayName] = useState<string>(databaseDisplayName || "");
+
+  // Dynamically resolve real database display name
+  useEffect(() => {
+    if (databaseDisplayName && databaseDisplayName.trim() && databaseDisplayName.toLowerCase() !== "database") {
+      setDbDisplayName(databaseDisplayName.trim());
+      return;
+    }
+
+    if (!userId) return;
+
+    let isMounted = true;
+    const resolveDatabaseName = async () => {
+      try {
+        // 1. Check workspace projects list for this project's database_display_name
+        if (projectId && projectId !== "project_default") {
+          const wsRes = await fetch(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
+          if (wsRes.ok) {
+            const wsData = await wsRes.json();
+            const wsList = wsData.workspaces || [];
+            const matchedWs = wsList.find((w: any) => w.project_id === projectId);
+            if (matchedWs && isMounted) {
+              const name = matchedWs.database_display_name || matchedWs.database_name;
+              if (name) {
+                setDbDisplayName(name);
+                return;
+              }
+            }
+          }
+        }
+
+        // 2. Fallback: inspect user's connected database list
+        const dbRes = await fetch(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+        if (dbRes.ok) {
+          const dbData = await dbRes.json();
+          const dbList = Array.isArray(dbData.databases) ? dbData.databases : (Array.isArray(dbData) ? dbData : []);
+          let matched = databaseId ? dbList.find((d: any) => d.db_id === databaseId) : null;
+          if (!matched && dbList.length > 0) {
+            matched = dbList[0];
+          }
+          if (matched && isMounted) {
+            const name = matched.display_name || matched.database_name || matched.service_name;
+            if (name) {
+              setDbDisplayName(name);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load database display name:", err);
+      }
+    };
+
+    resolveDatabaseName();
+    return () => {
+      isMounted = false;
+    };
+  }, [databaseDisplayName, userId, databaseId, projectId]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea up to 4 lines (~96px) and enable sleek scrollbar beyond that
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const maxHeight = 96; // ~4 lines @ 20px line-height + padding
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [inputValue]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter") {
+      if (e.shiftKey) {
+        // Shift + Enter: allow native newline up to 4 lines
+        return;
+      }
+      // Enter without Shift: submit
+      e.preventDefault();
+      if (inputValue.trim() && !isTyping) {
+        handleSendMessage();
+      }
+    }
+  };
 
   const defaultWelcomeMessage: ChatMessage = {
     id: "welcome-1",
@@ -168,7 +253,17 @@ export default function ChatInterface({
           replyText = data.output || "Query processed successfully.";
         }
       } else {
-        replyText = data.detail || "Unable to process query. Please verify your database connection.";
+        replyText = "Sorry, I cant help you rght now";
+      }
+
+      // Safeguard against any technical exception strings leaking into chat
+      if (
+        replyText.includes("LLM API Error") ||
+        replyText.includes("Rate limit") ||
+        replyText.includes("tokens per minute") ||
+        replyText.includes("execution failed")
+      ) {
+        replyText = "Sorry, I cant help you rght now";
       }
 
       const aiMsg: ChatMessage = {
@@ -185,7 +280,7 @@ export default function ChatInterface({
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
-        text: `Error connecting to backend service: ${err?.message || "Request failed"}. Please ensure backend server is running.`,
+        text: "Sorry, I cant help you rght now",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -205,14 +300,6 @@ export default function ChatInterface({
             </svg>
           </div>
           <span className="text-xs font-bold text-slate-800 tracking-tight">Copilot</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-
-          {/* Active Target Slide Badge */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-700 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5148]" />
-            <span>Slide {slideNumber || 1}</span>
-            <span className="text-[9px] text-slate-400 font-mono">({`slide_${String(slideNumber || 1).padStart(2, "0")}.html`})</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-1 text-slate-400">
@@ -255,7 +342,7 @@ export default function ChatInterface({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+      <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs custom-chat-scrollbar">
         {loadingHistory ? (
           <div className="flex items-center justify-center h-24 text-slate-400 text-xs">
             <svg className="w-4 h-4 animate-spin mr-2 text-[#FF5148]" fill="none" viewBox="0 0 24 24">
@@ -369,48 +456,79 @@ export default function ChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Target Slide Indicator Bar */}
-      <div className="px-3.5 py-1.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-[#FF5148]" />
-          <span className="font-semibold text-slate-700">Targeting: Slide {slideNumber || 1}</span>
-          <span className="text-[10px] text-slate-400 font-mono">({`slide_${String(slideNumber || 1).padStart(2, "0")}.html`})</span>
-        </div>
-        {totalSlides && totalSlides > 1 && (
-          <span className="text-[10px] text-slate-400">
-            Slide {slideNumber || 1} of {totalSlides}
-          </span>
-        )}
-      </div>
-
-      {/* Input Form */}
-      <div className="p-3 border-t border-slate-100 bg-white">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSendMessage();
-          }}
-          className="flex items-center gap-2"
+      {/* Modern Executive Composer */}
+      <div className="p-3 bg-white border-t border-slate-200/80">
+        <div
+          className={`rounded-2xl border transition-all duration-200 bg-slate-50/60 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-slate-900/5 shadow-2xs p-2.5 flex flex-col gap-1.5 ${
+            isTyping ? "opacity-60 pointer-events-none" : "border-slate-200"
+          }`}
         >
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={isTyping}
+            rows={1}
             placeholder="Ask questions or command presentation edits..."
-            className="flex-1 px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#FF5148]/30 focus:border-[#FF5148] text-slate-900 disabled:bg-slate-50 transition-all shadow-2xs"
+            className="w-full bg-transparent resize-none border-0 p-1 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 leading-5 custom-chat-scrollbar"
+            style={{ maxHeight: "96px" }}
           />
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || isTyping}
-            className="w-9 h-9 rounded-xl bg-[#FF5148] hover:bg-[#e64037] text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shrink-0 cursor-pointer hover:scale-105 active:scale-95"
-            title="Send query"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </button>
-        </form>
+
+          {/* Bottom Controls inside composer */}
+          <div className="flex items-center justify-between pt-1 select-none">
+            {/* Badges Container */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Database Indicator Badge with database.png */}
+              {dbDisplayName ? (
+                <div
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-medium text-slate-600 shadow-2xs hover:border-slate-300 transition-colors cursor-default max-w-[160px] truncate"
+                  title={`Connected Database: ${dbDisplayName}`}
+                >
+                  <img
+                    src="/database.png"
+                    alt="Database"
+                    className="w-3.5 h-3.5 object-contain shrink-0"
+                  />
+                  <span className="tracking-tight text-slate-700 font-semibold text-[10px] truncate">
+                    {dbDisplayName}
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Small Slide Indicator Badge with ppt.png */}
+              <div
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-medium text-slate-600 shadow-2xs hover:border-slate-300 transition-colors cursor-default shrink-0"
+                title={`Editing Slide ${slideNumber || 1} (${totalSlides ? `Slide ${slideNumber || 1} of ${totalSlides}` : `slide_${String(slideNumber || 1).padStart(2, "0")}.html`})`}
+              >
+                <img
+                  src="/ppt.png"
+                  alt="PPT"
+                  className="w-3.5 h-3.5 object-contain shrink-0"
+                />
+                <span className="tracking-tight text-slate-700 font-semibold text-[10px]">
+                  Slide {slideNumber || 1}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSendMessage()}
+              disabled={!inputValue.trim() || isTyping}
+              className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 ${
+                inputValue.trim() && !isTyping
+                  ? "bg-[#FF5148] hover:bg-[#e03e35] text-white shadow-xs hover:scale-105 active:scale-95"
+                  : "bg-slate-200/80 text-slate-400 cursor-not-allowed opacity-50"
+              }`}
+              title="Send query (Enter)"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

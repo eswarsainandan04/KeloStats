@@ -17,5 +17,6 @@ def execute_mysql_tool(db_info: Dict[str, Any], sql_query: str) -> List[Any]:
     engine = create_engine(conn_url, pool_pre_ping=True)
     with engine.connect() as conn:
         result = conn.execute(text(sql_query))
-        rows = [row[0] for row in result.fetchall() if row[0] is not None]
+        columns = list(result.keys())
+        rows = [{col: val for col, val in zip(columns, row)} for row in result.fetchall()]
         return rows

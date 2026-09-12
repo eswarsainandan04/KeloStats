@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import re
 import urllib.parse
@@ -13,7 +14,17 @@ from sqlalchemy import create_engine, text
 
 from dotenv import load_dotenv
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
+# Ensure backend root is in sys.path
+backend_dir = Path(__file__).resolve().parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+# Import database execution tools
+from databases.tools.postgres_exe_tool import execute_postgres_tool
+from databases.tools.mysql_exe_tool import execute_mysql_tool
+from databases.tools.oracle_sql_exe_tool import execute_oracle_tool
+
+env_path = backend_dir / ".env"
 load_dotenv(dotenv_path=env_path)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Nithin%4012@localhost:5432/kelostats")
@@ -102,67 +113,61 @@ def _validate_sql_guardrail(sql_query: str) -> tuple[bool, str]:
     return True, ""
 
 
-def _execute_and_save_master_data(db_info: Dict[str, Any], sql_query: str) -> Dict[str, Any]:
+def _execute_by_database_type(db_info: Dict[str, Any], sql_query: str) -> List[Any]:
     """
-    Executes the master SQL query against the target database, formats the retrieved rows
-    as a dictionary with 'columns' and 'rows' list of dicts, and saves it to:
-    backend/data/{timestamp}.json
+    Routes execution to the correct database execution tool in databases/tools/.
     """
-    user = urllib.parse.quote_plus(str(db_info.get("username") or ""))
-    pwd = urllib.parse.quote_plus(str(db_info.get("password") or ""))
-    host = db_info.get("host")
-    port = int(db_info.get("port") or 5432)
-    db_name = db_info.get("database_name") or ""
-    schema = db_info.get("schema_name") or "public"
-    ssl = db_info.get("ssl_mode")
     db_type = (db_info.get("database_type") or "").lower().strip()
 
     if db_type in ["postgres", "postgresql"]:
-        conn_url = f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db_name}"
-        if ssl:
-            conn_url += f"?sslmode={ssl}"
-        engine = create_engine(conn_url, pool_pre_ping=True)
-        with engine.connect() as conn:
-            if schema:
-                conn.execute(text(f'SET search_path TO "{schema}", public;'))
-            result = conn.execute(text(sql_query))
-            columns = list(result.keys())
-            raw_records = result.fetchall()
+        return execute_postgres_tool(db_info, sql_query)
     elif db_type in ["mysql", "mariadb"]:
-        port = int(db_info.get("port") or 3306)
-        db_target = db_info.get("database_name") or db_info.get("schema_name") or ""
-        conn_url = f"mysql+pymysql://{user}:{pwd}@{host}:{port}/{db_target}"
-        engine = create_engine(conn_url, pool_pre_ping=True)
-        with engine.connect() as conn:
-            result = conn.execute(text(sql_query))
-            columns = list(result.keys())
-            raw_records = result.fetchall()
+        return execute_mysql_tool(db_info, sql_query)
     elif db_type in ["oracle", "oracle_sql"]:
-        port = int(db_info.get("port") or 1521)
-        target_service = db_info.get("service_name") or db_info.get("database_name") or "XE"
-        schema_oracle = db_info.get("schema_name")
-        conn_url = f"oracle+oracledb://{user}:{pwd}@{host}:{port}/?service_name={target_service}"
-        engine = create_engine(conn_url, connect_args={"connect_timeout": 10}, pool_pre_ping=True)
-        with engine.connect() as conn:
-            if schema_oracle:
-                conn.execute(text(f'ALTER SESSION SET CURRENT_SCHEMA = "{schema_oracle}"'))
-            result = conn.execute(text(sql_query))
-            columns = list(result.keys())
-            raw_records = result.fetchall()
+        return execute_oracle_tool(db_info, sql_query)
     else:
         raise ValueError(f"Unsupported database_type '{db_type}' for execution.")
 
-    # Format rows as list of dicts:
+
+def _execute_and_save_master_data(db_info: Dict[str, Any], sql_query: str) -> Dict[str, Any]:
+    """
+    Executes the master SQL query against the target database using the execution tools,
+    formats the retrieved rows as a dictionary with 'columns' and 'rows' list of dicts,
+    and saves it to: backend/data/{timestamp}.json
+    """
+    raw_records = _execute_by_database_type(db_info, sql_query)
+
     dict_rows = []
     for record in raw_records:
-        row_dict = {}
-        for col, val in zip(columns, record):
+        if isinstance(record, dict):
+            clean_dict = {}
+            for col, val in record.items():
+                if hasattr(val, "isoformat"):
+                    clean_dict[col] = val.isoformat()
+                elif isinstance(val, Decimal):
+                    clean_dict[col] = float(val)
+                else:
+                    clean_dict[col] = val
+            dict_rows.append(clean_dict)
+        elif isinstance(record, (list, tuple)):
+            row_dict = {}
+            for idx, val in enumerate(record):
+                col_name = f"col_{idx}"
+                if hasattr(val, "isoformat"):
+                    val = val.isoformat()
+                elif isinstance(val, Decimal):
+                    val = float(val)
+                row_dict[col_name] = val
+            dict_rows.append(row_dict)
+        else:
+            val = record
             if hasattr(val, "isoformat"):
                 val = val.isoformat()
             elif isinstance(val, Decimal):
                 val = float(val)
-            row_dict[col] = val
-        dict_rows.append(row_dict)
+            dict_rows.append({"value": val})
+
+    columns = list(dict_rows[0].keys()) if dict_rows else []
 
     # Save to backend/data/{timestamp}.json
     data_dir = Path(__file__).resolve().parent.parent / "data"

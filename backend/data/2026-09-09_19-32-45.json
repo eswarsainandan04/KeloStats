@@ -1,0 +1,46 @@
+{
+  "columns": [
+    "schema_name",
+    "table_name",
+    "table_size_bytes",
+    "estimated_row_count",
+    "column_count"
+  ],
+  "rows": [
+    {
+      "schema_name": "public",
+      "table_name": "chat_messages",
+      "table_size_bytes": 16384,
+      "estimated_row_count": 0,
+      "column_count": 6
+    },
+    {
+      "schema_name": "public",
+      "table_name": "templates",
+      "table_size_bytes": 8192,
+      "estimated_row_count": -1,
+      "column_count": 5
+    },
+    {
+      "schema_name": "public",
+      "table_name": "user_databases",
+      "table_size_bytes": 8192,
+      "estimated_row_count": -1,
+      "column_count": 15
+    },
+    {
+      "schema_name": "public",
+      "table_name": "users",
+      "table_size_bytes": 8192,
+      "estimated_row_count": -1,
+      "column_count": 6
+    },
+    {
+      "schema_name": "public",
+      "table_name": "workspace",
+      "table_size_bytes": 8192,
+      "estimated_row_count": -1,
+      "column_count": 7
+    }
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "columns": [
+    "segment",
+    "market",
+    "total_sales",
+    "total_profit",
+    "total_quantity",
+    "avg_discount",
+    "profit_margin"
+  ],
+  "rows": [
+    {
+      "segment": "Consumer",
+      "market": "APAC",
+      "total_sales": 1816753.7004,
+      "total_profit": 222817.5604,
+      "total_quantity": 21414,
+      "avg_discount": 0.14886120371995087,
+      "profit_margin": 0.12264599232738131
+    },
+    {
+      "segment": "Consumer",
+      "market": "EU",
+      "total_sales": 1529716.2375,
+      "total_profit": 188687.7075,
+      "total_quantity": 19541,
+      "avg_discount": 0.10721172387196298,
+      "profit_margin": 0.12334817587369697
+    },
+    {
+      "segment": "Consumer",
+      "market": "US",
+      "total_sales": 1161401.345,
+      "total_profit": 134119.2092,
+      "total_quantity": 19521,
+      "avg_discount": 0.15814101329223657,
+      "profit_margin": 0.11548050101491832
+    },
+    {
+      "segment": "Corporate",
+      "market": "APAC",
+      "total_sales": 1078466.3148,
+      "total_profit": 129737.2348,
+      "total_quantity": 12142,
+      "avg_discount": 0.1478738958269875,
+      "profit_margin": 0.12029790176994037
+    },
+    {
+      "segment": "Corporate",
+      "market": "EU",
+      "total_sales": 920008.2795,
+      "total_profit": 123393.9795,
+      "total_quantity": 11635,
+      "avg_discount": 0.099480012999675,
+      "profit_margin": 0.13412268372960875
+    },
+    {
+      "segment": "Consumer",
+      "market": "LATAM",
+      "total_sales": 1133847.0323,
+      "total_profit": 120632.9323,
+      "total_quantity": 19853,
+      "avg_discount": 0.13395451982710016,
+      "profit_margin": 0.10639259870469213
+    },
+    {
+      "segment": "Corporate",
+      "market": "US",
+      "total_sales": 706146.3668,
+      "total_profit": 91979.134,
+      "total_quantity": 11608,
+      "avg_discount": 0.15822847682119207,
+      "profit_margin": 0.13025505521867398
+    },
+    {
+      "segment": "Home Office",
+      "market": "APAC",
+      "total_sales": 690524.1138,
+      "total_profit": 83445.2538,
+      "total_quantity": 7670,
+      "avg_discount": 0.15034653465346534,
+      "profit_margin": 0.12084335960520659
+    },
+    {
+      "segment": "Home Office",
+      "market": "EU",
+      "total_sales": 488364.5445,
+      "total_profit": 60748.0545,
+      "total_quantity": 6597,
+      "avg_discount": 0.09726540011514105,
+      "profit_margin": 0.12439079614634063
+    },
+    {
+      "segment": "Home Office",
+      "market": "US",
+      "total_sales": 429653.1485,
+      "total_profit": 60298.6785,
+      "total_quantity": 6744,
+      "avg_discount": 0.14712843522153674,
+      "profit_margin": 0.14034268970334335
+    },
+    {
+      "segment": "Corporate",
+      "market": "LATAM",
+      "total_sales": 645252.4819,
+      "total_profit": 57875.4219,
+      "total_quantity": 11499,
+      "avg_discount": 0.13506845725515887,
+      "profit_margin": 0.08969422594017921
+    },
+    {
+      "segment": "Consumer",
+      "market": "Africa",
+      "total_sales": 423766.809,
+      "total_profit": 47772.099,
+      "total_quantity": 5503,
+      "avg_discount": 0.15573288534229315,
+      "profit_margin": 0.11273204504319734
+    },
+    {
+      "segment": "Home Office",
+      "market": "LATAM",
+      "total_sales": 385505.6538,
+      "total_profit": 43135.1338,
+      "total_quantity": 7174,
+      "avg_discount": 0.14063645833333333,
+      "profit_margin": 0.11189235066933277
+    },
+    {
+      "segment": "Consumer",
+      "market": "EMEA",
+      "total_sales": 406745.184,
+      "total_profit": 25532.574,
+      "total_quantity": 5871,
+      "avg_discount": 0.1966903073286052,
+      "profit_margin": 0.06277289812975388
+    },
+    {
+      "segment": "Corporate",
+      "market": "Africa",
+      "total_sales": 204938.955,
+      "total_profit": 20686.965,
+      "total_quantity": 2943,
+      "avg_discount": 0.1639481707317073,
+      "profit_margin": 0.10094208297295162
+    },
+    {
+      "segment": "Home Office",
+      "market": "Africa",
+      "total_sales": 155067.447,
+      "total_profit": 20412.567,
+      "total_quantity": 2118,
+      "avg_discount": 0.14865771812080536,
+      "profit_margin": 0.131636699996744
+    },
+    {
+      "segment": "Corporate",
+      "market": "EMEA",
+      "total_sales": 250571.394,
+      "total_profit": 12499.134,
+      "total_quantity": 3515,
+      "avg_discount": 0.19593392630241424,
+      "profit_margin": 0.04988252569644881
+    },
+    {
+      "segment": "Consumer",
+      "market": "Canada",
+      "total_sales": 35719.11,
+      "total_profit": 9677.7,
+      "total_quantity": 454,
+      "avg_discount": 0.0,
+      "profit_margin": 0.2709390015596693
+    },
+    {
+      "segment": "Home Office",
+      "market": "EMEA",
+      "total_sales": 148844.733,
+      "total_profit": 5866.263,
+      "total_quantity": 2131,
+      "avg_discount": 0.1946564885496183,
+      "profit_margin": 0.03941196226271574
+    },
+    {
+      "segment": "Corporate",
+      "market": "Canada",
+      "total_sales": 19313.73,
+      "total_profit": 5036.46,
+      "total_quantity": 223,
+      "avg_discount": 0.0,
+      "profit_margin": 0.2607709644900286
+    },
+    {
+      "segment": "Home Office",
+      "market": "Canada",
+      "total_sales": 11895.33,
+      "total_profit": 3103.23,
+      "total_quantity": 156,
+      "avg_discount": 0.0,
+      "profit_margin": 0.26087800842851777
+    }
+  ]
+}

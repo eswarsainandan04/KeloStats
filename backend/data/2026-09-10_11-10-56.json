@@ -1,0 +1,88 @@
+{
+  "columns": [
+    "region",
+    "total_sales",
+    "total_profit",
+    "avg_discount"
+  ],
+  "rows": [
+    {
+      "region": "Central",
+      "total_sales": 2822302.5203,
+      "total_profit": 311403.982,
+      "avg_discount": 0.13885130880633265
+    },
+    {
+      "region": "South",
+      "total_sales": 1600907.041,
+      "total_profit": 140355.7663,
+      "avg_discount": 0.14905011286681716
+    },
+    {
+      "region": "North",
+      "total_sales": 1248165.6028,
+      "total_profit": 194597.9528,
+      "avg_discount": 0.0960564263322884
+    },
+    {
+      "region": "Oceania",
+      "total_sales": 1100184.612,
+      "total_profit": 120089.112,
+      "avg_discount": 0.15316891310582162
+    },
+    {
+      "region": "Southeast Asia",
+      "total_sales": 884423.169,
+      "total_profit": 17852.329,
+      "avg_discount": 0.2720773410035155
+    },
+    {
+      "region": "North Asia",
+      "total_sales": 848309.781,
+      "total_profit": 165578.421,
+      "avg_discount": 0.04871685201026518
+    },
+    {
+      "region": "EMEA",
+      "total_sales": 806161.311,
+      "total_profit": 43897.971,
+      "avg_discount": 0.19608272022270828
+    },
+    {
+      "region": "Africa",
+      "total_sales": 783773.211,
+      "total_profit": 88871.631,
+      "avg_discount": 0.1567037279267495
+    },
+    {
+      "region": "Central Asia",
+      "total_sales": 752826.567,
+      "total_profit": 132480.187,
+      "avg_discount": 0.06748046875
+    },
+    {
+      "region": "West",
+      "total_sales": 725457.8245,
+      "total_profit": 108418.4489,
+      "avg_discount": 0.10933499843896347
+    },
+    {
+      "region": "East",
+      "total_sales": 678781.24,
+      "total_profit": 91522.78,
+      "avg_discount": 0.14536516853932585
+    },
+    {
+      "region": "Caribbean",
+      "total_sales": 324280.8612,
+      "total_profit": 34571.3212,
+      "avg_discount": 0.13575147928994083
+    },
+    {
+      "region": "Canada",
+      "total_sales": 66928.17,
+      "total_profit": 17817.39,
+      "avg_discount": 0.0
+    }
+  ]
+}
