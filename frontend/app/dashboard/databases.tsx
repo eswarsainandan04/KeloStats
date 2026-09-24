@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config";
+import { fetchWithAuth } from "@/lib/api";
 
 interface DatabaseItem {
   db_id: string;
@@ -55,7 +56,7 @@ export default function DatabasesPage() {
     setLoadingSchema(true);
     setSchemaError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/database/schema?database_id=${dbId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/database/schema?database_id=${dbId}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.detail || "Failed to load database schema.");
@@ -152,7 +153,7 @@ export default function DatabasesPage() {
   const fetchDatabases = async () => {
     const userId = getUserId();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
       if (res.ok) {
         const data = await res.json();
         setDatabases(data.databases || []);
@@ -200,7 +201,7 @@ export default function DatabasesPage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/databases/connect`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/connect`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -234,7 +235,7 @@ export default function DatabasesPage() {
     setDeleteDbError(null);
     const userId = getUserId();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/databases/delete`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -263,7 +264,7 @@ export default function DatabasesPage() {
   };
 
   return (
-    <div className="space-y-6 relative">
+    <div className="w-full flex-1 min-h-screen bg-[#f8fafc] px-6 sm:px-10 lg:px-12 py-8 space-y-8 animate-in fade-in duration-200 relative">
       {/* Floating Error Popup (Shows ONLY if connection fails) */}
       {popupError && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4 transition-all">
@@ -279,7 +280,7 @@ export default function DatabasesPage() {
             </div>
             <button
               onClick={() => setPopupError(null)}
-              className="text-red-400 hover:text-red-700 font-bold text-lg leading-none p-1 shrink-0"
+              className="text-red-400 hover:text-red-700 font-bold text-lg leading-none p-1 shrink-0 cursor-pointer"
             >
               ✕
             </button>
@@ -287,20 +288,27 @@ export default function DatabasesPage() {
         </div>
       )}
 
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Bar matching Presentation Templates */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-slate-100">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Connected Databases</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Connected Databases
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-[#FF5148] border border-orange-200/80">
+              {databases.length} {databases.length === 1 ? "Database" : "Databases"}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 mt-1 max-w-2xl">
             Connect your PostgreSQL, MySQL, or Oracle database to enable automated schema extraction and AI presentation synthesis.
           </p>
         </div>
         <button
           onClick={openAddModal}
-          className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#FF5148] hover:bg-[#e64037] shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          className="px-5 py-2.5 rounded-xl bg-[#FF5148] hover:bg-[#e64037] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
           </svg>
           <span>Add Database</span>
         </button>
@@ -308,11 +316,23 @@ export default function DatabasesPage() {
 
       {/* Database Cards List */}
       {loading ? (
-        <div className="p-12 text-center text-slate-400 text-sm">
-          Loading connected databases...
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 aspect-square animate-pulse flex flex-col justify-between items-center">
+              <div className="w-full flex justify-between">
+                <div className="h-5 w-16 bg-slate-100 rounded-full" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-100" />
+              </div>
+              <div className="w-20 h-20 bg-slate-100 rounded-2xl" />
+              <div className="w-full space-y-2">
+                <div className="h-4 bg-slate-100 rounded mx-auto w-3/4" />
+                <div className="h-3 bg-slate-50 rounded mx-auto w-1/2" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : databases.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+        <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-white/70">
           <div className="w-12 h-12 rounded-xl bg-orange-100 text-[#FF5148] flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
@@ -324,13 +344,13 @@ export default function DatabasesPage() {
           </p>
           <button
             onClick={openAddModal}
-            className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#FF5148] hover:bg-[#e64037] shadow-sm transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#FF5148] hover:bg-[#e64037] shadow-md transition-all cursor-pointer"
           >
             Connect Your First Database
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {databases.map((db) => {
             const dbTitle = db.display_name || db.database_name || db.service_name || "Database";
             const subTitle = db.database_name || db.service_name;

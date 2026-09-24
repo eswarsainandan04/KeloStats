@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/config";
+import { supabase } from "@/lib/supabase";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -38,27 +38,34 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
         },
-        body: JSON.stringify({
-          full_name: fullName.trim(),
-          email: email.trim(),
-          password,
-          confirm_password: confirmPassword,
-        }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to create account.");
+      if (authError) {
+        throw new Error(authError.message || "Failed to create account.");
       }
 
-      // Immediately redirect on success without message
-      router.push("/login");
+      if (data?.session && data?.user) {
+        if (typeof window !== "undefined") {
+          const userInfo = {
+            user_id: data.user.id,
+            email: data.user.email,
+            full_name: fullName.trim(),
+          };
+          localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
+        }
+        router.push("/dashboard");
+      } else {
+        // Redirection to login
+        router.push("/login");
+      }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {

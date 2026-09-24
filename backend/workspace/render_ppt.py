@@ -109,15 +109,22 @@ def prepare_embeddable_html(raw_html: str) -> str:
     content = body_match.group(1).strip() if body_match else raw_html.strip()
 
     # Ensure all <script> tags from raw_html are preserved in embeddable output
+    # CRITICAL: External library scripts (like Chart.js, Lucide) MUST be placed BEFORE inline scripts
     script_tags = re.findall(r"<script[\s\S]*?</script>", raw_html, re.IGNORECASE)
+    ext_scripts = []
+    inline_scripts = []
     for s_tag in script_tags:
         if s_tag not in content:
-            content += f"\n{s_tag}"
+            if "src=" in s_tag.lower():
+                ext_scripts.append(s_tag)
+            else:
+                inline_scripts.append(s_tag)
 
-    # If style tags exist, prepend the scoped styles
-    if combined_css.strip():
-        return f"<style>\n{combined_css}\n</style>\n{content}"
-    return content
+    ext_markup = "\n".join(ext_scripts)
+    inline_markup = "\n".join(inline_scripts)
+    style_markup = f"<style>\n{combined_css}\n</style>\n" if combined_css.strip() else ""
+
+    return f"{style_markup}{ext_markup}\n{content}\n{inline_markup}".strip()
 
 
 # ==============================================================================

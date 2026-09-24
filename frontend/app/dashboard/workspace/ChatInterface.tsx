@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_BASE_URL } from "@/lib/config";
+import { fetchWithAuth } from "@/lib/api";
 
 interface ChatMessage {
   id: string;
@@ -19,10 +20,13 @@ interface ChatInterfaceProps {
   userId?: string;
   databaseId?: string;
   databaseDisplayName?: string;
+  collectionId?: string;
+  collectionDisplayName?: string;
+  source?: "database" | "documents" | "auto";
   slideNumber?: number;
   totalSlides?: number;
   onSelectSlide?: (slideNum: number) => void;
-  onSlideRefreshRequired?: () => void;
+  onSlideRefreshRequired?: (targetSlideNumber?: number) => void;
   onClose?: () => void;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -33,6 +37,9 @@ export default function ChatInterface({
   userId,
   databaseId,
   databaseDisplayName,
+  collectionId,
+  collectionDisplayName,
+  source,
   slideNumber,
   totalSlides,
   onSelectSlide,
@@ -41,6 +48,42 @@ export default function ChatInterface({
   isExpanded,
   onToggleExpand,
 }: ChatInterfaceProps) {
+  const [currentSource, setCurrentSource] = useState<"database" | "documents" | "auto">(
+    source || (databaseId && collectionId ? "auto" : databaseId ? "database" : collectionId ? "documents" : "auto")
+  );
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [isUpdatingSource, setIsUpdatingSource] = useState(false);
+
+  useEffect(() => {
+    if (source) {
+      setCurrentSource(source);
+    }
+  }, [source]);
+
+  const handleSelectSource = async (newSource: "database" | "documents" | "auto") => {
+    setCurrentSource(newSource);
+    setIsSourceModalOpen(false);
+
+    if (projectId) {
+      try {
+        setIsUpdatingSource(true);
+        await fetchWithAuth(`${API_BASE_URL}/api/workspace/update_source`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: projectId,
+            user_id: userId,
+            source: newSource,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to update workspace source in backend:", err);
+      } finally {
+        setIsUpdatingSource(false);
+      }
+    }
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -61,7 +104,7 @@ export default function ChatInterface({
       try {
         // 1. Check workspace projects list for this project's database_display_name
         if (projectId && projectId !== "project_default") {
-          const wsRes = await fetch(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
+          const wsRes = await fetchWithAuth(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
           if (wsRes.ok) {
             const wsData = await wsRes.json();
             const wsList = wsData.workspaces || [];
@@ -77,7 +120,7 @@ export default function ChatInterface({
         }
 
         // 2. Fallback: inspect user's connected database list
-        const dbRes = await fetch(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+        const dbRes = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
         if (dbRes.ok) {
           const dbData = await dbRes.json();
           const dbList = Array.isArray(dbData.databases) ? dbData.databases : (Array.isArray(dbData) ? dbData : []);
@@ -152,7 +195,7 @@ export default function ChatInterface({
     const fetchHistory = async () => {
       setLoadingHistory(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/workspace/chat/${projectId}`);
+        const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/chat/${projectId}`);
         if (res.ok) {
           const data = await res.json();
           const loadedMessages: ChatMessage[] = (data.messages || []).map((m: any) => {
@@ -221,7 +264,7 @@ export default function ChatInterface({
     const targetFilename = `slide_${String(targetSlideNumber).padStart(2, "0")}.html`;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/workflow/query`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/workflow/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -229,8 +272,10 @@ export default function ChatInterface({
         body: JSON.stringify({
           user_query: query,
           database_id: databaseId || undefined,
+          collection_id: collectionId || undefined,
           project_id: projectId || undefined,
           user_id: userId || undefined,
+          source: currentSource,
           slide_number: targetSlideNumber,
           slide_filename: targetFilename,
         }),
@@ -247,7 +292,7 @@ export default function ChatInterface({
             ? data.output
             : `✨ I've designed Slide ${generatedSlideNum} (${generatedFilename}) based on your data and updated your presentation canvas.`;
           if (onSlideRefreshRequired) {
-            onSlideRefreshRequired();
+            onSlideRefreshRequired(generatedSlideNum);
           }
         } else {
           replyText = data.output || "Query processed successfully.";
@@ -293,13 +338,13 @@ export default function ChatInterface({
     <div className="h-full flex flex-col bg-white">
       {/* Sleek Copilot Top Bar with Stretch & Close Controls */}
       <div className="h-11 border-b border-slate-200 flex items-center justify-between px-3.5 shrink-0 bg-white select-none">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-[#FF5148] to-orange-400 text-white flex items-center justify-center shadow-2xs">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-[#FF5148] to-orange-400 text-white flex items-center justify-center shadow-2xs shrink-0">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <span className="text-xs font-bold text-slate-800 tracking-tight">Copilot</span>
+          <span className="text-xs font-bold text-slate-800 tracking-tight shrink-0">Copilot</span>
         </div>
 
         <div className="flex items-center gap-1 text-slate-400">
@@ -470,7 +515,13 @@ export default function ChatInterface({
             onKeyDown={handleKeyDown}
             disabled={isTyping}
             rows={1}
-            placeholder="Ask questions or command presentation edits..."
+            placeholder={
+              currentSource === "auto"
+                ? "Ask questions across database & documents or command slide edits..."
+                : currentSource === "database"
+                ? "Ask questions about database or command slide edits..."
+                : "Ask questions from documents or command slide edits..."
+            }
             className="w-full bg-transparent resize-none border-0 p-1 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 leading-5 custom-chat-scrollbar"
             style={{ maxHeight: "96px" }}
           />
@@ -479,22 +530,50 @@ export default function ChatInterface({
           <div className="flex items-center justify-between pt-1 select-none">
             {/* Badges Container */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Database Indicator Badge with database.png */}
-              {dbDisplayName ? (
+              {/* Dynamic Source Indicator at Input Bar */}
+              {currentSource === "auto" && (
                 <div
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-medium text-slate-600 shadow-2xs hover:border-slate-300 transition-colors cursor-default max-w-[160px] truncate"
-                  title={`Connected Database: ${dbDisplayName}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/90 text-[10px] font-semibold text-amber-700 shadow-2xs shrink-0 cursor-default"
+                  title="Source: Auto"
+                >
+                  <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="tracking-tight uppercase text-[9px] font-bold">Auto</span>
+                </div>
+              )}
+
+              {currentSource === "database" && (
+                <div
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-semibold text-slate-700 shadow-2xs shrink-0 cursor-default max-w-[160px] truncate"
+                  title={dbDisplayName || "Database"}
                 >
                   <img
                     src="/database.png"
                     alt="Database"
                     className="w-3.5 h-3.5 object-contain shrink-0"
                   />
-                  <span className="tracking-tight text-slate-700 font-semibold text-[10px] truncate">
-                    {dbDisplayName}
+                  <span className="tracking-tight text-[10px] font-semibold truncate">
+                    {dbDisplayName || "Database"}
                   </span>
                 </div>
-              ) : null}
+              )}
+
+              {currentSource === "documents" && (
+                <div
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-semibold text-slate-700 shadow-2xs shrink-0 cursor-default max-w-[160px] truncate"
+                  title={collectionDisplayName || "Collection"}
+                >
+                  <img
+                    src="/collection.png"
+                    alt="Collection"
+                    className="w-3.5 h-3.5 object-contain shrink-0"
+                  />
+                  <span className="tracking-tight text-[10px] font-semibold truncate">
+                    {collectionDisplayName || "Collection"}
+                  </span>
+                </div>
+              )}
 
               {/* Small Slide Indicator Badge with ppt.png */}
               <div
@@ -512,21 +591,157 @@ export default function ChatInterface({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleSendMessage()}
-              disabled={!inputValue.trim() || isTyping}
-              className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 ${
-                inputValue.trim() && !isTyping
-                  ? "bg-[#FF5148] hover:bg-[#e03e35] text-white shadow-xs hover:scale-105 active:scale-95"
-                  : "bg-slate-200/80 text-slate-400 cursor-not-allowed opacity-50"
-              }`}
-              title="Send query (Enter)"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </button>
+            {/* Right Action Buttons: Source Picker & Send Button */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Small Source Switcher Button with anchored popover */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSourceModalOpen(!isSourceModalOpen)}
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all cursor-pointer shrink-0 ${
+                    isSourceModalOpen
+                      ? "bg-slate-100 border-slate-300 text-slate-800 scale-105"
+                      : "bg-white hover:bg-slate-100 border-slate-200/90 text-slate-600 shadow-2xs hover:scale-105 active:scale-95"
+                  }`}
+                  title="Select Data Source"
+                >
+                  <img
+                    src="/source.png"
+                    alt="Source"
+                    className="w-3.5 h-3.5 object-contain shrink-0"
+                  />
+                </button>
+
+                {/* Small Popover Menu anchored at source button */}
+                {isSourceModalOpen && (
+                  <>
+                    {/* Invisible backdrop to dismiss when clicking outside */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsSourceModalOpen(false)}
+                    />
+
+                    <div className="absolute bottom-full right-0 mb-2 z-50 w-52 bg-white rounded-xl shadow-xl border border-slate-200/90 p-1.5 animate-in fade-in zoom-in-95 duration-150 select-none">
+                      <div className="px-2.5 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                        Source
+                      </div>
+
+                      <div className="space-y-0.5">
+                        {/* Option 1: Database */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSource("database")}
+                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            currentSource === "database"
+                              ? "bg-slate-100 text-slate-900 font-semibold"
+                              : "hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Database Icon */}
+                            <img
+                              src="/database.png"
+                              alt="Database"
+                              className="w-4 h-4 object-contain shrink-0"
+                            />
+                            {/* Display Name */}
+                            <span className="text-xs truncate">
+                              {dbDisplayName || "Database"}
+                            </span>
+                          </div>
+                          {currentSource === "database" && (
+                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* Option 2: Collection */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSource("documents")}
+                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            currentSource === "documents"
+                              ? "bg-slate-100 text-slate-900 font-semibold"
+                              : "hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Collection Icon */}
+                            <img
+                              src="/collection.png"
+                              alt="Collection"
+                              className="w-4 h-4 object-contain shrink-0"
+                            />
+                            {/* Display Name */}
+                            <span className="text-xs truncate">
+                              {collectionDisplayName || "Collection"}
+                            </span>
+                          </div>
+                          {currentSource === "documents" && (
+                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* Option 3: Auto */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSource("auto")}
+                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                            currentSource === "auto"
+                              ? "bg-slate-100 text-slate-900 font-semibold"
+                              : "hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Auto Icon */}
+                            <svg
+                              className="w-4 h-4 text-amber-500 shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            {/* Auto Name */}
+                            <span className="text-xs">
+                              Auto
+                            </span>
+                          </div>
+                          {currentSource === "auto" && (
+                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Send Message Button */}
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                disabled={!inputValue.trim() || isTyping}
+                className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0 ${
+                  inputValue.trim() && !isTyping
+                    ? "bg-[#FF5148] hover:bg-[#e03e35] text-white shadow-xs hover:scale-105 active:scale-95"
+                    : "bg-slate-200/80 text-slate-400 cursor-not-allowed opacity-50"
+                }`}
+                title="Send query (Enter)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

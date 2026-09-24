@@ -311,62 +311,94 @@ def _clean_html_response(raw_response: str) -> str:
         if not text.endswith("</body>"):
             text += "\n</body>\n</html>"
 
+    # 5. Sanitize HTML to prevent scrollbars and responsive column collapse
+    text = _sanitize_slide_html(text)
+
     return text
+
+
+def _sanitize_slide_html(html_code: str) -> str:
+    """
+    Sanitizes slide HTML to guarantee zero scrollbars and prevent
+    destructive mobile media queries that collapse side-by-side layouts.
+    """
+    if not html_code:
+        return html_code
+
+    # 1. Eliminate scrollbars: force overflow: hidden
+    sanitized = re.sub(
+        r"overflow(?:-[yx])?\s*:\s*(?:auto|scroll)\s*!?;?",
+        "overflow: hidden;",
+        html_code,
+        flags=re.IGNORECASE
+    )
+
+    # 2. Strip destructive responsive collapse media queries that force 1fr columns
+    def _strip_collapse_media(match):
+        block = match.group(0)
+        if (
+            "grid-template-columns: 1fr" in block
+            or "grid-template-columns:1fr" in block
+            or "grid-column: 1 / -1" in block
+            or "grid-column:1/-1" in block
+        ):
+            return "/* Stripped mobile collapse to preserve 16:9 side-by-side layout */"
+        return block
+
+    sanitized = re.sub(
+        r"@media\s*\([^{]+\)\s*\{[\s\S]*?\}\s*\}",
+        _strip_collapse_media,
+        sanitized,
+        flags=re.IGNORECASE
+    )
+
+    return sanitized
 
 
 def PPTGenerationAgent(
     user_query: str,
-    retrived_rows: Optional[Union[Dict[str, Any], List[Any], str]] = None,
+    slide_plan: Optional[Union[Dict[str, Any], str]] = None,
     slide_number: int = 1,
     project_id: Optional[str] = None,
     user_id: Optional[str] = None,
     html_code: Optional[str] = None,
-    sql_required: bool = True
+    sql_required: bool = True,
+    **kwargs
 ) -> str:
     """
     PPT Generation Agent:
-    - If sql_required is True: Uses retrieved database records and ppt_theme_prompt.txt to generate data-driven slides.
-    - If sql_required is False: Skips SQL rows and uses ppt_general_agent_prompt.txt for direct editing, styling,
+    - Compiles the structured JSON slide plan (produced by SlidePlanningAgent) and HTML template
+      into responsive, presentation-ready 16:9 HTML slide code.
+    - If sql_required is True: Uses slide_plan and ppt_theme_prompt.txt to compile data visualizations.
+    - If sql_required is False: Uses ppt_general_agent_prompt.txt for direct editing, styling,
       and improving existing presentation slides.
     - Saves updated HTML to Supabase S3 under workspace/{user_id}/{project_id}/slides/{current_slide}.html.
     - Returns executable HTML code.
 
     :param user_query: The user prompt / instruction for the presentation slide
-    :param retrived_rows: The data records returned from SQL execution (ignored if sql_required=False)
+    :param slide_plan: Structured layout plan JSON containing components, coordinates, and data
     :param slide_number: Target slide index (e.g. 1, 2, 3...)
     :param project_id: Optional project identifier for S3 sync and retrieval
     :param user_id: Optional user identifier for S3 path resolution
     :param html_code: Explicit template HTML string (if not provided, retrieved dynamically via GetHTMLCode)
-    :param sql_required: True to use SQL rows + ppt_theme_prompt.txt; False to use ppt_general_agent_prompt.txt
+    :param sql_required: True to compile data-driven slide plan; False for general slide edits
     :return: Pure executable HTML slide markup
     """
     cleaned_query = (user_query or "").strip()
 
-    # 1. Format retrieved_rows to clean JSON string (only if sql_required)
-    if sql_required and retrived_rows is not None:
-        if isinstance(retrived_rows, (dict, list)):
-            if isinstance(retrived_rows, dict) and "rows" in retrived_rows:
-                all_rows = retrived_rows.get("rows") or []
-                if len(all_rows) > 50:
-                    truncated_payload = {
-                        "columns": retrived_rows.get("columns", []),
-                        "total_rows_count": len(all_rows),
-                        "showing_first_50_rows": all_rows[:50]
-                    }
-                    data_str = json.dumps(truncated_payload, indent=2, default=str)
-                else:
-                    data_str = json.dumps(retrived_rows, indent=2, default=str)
-            elif isinstance(retrived_rows, list) and len(retrived_rows) > 50:
-                data_str = json.dumps({
-                    "total_rows_count": len(retrived_rows),
-                    "showing_first_50_rows": retrived_rows[:50]
-                }, indent=2, default=str)
-            else:
-                data_str = json.dumps(retrived_rows, indent=2, default=str)
+    # 1. Format slide_plan to clean JSON string
+    if slide_plan is not None:
+        if isinstance(slide_plan, (dict, list)):
+            plan_str = json.dumps(slide_plan, indent=2, default=str)
         else:
-            data_str = str(retrived_rows or "{}")
+            plan_str = str(slide_plan or "{}")
     else:
-        data_str = "{}"
+        # Fallback check if legacy retrived_rows was passed
+        legacy_rows = kwargs.get("retrived_rows")
+        if legacy_rows:
+            plan_str = json.dumps(legacy_rows, indent=2, default=str) if isinstance(legacy_rows, (dict, list)) else str(legacy_rows)
+        else:
+            plan_str = "{}"
 
     # 2. Determine template HTML code if not provided
     template_html = html_code
@@ -412,7 +444,8 @@ def PPTGenerationAgent(
         populated_prompt = (
             prompt_template
             .replace("{{Prompt}}", cleaned_query)
-            .replace("{{retrived_rows}}", data_str)
+            .replace("{{slide_plan}}", plan_str)
+            .replace("{{retrived_rows}}", plan_str)
             .replace("{{html_code}}", template_html)
         )
 

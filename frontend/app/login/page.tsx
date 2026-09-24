@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/config";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,29 +25,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || "Invalid email or password.");
+      if (authError) {
+        throw new Error(authError.message || "Invalid email or password.");
       }
 
-      // Store basic user session info in localStorage
+      // Store user info in localStorage for seamless backward-compatibility
       if (typeof window !== "undefined" && data.user) {
-        localStorage.setItem("kelostats_user", JSON.stringify(data.user));
+        const userInfo = {
+          user_id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User",
+        };
+        localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
       }
 
-      // Immediately redirect on success without message
+      // Immediately redirect on success
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred. Please try again.");

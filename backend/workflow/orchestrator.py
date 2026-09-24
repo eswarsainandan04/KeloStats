@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import TypedDict, Optional, Dict, Any, Union, List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
 
@@ -32,6 +32,7 @@ from Agents.quey_decision_agent import (
     QueryDecisionAgent,
     QueryDecisionClassifyAgent
 )
+from Agents.knowledge_answer_agent import KnowledgeAnswerAgent
 from Agents.answer_generator_agent import AnswerGeneratorAgent
 from Agents.ppt_generation_agent import (
     PPTGenerationAgent,
@@ -39,6 +40,8 @@ from Agents.ppt_generation_agent import (
     is_empty_slide,
     save_slide_to_s3
 )
+from Agents.slide_planning_agent import SlidePlanningAgent
+from Agents.rag_planner_agent import RAGPlannerAgent
 from Agents.validate_html_code_agent import ValidateHTMLCodeAgent
 from workspace.chat import save_chat_message
 from databases.schema_extraction import schema_input
@@ -60,6 +63,7 @@ class KelostatsGraphState(TypedDict):
     reformulated_query: Optional[str]
     is_reformulated: Optional[bool]
     database_id: Optional[str]
+    collection_id: Optional[str]
     project_id: Optional[str]
     user_id: Optional[str]
     slide_number: Optional[int]
@@ -68,6 +72,8 @@ class KelostatsGraphState(TypedDict):
     decision: Optional[str]               # "normal_qa" | "agent"
     decision_reason: Optional[str]
     sql_required: Optional[bool]          # True if SQL pipeline needed, False for direct PPT edit
+    rag_required: Optional[bool]          # True if RAG document retrieval needed
+    source: Optional[str]                 # "database" | "documents"
     llm_prompt_text: Optional[str]
     verification_status: Optional[str]  # "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED"
     verification_reason: Optional[str]
@@ -76,6 +82,7 @@ class KelostatsGraphState(TypedDict):
     sql_error: Optional[str]
     retrieved_data: Optional[Dict[str, Any]]
     retrieved_rows_count: Optional[int]
+    slide_plan: Optional[Dict[str, Any]]
     generated_slide_html: Optional[str]
     final_output: Optional[str]
     status: Optional[str]
@@ -191,20 +198,32 @@ def query_decision_node(state: KelostatsGraphState) -> Dict[str, Any]:
       or if it's a direct edit/styling request without SQL (sql_required=False).
     """
     user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    source_input = state.get("source")
     print(f"\n[LangGraph - Node 0B: Query Decision] Classifying task type (normal_qa vs agent)...")
 
-    decision_res = QueryDecisionAgent(user_query=user_query)
+    decision_res = QueryDecisionAgent(user_query=user_query, project_id=project_id, source=source_input)
     decision = decision_res.get("decision", "normal_qa").lower().strip()
     reason = decision_res.get("reason", "")
-    sql_required = decision_res.get("sql_required", True)
-    print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | sql_required={sql_required} | reason='{reason}'")
+    source = decision_res.get("source", "database")
 
-    return {
+    result_dict: Dict[str, Any] = {
         "decision": decision,
         "decision_reason": reason,
-        "sql_required": sql_required,
+        "source": source,
         "status": f"DECISION_{decision.upper()}"
     }
+
+    if source in ("documents", "document", "docs"):
+        rag_required = decision_res.get("rag_required", True)
+        result_dict["rag_required"] = rag_required
+        print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | source='{source}' | rag_required={rag_required} | reason='{reason}'")
+    else:
+        sql_required = decision_res.get("sql_required", True)
+        result_dict["sql_required"] = sql_required
+        print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | source='{source}' | sql_required={sql_required} | reason='{reason}'")
+
+    return result_dict
 
 
 def schema_input_node(state: KelostatsGraphState) -> Dict[str, Any]:
@@ -452,22 +471,146 @@ def answer_generator_node(state: KelostatsGraphState) -> Dict[str, Any]:
     }
 
 
-def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
+def get_collection_from_workspace(project_id: Optional[str]) -> Optional[str]:
+    """Retrieves collection_id for a workspace project from the workspace table."""
+    if not project_id or not str(project_id).strip():
+        return None
+    try:
+        from Agents.quey_decision_agent import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            stmt = text("SELECT collection_id FROM workspace WHERE project_id = :project_id LIMIT 1;")
+            row = conn.execute(stmt, {"project_id": str(project_id).strip()}).fetchone()
+            if row and row[0]:
+                return str(row[0]).strip()
+    except Exception as exc:
+        print(f"[!] Warning fetching collection_id for project '{project_id}': {exc}")
+    return None
+
+
+def knowledge_answer_node(state: KelostatsGraphState) -> Dict[str, Any]:
     """
-    Node 6: PPTGenerationAgent
-    Triggered when decision == 'agent'.
-    - If sql_required is True: SQL workflow has executed and populated state['retrieved_data'].
-      Uses ppt_theme_prompt.txt.
-    - If sql_required is False: Bypasses SQL pipeline. Direct slide edit/styling/content improvement.
-      Uses ppt_general_agent_prompt.txt without SQL rows.
-    1. Calls GetHTMLCode(project_id, slide_number, user_id) from S3: workspace/{user_id}/{project_id}/slides/slide_{slide_number:02d}.html
-       - Case 1 (Empty Slide): If current slide is empty ppt slide (no content in canvas),
-         retrieves previous slide code (slide_{slide_number - 1:02d}.html) and sends it as template to LLM.
-       - Case 2 (Slide with Content): If current slide has content,
-         sends current slide code (slide_{slide_number:02d}.html) as template to LLM.
-    2. Invokes PPTGenerationAgent(user_query, retrieved_rows, slide_number, project_id, user_id, template_html, sql_required)
-       to generate/update HTML slide and replaces the existing code in Supabase S3.
-    3. Sets final_output to a friendly chat confirmation (DO NOT return raw HTML code in chat!).
+    Node: KnowledgeAnswerAgent
+    Triggered when decision == 'normal_qa' and rag_required is True.
+    Retrieves document chunks from pgvector semantic search and synthesizes
+    a factual answer via KnowledgeAnswerAgent.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    collection_id = state.get("collection_id")
+
+    if not collection_id and project_id:
+        collection_id = get_collection_from_workspace(project_id)
+
+    print(f"\n[LangGraph - Knowledge Answer Node] Synthesizing answer from documents (collection_id={collection_id})...")
+
+    context = ""
+    if collection_id:
+        try:
+            from documents.semantic_search import generate_query_embeddings, hybrid_search, context_parser
+            query_embedding = generate_query_embeddings(user_query)
+            chunks = hybrid_search(query_text=user_query, embedded_query=query_embedding, collection_id=collection_id)
+            context = context_parser(chunks)
+        except Exception as ctx_err:
+            print(f"[!] Warning retrieving document context: {ctx_err}")
+
+    try:
+        decision_val = state.get("decision") or "normal_qa"
+        answer_text = KnowledgeAnswerAgent(user_query=user_query, context=context, decision=decision_val)
+    except Exception as agent_err:
+        print(f"[!] Error in KnowledgeAnswerAgent: {agent_err}")
+        answer_text = f"I encountered an error retrieving answers from the documents: {str(agent_err)}"
+
+    print("[+] [LangGraph - Knowledge Answer Node] Document answer generated successfully!")
+    return {
+        "final_output": answer_text,
+        "status": "SUCCESS_KNOWLEDGE_ANSWER_GENERATED"
+    }
+
+
+def knowledge_planner_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node: RAGPlannerAgent (knowledge_planner)
+    Triggered when decision == 'agent' and rag_required is True.
+    1. Retrieves document context chunks for collection_id.
+    2. Calls KnowledgeAnswerAgent(user_query, context) to produce generated_context.
+    3. Resolves template HTML code from current/previous slide.
+    4. Calls RAGPlannerAgent(user_query, template_html, generated_context) to produce
+       a structured slide layout JSON plan.
+    5. Returns slide_plan for PPTGenerationAgent.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    user_id = state.get("user_id")
+    slide_number = int(state.get("slide_number") or 1)
+    collection_id = state.get("collection_id")
+
+    if not collection_id and project_id:
+        collection_id = get_collection_from_workspace(project_id)
+
+    print(f"\n[LangGraph - Node: Knowledge Planner] Planning Slide {slide_number} from document RAG context (collection_id={collection_id})...")
+
+    # 1. Retrieve document chunks via semantic search
+    context = ""
+    if collection_id:
+        try:
+            from documents.semantic_search import generate_query_embeddings, hybrid_search, context_parser
+            query_embedding = generate_query_embeddings(user_query)
+            chunks = hybrid_search(query_text=user_query, embedded_query=query_embedding, collection_id=collection_id)
+            context = context_parser(chunks)
+        except Exception as ctx_err:
+            print(f"[!] Warning retrieving document context for RAG planner: {ctx_err}")
+
+    # 2. Synthesize document knowledge via KnowledgeAnswerAgent
+    print(f"[*] [LangGraph - Knowledge Planner] Synthesizing document context via KnowledgeAnswerAgent (decision='agent')...")
+    try:
+        from Agents.knowledge_answer_agent import KnowledgeAnswerAgent
+        decision_val = state.get("decision") or "agent"
+        generated_context = KnowledgeAnswerAgent(user_query=user_query, context=context, decision=decision_val)
+    except Exception as agent_err:
+        print(f"[!] Error in KnowledgeAnswerAgent: {agent_err}")
+        generated_context = context or user_query
+
+    # 3. Retrieve current/previous slide HTML code as template
+    current_html = GetHTMLCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
+    if is_empty_slide(current_html):
+        if slide_number > 1 and project_id:
+            prev_num = slide_number - 1
+            prev_html = GetHTMLCode(project_id=project_id, slide_number=prev_num, user_id=user_id)
+            template_html = prev_html if (prev_html and not is_empty_slide(prev_html)) else current_html
+        else:
+            template_html = current_html
+    else:
+        template_html = current_html
+
+    # 4. Generate structured slide plan via RAGPlannerAgent
+    print(f"[*] [LangGraph - Knowledge Planner] Calling RAGPlannerAgent to build 1920x1080 slide plan...")
+    slide_plan = RAGPlannerAgent(
+        user_query=user_query,
+        html_code=template_html,
+        generated_context=generated_context,
+        project_id=project_id,
+        slide_number=slide_number,
+        user_id=user_id
+    )
+
+    component_count = len(slide_plan.get("components", []))
+    print(f"[+] [LangGraph - Knowledge Planner] Synthesized RAG slide plan with {component_count} components.")
+
+    return {
+        "slide_plan": slide_plan,
+        "slide_number": slide_number,
+        "status": "RAG_SLIDE_PLAN_GENERATED"
+    }
+
+
+def slide_planning_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 5.5: SlidePlanningAgent
+    Triggered when decision == 'agent'. Runs immediately before PPTGenerationAgent.
+    - Receives: user_query, html_code (template), retrived_rows (optional), sql_required.
+    - Plans: component data and non-overlapping 1920x1080 bounding box locations.
+    - Returns: structured slide_plan JSON dict.
     """
     user_query = state.get("user_query") or ""
     sql_required = state.get("sql_required")
@@ -479,7 +622,7 @@ def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
     project_id = state.get("project_id")
     user_id = state.get("user_id")
 
-    print(f"\n[LangGraph - Node 6: PPT Generation Node] Processing Slide {slide_number} (sql_required={sql_required})...")
+    print(f"\n[LangGraph - Node 5.5: Slide Planning Node] Planning Slide {slide_number} (sql_required={sql_required})...")
 
     # 1. Retrieve current slide code from S3
     current_html = GetHTMLCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
@@ -501,21 +644,94 @@ def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
         print(f"[*] [Case 2 - Content Slide] Slide {slide_number} has existing content. Sending current slide to LLM as template.")
         template_html = current_html
 
-    # 3. Generate new slide HTML and replace existing code in S3
+    # 3. Call SlidePlanningAgent
+    slide_plan = SlidePlanningAgent(
+        user_query=user_query,
+        html_code=template_html,
+        retrived_rows=retrieved_data,
+        sql_required=sql_required,
+        project_id=project_id,
+        slide_number=slide_number,
+        user_id=user_id
+    )
+
+    component_count = len(slide_plan.get("components", []))
+    print(f"[+] [LangGraph - Slide Planning Node] Synthesized layout plan with {component_count} components.")
+    
+    # If slide_plan is invalid or empty, create a fallback empty plan
+    if not slide_plan or not isinstance(slide_plan, dict):
+        slide_plan = {"canvas": {"width": 1920, "height": 1080}, "components": []}
+
+    return {
+        "slide_plan": slide_plan,
+        "slide_number": slide_number,
+        "status": "SLIDE_PLAN_GENERATED"
+    }
+
+
+def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 6: PPTGenerationAgent
+    Triggered after slide_planning_node.
+    - Receives: user_query, slide_plan (from SlidePlanningAgent), html_code (template).
+      (Does NOT receive raw retrived_rows).
+    - Compiles the slide_plan JSON and template HTML into responsive 16:9 HTML slide markup.
+    - Saves generated HTML to Supabase S3.
+    """
+    user_query = state.get("user_query") or ""
+    sql_required = state.get("sql_required")
+    if sql_required is None:
+        sql_required = True
+
+    slide_plan = state.get("slide_plan") or {}
+    slide_number = int(state.get("slide_number") or 1)
+    project_id = state.get("project_id")
+    user_id = state.get("user_id")
+
+    print(f"\n[LangGraph - Node 6: PPT Generation Node] Rendering Slide {slide_number} from Slide Plan (sql_required={sql_required})...")
+
+    # 1. Retrieve current slide code from S3
+    current_html = GetHTMLCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
+
+    # 2. Check if current slide is empty (Case 1 vs Case 2)
+    if is_empty_slide(current_html):
+        print(f"[*] [Case 1 - Empty Slide] Slide {slide_number} is empty.")
+        if slide_number > 1 and project_id:
+            prev_num = slide_number - 1
+            prev_html = GetHTMLCode(project_id=project_id, slide_number=prev_num, user_id=user_id)
+            if prev_html and not is_empty_slide(prev_html):
+                template_html = prev_html
+                print(f"[*] [Case 1] Found previous slide {prev_num} with content. Sending to LLM as template.")
+            else:
+                template_html = prev_html or current_html
+        else:
+            template_html = current_html
+    else:
+        print(f"[*] [Case 2 - Content Slide] Slide {slide_number} has existing content. Sending current slide to LLM as template.")
+        template_html = current_html
+
+    rag_required = state.get("rag_required")
+    is_data_driven = bool(sql_required or rag_required)
+
+    # 3. Generate new slide HTML from slide_plan and template HTML
     generated_html = PPTGenerationAgent(
         user_query=user_query,
-        retrived_rows=retrieved_data,
+        slide_plan=slide_plan,
         slide_number=slide_number,
         project_id=project_id,
         user_id=user_id,
         html_code=template_html,
-        sql_required=sql_required
+        sql_required=is_data_driven
     )
-    action_verb = "generated" if sql_required else "updated"
-    print(f"[+] [LangGraph - PPT Generation Node] Presentation slide {slide_number} {action_verb} successfully!")
+    action_verb = "generated" if is_data_driven else "updated"
+    print(f"[+] [LangGraph - PPT Generation Node] Presentation slide {slide_number} {action_verb} successfully from plan!")
 
     # Chat message for the user - Clean conversational response, NEVER raw HTML code!
-    if not sql_required:
+    if rag_required:
+        chat_confirmation = (
+            f"✨ I've designed Slide {slide_number} based on your documents and updated your presentation canvas."
+        )
+    elif not sql_required:
         chat_confirmation = (
             f"✨ I've updated Slide {slide_number} according to your design instructions and refreshed your presentation canvas."
         )
@@ -613,18 +829,59 @@ def decide_classification_route(state: KelostatsGraphState) -> str:
 def decide_decision_route(state: KelostatsGraphState) -> str:
     """
     Decides the route from query_decision:
-    - If decision == 'agent' and sql_required is False:
-        Skips the SQL pipeline (schema_input, verification_agent, sql_writer)
-        and routes directly to ppt_generation for direct slide editing/styling.
-    - Otherwise (normal_qa or agent with sql_required == True):
-        Routes to schema_input to execute the SQL data pipeline.
+    - if decision == 'normal_qa' and sql_required is True:
+        pass to existing SQL pipeline ('schema_input')
+    - elif decision == 'agent' and sql_required is True:
+        pass to existing SQL pipeline ('schema_input')
+    - elif decision == 'agent' and sql_required is False:
+        bypass SQL pipeline & give it ppt generation ('slide_planning')
+    - elif decision == 'normal_qa' and rag_required is True:
+        now pass to KnowledgeAnswerAgent ('knowledge_answer')
+    - elif decision == 'agent' and rag_required is True:
+        now pass to KnowledgePlannerAgent ('knowledge_planner') [to be implemented later]
+    - elif decision == 'agent' and rag_required is False:
+        bypass RAG pipeline & give it ppt generation ('slide_planning')
     """
     decision = (state.get("decision") or "normal_qa").lower().strip()
     sql_required = state.get("sql_required")
+    rag_required = state.get("rag_required")
+    source = (state.get("source") or "database").lower().strip()
 
-    if decision == "agent" and sql_required is False:
-        print("[*] [LangGraph Routing] Direct PPT edit/style command detected (sql_required=False). Bypassing SQL pipeline -> ppt_generation.")
-        return "ppt_generation"
+    # 1. if decision=normal_qa & sql_required=true -> pass the existing SQL pipeline
+    if decision == "normal_qa" and sql_required is True:
+        print("[*] [LangGraph Routing] Routing to existing SQL pipeline (decision='normal_qa', sql_required=True) -> schema_input")
+        return "schema_input"
+
+    # 2. elif decision=agent & sql_required=true -> pass the existing SQL pipeline
+    elif decision == "agent" and sql_required is True:
+        print("[*] [LangGraph Routing] Routing to existing SQL pipeline (decision='agent', sql_required=True) -> schema_input")
+        return "schema_input"
+
+    # 3. elif decision=agent & sql_required=false -> bypass SQL pipeline & give it ppt generation
+    elif decision == "agent" and sql_required is False:
+        print("[*] [LangGraph Routing] Bypassing SQL pipeline for PPT generation (decision='agent', sql_required=False) -> slide_planning")
+        return "slide_planning"
+
+    # 4. elif decision=normal_qa & rag_required=true -> pass to KnowledgeAnswerAgent()
+    elif decision == "normal_qa" and rag_required is True:
+        print("[*] [LangGraph Routing] Routing to KnowledgeAnswerAgent (decision='normal_qa', rag_required=True) -> knowledge_answer")
+        return "knowledge_answer"
+
+    # 5. elif decision=agent & rag_required=true -> pass to KnowledgePlannerAgent()
+    elif decision == "agent" and rag_required is True:
+        print("[*] [LangGraph Routing] Routing to KnowledgePlannerAgent (decision='agent', rag_required=True) -> knowledge_planner")
+        return "knowledge_planner"
+
+    # 6. elif decision=agent & rag_required=false -> bypass RAG pipeline & give it ppt generation
+    elif decision == "agent" and rag_required is False:
+        print("[*] [LangGraph Routing] Bypassing RAG pipeline for PPT generation (decision='agent', rag_required=False) -> slide_planning")
+        return "slide_planning"
+
+    # Default fallback
+    if source in ("documents", "document", "docs"):
+        if decision == "agent":
+            return "knowledge_planner"
+        return "knowledge_answer"
 
     return "schema_input"
 
@@ -661,7 +918,7 @@ def decide_sql_writer_route(state: KelostatsGraphState) -> str:
     """
     Decides the route after sql_writer_node:
     - If execution failed (status == "REPAIR_REQUIRED"): routes to sql_repair node in LangGraph
-    - If decision == "agent": routes to ppt_generation
+    - If decision == "agent": routes to slide_planning
     - If decision == "normal_qa":
         - if retrieved_rows_count > 0: routes to answer_generator
         - otherwise: routes to save_ai_response -> END
@@ -674,7 +931,7 @@ def decide_sql_writer_route(state: KelostatsGraphState) -> str:
     rows_count = state.get("retrieved_rows_count") or 0
 
     if decision == "agent":
-        return "ppt_generation"
+        return "slide_planning"
 
     if decision == "normal_qa" and rows_count > 0:
         return "answer_generator"
@@ -687,7 +944,7 @@ def decide_sql_repair_route(state: KelostatsGraphState) -> str:
     Decides the route after sql_repair_node:
     - If repaired from retrieval (status == "RETRIEVAL_SUCCESS"): routes to sql_writer
     - If repaired master SQL:
-        - If decision == "agent": routes to ppt_generation
+        - If decision == "agent": routes to slide_planning
         - If decision == "normal_qa" and retrieved_rows_count > 0: routes to answer_generator
     - Otherwise: routes to save_ai_response -> END
     """
@@ -700,9 +957,11 @@ def decide_sql_repair_route(state: KelostatsGraphState) -> str:
 
     if status_val == "SUCCESS_SQL_REPAIRED":
         if decision == "agent":
-            return "ppt_generation"
+            return "slide_planning"
         elif decision == "normal_qa" and rows_count > 0:
             return "answer_generator"
+
+    return "save_ai_response"
 
     return "save_ai_response"
 
@@ -751,9 +1010,12 @@ def build_kelostats_workflow():
     workflow.add_node("retrieval_agent", retrieval_agent_node)
     workflow.add_node("sql_repair", sql_repair_node)
     workflow.add_node("answer_generator", answer_generator_node)
+    workflow.add_node("slide_planning", slide_planning_node)
     workflow.add_node("ppt_generation", ppt_generation_node)
     workflow.add_node("validate_html_code", validate_html_code_node)
     workflow.add_node("save_ai_response", save_ai_response_node)
+    workflow.add_node("knowledge_answer", knowledge_answer_node)
+    workflow.add_node("knowledge_planner", knowledge_planner_node)
 
     # 2. Set entry point to save_user_message -> query_reformulate -> query_classification
     workflow.set_entry_point("save_user_message")
@@ -776,14 +1038,15 @@ def build_kelostats_workflow():
     workflow.add_edge("handle_out_of_scope", "save_ai_response")
 
     # 5. Conditional routing from query_decision:
-    # If decision == 'agent' and sql_required is False -> directly to ppt_generation (bypasses SQL pipeline)
-    # Else -> schema_input (runs SQL data pipeline)
+    # Diverts RAG and SQL pipelines according to decision, sql_required, and rag_required
     workflow.add_conditional_edges(
         "query_decision",
         decide_decision_route,
         {
             "schema_input": "schema_input",
-            "ppt_generation": "ppt_generation"
+            "slide_planning": "slide_planning",
+            "knowledge_answer": "knowledge_answer",
+            "knowledge_planner": "knowledge_planner"
         }
     )
 
@@ -817,7 +1080,7 @@ def build_kelostats_workflow():
         decide_sql_writer_route,
         {
             "sql_repair": "sql_repair",
-            "ppt_generation": "ppt_generation",
+            "slide_planning": "slide_planning",
             "answer_generator": "answer_generator",
             "save_ai_response": "save_ai_response"
         }
@@ -829,13 +1092,20 @@ def build_kelostats_workflow():
         decide_sql_repair_route,
         {
             "sql_writer": "sql_writer",
-            "ppt_generation": "ppt_generation",
+            "slide_planning": "slide_planning",
             "answer_generator": "answer_generator",
             "save_ai_response": "save_ai_response"
         }
     )
 
-    # 11. Route remaining terminal nodes into save_ai_response, then to END
+    # 11. Route slide_planning into ppt_generation
+    workflow.add_edge("slide_planning", "ppt_generation")
+
+    # 12. Route Knowledge RAG nodes
+    workflow.add_edge("knowledge_answer", "save_ai_response")
+    workflow.add_edge("knowledge_planner", "ppt_generation")
+
+    # 13. Route remaining terminal nodes into save_ai_response, then to END
     workflow.add_edge("answer_generator", "save_ai_response")
     workflow.add_edge("ppt_generation", "validate_html_code")
     workflow.add_edge("validate_html_code", "save_ai_response")
@@ -852,9 +1122,11 @@ kelostats_graph = build_kelostats_workflow()
 def run_orchestrator(
     user_query: str,
     database_id: Optional[str] = None,
+    collection_id: Optional[str] = None,
     project_id: Optional[str] = None,
     user_id: Optional[str] = None,
-    slide_number: Optional[int] = 1
+    slide_number: Optional[int] = 1,
+    source: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Programmatic entry point to invoke the LangGraph orchestrator.
@@ -868,6 +1140,7 @@ def run_orchestrator(
         "reformulated_query": None,
         "is_reformulated": False,
         "database_id": database_id,
+        "collection_id": collection_id,
         "project_id": project_id,
         "user_id": user_id,
         "slide_number": slide_number or 1,
@@ -876,6 +1149,8 @@ def run_orchestrator(
         "decision": None,
         "decision_reason": None,
         "sql_required": None,
+        "rag_required": None,
+        "source": source,
         "llm_prompt_text": None,
         "verification_status": None,
         "verification_reason": None,
@@ -943,6 +1218,8 @@ class QueryWorkflowRequest(BaseModel):
     user_query: str
     database_id: Optional[str] = None
     db_id: Optional[str] = None
+    collection_id: Optional[str] = None
+    source: Optional[str] = None
     project_id: Optional[str] = None
     user_id: Optional[str] = None
     slide_number: Optional[Union[int, str]] = 1
@@ -950,21 +1227,16 @@ class QueryWorkflowRequest(BaseModel):
 
 
 @router.post("/api/workflow/query", summary="Run LangGraph workflow for user query, database, and project")
-def workflow_query_endpoint(payload: QueryWorkflowRequest):
+def workflow_query_endpoint(payload: QueryWorkflowRequest, request: Request):
     """
     POST /api/workflow/query
-    Runs LangGraph:
-    1. QueryClassificationAgent: classifies intent as 'greet' | 'out_of_scope' | 'in_scope'
-    2. If greet -> handle_greet -> END
-    3. If out_of_scope -> handle_out_of_scope -> END
-    4. If in_scope -> QueryDecisionAgent: classifies decision as 'normal_qa' | 'agent'
-    5. Proceeds to schema_input -> verification_agent -> sql_writer / retrieval_agent -> SQL execution.
-    6. If decision == 'normal_qa' and retrieved_rows > 0 -> AnswerGeneratorAgent -> END.
-    7. If decision == 'agent' -> PPTGenerationAgent -> generates slide HTML and updates S3 -> END.
+    Authenticated automatically by Global Middleware.
     """
     target_db_id = payload.database_id or payload.db_id
+    target_collection_id = payload.collection_id
+    target_source = payload.source
     target_project_id = payload.project_id
-    target_user_id = payload.user_id
+    target_user_id = getattr(request.state, "user_id", None) or payload.user_id
 
     # Resolve target slide number from slide_filename (e.g. 'slide_04.html') or slide_number
     target_slide_number = 1
@@ -992,9 +1264,11 @@ def workflow_query_endpoint(payload: QueryWorkflowRequest):
         graph_result = run_orchestrator(
             user_query=payload.user_query,
             database_id=target_db_id,
+            collection_id=target_collection_id,
             project_id=target_project_id,
             user_id=target_user_id,
-            slide_number=target_slide_number
+            slide_number=target_slide_number,
+            source=target_source
         )
 
         slide_num_result = graph_result.get("slide_number") or target_slide_number

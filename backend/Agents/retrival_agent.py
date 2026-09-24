@@ -366,29 +366,4 @@ def RetrievalAgent(
 # ==========================================
 # 5. Direct Script Test
 # ==========================================
-if __name__ == "__main__":
-    sample_schema = """
-DATABASE SCHEMA
-Database: kelostats
-Dialect: PostgreSQL
-TABLE: global_superstore
-Columns:
-- product_name | TEXT | categorical | distinct: 3788 | samples: "Staples", "Eldon File Cart"
-- customer_name | VARCHAR(255) | categorical | distinct: 795 | samples: "Muhammed Yedwab", "Steven Ward"
-- sales | NUMERIC(12,4)
-"""
-    test_db_id = "db_4edfa948-8f02-4508-a3fc-7605da52caf1"
-    test_query = "show the total orders for product cisco phone"
-    test_reason = "The query asks for a specific product name ('cisco phone') that is not listed in the sample categories for product_name."
 
-    try:
-        result = RetrievalAgent(
-            user_query=test_query,
-            llm_prompt_text=sample_schema,
-            database_id=test_db_id,
-            reason=test_reason
-        )
-        print("\n--- RETRIEVAL AGENT RESULT ---")
-        print(json.dumps(result, indent=2, default=str))
-    except Exception as e:
-        print(f"[!] Test notice: {e}")

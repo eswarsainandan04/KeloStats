@@ -33,4 +33,15 @@ node_modules/
 .next/
 **/.next/
 *.tsbuildinfo
+
+# Scratch & Temporary Testing Folders (CRITICAL)
 scratch/
+**/scratch/
+backend/scratch/
+
+# Runtime Logs, Test Dumps & Media
+backend/logs/llm_logs/
+backend/data/*.json
+backend/*.pptx
+backend/slide3_dump.html
+backend/canvas_screenshot.png

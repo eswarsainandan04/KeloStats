@@ -4,7 +4,9 @@ import re
 import urllib.request
 import urllib.error
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+from enum import Enum
+from pydantic import BaseModel, Field, field_validator
 
 from dotenv import load_dotenv
 
@@ -14,23 +16,25 @@ load_dotenv(dotenv_path=env_path)
 PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parent / "prompts" / "query_classification_prompt.txt"
 
 
-def _clean_json_response(raw_response: str) -> str:
-    """
-    Strips markdown code blocks, reasoning tags, and extracts clean JSON.
-    """
-    text = raw_response.strip()
-    text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+class ClassificationIntent(str, Enum):
+    GREET = "greet"
+    OUT_OF_SCOPE = "out_of_scope"
+    IN_SCOPE = "in_scope"
 
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
-    if match:
-        text = match.group(1).strip()
 
-    first_brace = text.find("{")
-    last_brace = text.rfind("}")
-    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-        text = text[first_brace:last_brace + 1]
+class QueryClassificationResponse(BaseModel):
+    intent: ClassificationIntent = Field(default=ClassificationIntent.IN_SCOPE, description="Query classification intent")
+    reason: str = Field(default="Query classified successfully.", description="Reason for classification")
 
-    return text
+    @field_validator("intent", mode="before")
+    @classmethod
+    def normalize_intent(cls, value: Any) -> ClassificationIntent:
+        if isinstance(value, str):
+            clean_val = value.strip().lower()
+            for item in ClassificationIntent:
+                if item.value == clean_val:
+                    return item
+        return ClassificationIntent.IN_SCOPE
 
 
 def _clean_text_response(raw_response: str) -> str:
@@ -254,7 +258,8 @@ def QueryClassificationAgent(user_query: str) -> Dict[str, str]:
                 "content": populated_prompt
             }
         ],
-        "temperature": 0.0
+        "temperature": 0.0,
+        "response_format": {"type": "json_object"}
     }
 
     req = urllib.request.Request(
@@ -288,18 +293,30 @@ def QueryClassificationAgent(user_query: str) -> Dict[str, str]:
             except Exception as log_err:
                 print(f"[!] Warning logging classification agent interaction: {log_err}")
 
-            cleaned_json = _clean_json_response(raw_content)
-            result = json.loads(cleaned_json)
-            intent = str(result.get("intent", "in_scope")).lower().strip()
-            reason = result.get("reason", "Query classified successfully.")
+            # Validate structured JSON using Pydantic
+            try:
+                parsed = QueryClassificationResponse.model_validate_json(raw_content)
+                return {
+                    "intent": parsed.intent.value,
+                    "reason": parsed.reason
+                }
+            except Exception:
+                # Handle possible markdown fence or partial wrapping
+                stripped = raw_content.strip()
+                if "```" in stripped:
+                    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped, re.IGNORECASE)
+                    if match:
+                        stripped = match.group(1).strip()
+                first_brace = stripped.find("{")
+                last_brace = stripped.rfind("}")
+                if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                    stripped = stripped[first_brace:last_brace + 1]
 
-            if intent not in ["greet", "out_of_scope", "in_scope"]:
-                intent = "in_scope"
-
-            return {
-                "intent": intent,
-                "reason": reason
-            }
+                parsed = QueryClassificationResponse.model_validate_json(stripped)
+                return {
+                    "intent": parsed.intent.value,
+                    "reason": parsed.reason
+                }
 
     except Exception as err:
         print(f"[!] Warning in QueryClassificationAgent: {err}. Defaulting to in_scope.")

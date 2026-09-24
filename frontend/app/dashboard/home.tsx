@@ -8,6 +8,8 @@ import DocumentsPage from "./documents";
 import TemplatesPage from "./templates";
 import NavBar from "./NavBar";
 import { API_BASE_URL } from "@/lib/config";
+import { fetchWithAuth } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 interface DatabaseItem {
   db_id: string;
@@ -25,6 +27,15 @@ interface TemplateItem {
   template_id: string;
   template_name: string;
   category?: string;
+  preview_url?: string;
+}
+
+interface CollectionItem {
+  collection_id: string;
+  display_name: string;
+  total_files: number;
+  documents?: any[];
+  created_at?: string;
 }
 
 interface WorkspaceItem {
@@ -35,6 +46,9 @@ interface WorkspaceItem {
   database_name?: string;
   database_display_name?: string;
   database_type?: string;
+  collection_id?: string;
+  collection_display_name?: string;
+  source?: "database" | "documents" | "auto";
   template_id?: string;
   template_name?: string;
   template_category?: string;
@@ -44,6 +58,17 @@ interface WorkspaceItem {
   created_at?: string;
   updated_at?: string;
 }
+
+const getEngineInfo = (type: string) => {
+  const norm = (type || "").toLowerCase().trim();
+  if (norm === "mysql") {
+    return { name: "MySQL", icon: "/mysql.png" };
+  }
+  if (norm === "oracle_sql" || norm === "oracle") {
+    return { name: "Oracle SQL", icon: "/oracle.png" };
+  }
+  return { name: "PostgreSQL", icon: "/postgres.png" };
+};
 
 export default function DashboardHome() {
   const router = useRouter();
@@ -66,10 +91,14 @@ export default function DashboardHome() {
   // Step 1: Project Name
   const [projectName, setProjectName] = useState("");
 
-  // Step 2: Databases
+  // Step 2: Databases & Collections
   const [availableDbs, setAvailableDbs] = useState<DatabaseItem[]>([]);
   const [loadingDbs, setLoadingDbs] = useState(false);
   const [selectedDbId, setSelectedDbId] = useState<string | null>(null);
+
+  const [availableCollections, setAvailableCollections] = useState<CollectionItem[]>([]);
+  const [loadingCollections, setLoadingCollections] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
 
   // Step 3: Templates
   const [availableTemplates, setAvailableTemplates] = useState<TemplateItem[]>([]);
@@ -106,7 +135,7 @@ export default function DashboardHome() {
     if (!userId) return;
     setLoadingWorkspaces(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data.workspaces || []);
@@ -124,7 +153,7 @@ export default function DashboardHome() {
     setIsDeletingProject(true);
     setDeleteError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/workspace/delete`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,8 +184,10 @@ export default function DashboardHome() {
     const userId = getUserId();
     const projName = encodeURIComponent(ws.project_name || "Presentation Project");
     const dbDispName = encodeURIComponent(ws.database_display_name || ws.database_name || "");
+    const colDispName = encodeURIComponent(ws.collection_display_name || "");
+    const source = ws.source || (ws.database_id && ws.collection_id ? "auto" : ws.database_id ? "database" : ws.collection_id ? "documents" : "auto");
     router.push(
-      `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&template_id=${ws.template_id || ""}&display_name=${dbDispName}`
+      `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&display_name=${dbDispName}&collection_id=${ws.collection_id || ""}&collection_display_name=${colDispName}&source=${source}&template_id=${ws.template_id || ""}`
     );
   };
 
@@ -175,24 +206,82 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem("kelostats_user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      } else {
-        setUser({
-          full_name: "Eswar Sai Nandan",
-          email: "eswarsainandan04@gmail.com",
-        });
+    // 1. Immediately restore user session from localStorage so dashboard displays without login prompt on restart
+    let hasLocalUser = false;
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kelostats_user");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.user_id) {
+            setUser({
+              full_name: parsed.full_name || "User",
+              email: parsed.email || "",
+            });
+            hasLocalUser = true;
+          }
+        }
+      } catch (err) {
+        console.warn("Error parsing kelostats_user from localStorage:", err);
       }
-    } catch {
-      setUser({
-        full_name: "Eswar Sai Nandan",
-        email: "eswarsainandan04@gmail.com",
-      });
     }
 
-    fetchWorkspaces();
+    // Immediately fetch workspaces if recognized
+    if (hasLocalUser) {
+      fetchWorkspaces();
+    }
+
+    // 2. Synchronize with Supabase session asynchronously in the background
+    const syncSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+          const fullName =
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split("@")[0] ||
+            "User";
+          const email = session.user.email || "";
+
+          setUser({
+            full_name: fullName,
+            email,
+          });
+
+          if (typeof window !== "undefined") {
+            localStorage.setItem(
+              "kelostats_user",
+              JSON.stringify({
+                user_id: session.user.id,
+                email,
+                full_name: fullName,
+              })
+            );
+          }
+          fetchWorkspaces();
+        } else if (!hasLocalUser) {
+          // If no local session AND no Supabase session, redirect to login
+          router.push("/login");
+        }
+      } catch (err) {
+        console.error("Auth session sync error:", err);
+      }
+    };
+
+    syncSession();
+
+    // 3. Listen for explicit auth state changes (e.g. user signs out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("kelostats_user");
+        }
+        router.push("/login");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -201,7 +290,12 @@ export default function DashboardHome() {
     }
   }, [activeTab]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Supabase signOut error:", e);
+    }
     if (typeof window !== "undefined") {
       localStorage.removeItem("kelostats_user");
     }
@@ -223,22 +317,21 @@ export default function DashboardHome() {
     setProjectStep(1);
     setProjectName("");
     setSelectedDbId(null);
+    setSelectedCollectionId(null);
     setSelectedTemplateId(null);
     setCreationError(null);
     setProjectModalOpen(true);
 
-    // Fetch user's databases
-    setLoadingDbs(true);
     const userId = getUserId();
+
+    // 1. Fetch user's databases
+    setLoadingDbs(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
       if (res.ok) {
         const data = await res.json();
         const dbs = data.databases || [];
         setAvailableDbs(dbs);
-        if (dbs.length > 0) {
-          setSelectedDbId(dbs[0].db_id);
-        }
       }
     } catch (err) {
       console.error("Error fetching databases:", err);
@@ -246,7 +339,22 @@ export default function DashboardHome() {
       setLoadingDbs(false);
     }
 
-    // Fetch PPT templates from backend (templates/presentations.py -> api/get/templates)
+    // 2. Fetch user's document collections
+    setLoadingCollections(true);
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/documents/collections?user_id=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const cols = data.collections || [];
+        setAvailableCollections(cols);
+      }
+    } catch (err) {
+      console.error("Error fetching collections:", err);
+    } finally {
+      setLoadingCollections(false);
+    }
+
+    // 3. Fetch PPT templates from backend
     setLoadingTemplates(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/get/templates`);
@@ -267,15 +375,17 @@ export default function DashboardHome() {
 
   // Handle "Let's Go" -> Call /api/workspace/create then navigate to workspace
   const handleLetsGo = async () => {
-    if (!projectName.trim() || !selectedDbId || !selectedTemplateId) return;
+    if (!projectName.trim() || (!selectedDbId && !selectedCollectionId) || !selectedTemplateId) return;
 
     setSubmitting(true);
     setCreationError(null);
 
     const userId = getUserId();
+    const computedSource: "database" | "documents" | "auto" =
+      selectedDbId && selectedCollectionId ? "auto" : selectedDbId ? "database" : "documents";
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/workspace/create`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -283,7 +393,9 @@ export default function DashboardHome() {
         body: JSON.stringify({
           project_name: projectName.trim(),
           user_id: userId,
-          database_id: selectedDbId,
+          database_id: selectedDbId || null,
+          collection_id: selectedCollectionId || null,
+          source: computedSource,
           template_id: selectedTemplateId,
         }),
       });
@@ -303,8 +415,11 @@ export default function DashboardHome() {
       const selectedDb = availableDbs.find((d) => d.db_id === selectedDbId);
       const dbDispName = encodeURIComponent(selectedDb?.display_name || selectedDb?.database_name || "");
 
+      const selectedCol = availableCollections.find((c) => c.collection_id === selectedCollectionId);
+      const colDispName = encodeURIComponent(selectedCol?.display_name || "");
+
       router.push(
-        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}&display_name=${dbDispName}`
+        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId || ""}&display_name=${dbDispName}&collection_id=${selectedCollectionId || ""}&collection_display_name=${colDispName}&source=${computedSource}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}`
       );
     } catch (err: any) {
       setCreationError(err.message || "An unexpected error occurred. Please try again.");
@@ -342,37 +457,73 @@ export default function DashboardHome() {
       {/* ========================================================================= */}
       {/* MAIN BODY CONTENT WRAPPER */}
       {/* ========================================================================= */}
-      <div className={`flex-1 flex flex-col min-w-0 min-h-screen ${activeTab === "templates" ? "bg-[#f4f6f9]" : "bg-white"}`}>
-        {activeTab !== "templates" && (
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#f8fafc]">
+        {/* TAB 1: HOME */}
+        {activeTab === "home" && (
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-8">
-            {/* TAB 1: HOME */}
-            {activeTab === "home" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
+            <div className="space-y-8 animate-in fade-in duration-200">
             {/* Action Banner */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-2xl bg-gradient-to-r from-orange-50 via-white to-orange-50/40 border border-orange-200/60 shadow-sm">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                  Welcome back, <span className="text-[#FF5148]">{user?.full_name?.split(" ")[0] || "User"}</span>!
-                </h1>
-                <p className="text-sm text-slate-600 mt-1.5 max-w-xl">
-                  Connect your database telemetry and synthesize branded, executive-ready PowerPoint decks with multi-agent AI.
-                </p>
+            <div className="relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 p-7 rounded-2xl border border-orange-200/50 shadow-sm"
+              style={{ background: "linear-gradient(135deg, #fff7f6 0%, #ffffff 45%, #fff3f0 100%)" }}>
+              {/* Decorative background blobs */}
+              <div className="pointer-events-none absolute -top-10 -right-10 w-56 h-56 rounded-full opacity-10"
+                style={{ background: "radial-gradient(circle, #FF5148 0%, transparent 70%)" }} />
+              <div className="pointer-events-none absolute -bottom-8 left-24 w-40 h-40 rounded-full opacity-5"
+                style={{ background: "radial-gradient(circle, #FF5148 0%, transparent 70%)" }} />
+
+              {/* Left — greeting + meta */}
+              <div className="flex items-center gap-4 min-w-0">
+                {/* Avatar circle with initials */}
+
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-2xl font-extrabold text-slate-900 leading-tight">
+                    {(() => {
+                      const h = new Date().getHours();
+                      if (h < 12) return "Good morning 👋";
+                      if (h < 17) return "Good afternoon 👋";
+                      return "Good evening 👋";
+                    })()}
+                  </h1>
+                  <p className="text-sm text-slate-500 mt-1 max-w-lg leading-relaxed">
+                    Your AI analytics workspace is ready. Build decks, query your data, and generate insights.
+                  </p>
+
+                  {/* Quick stat chips */}
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-50 text-[#FF5148] border border-orange-200/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF5148] animate-pulse" />
+                      {workspaces.length} {workspaces.length === 1 ? "Project" : "Projects"}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200/60">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      AI-Powered
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+
+              {/* Right — action buttons */}
+              <div className="flex items-center gap-3 shrink-0 relative z-10">
                 <button
                   onClick={() => setActiveTab("databases")}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer shadow-sm flex items-center gap-2"
                 >
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3M4 7v5c0 1.657 3.582 3 8 3s8-1.343 8-3V7M4 7c0 1.657 3.582 3 8 3s8-1.343 8-3M4 17c0 1.657 3.582 3 8 3s8-1.343 8-3v-5" />
+                  </svg>
                   Manage Databases
                 </button>
                 <button
-                  onClick={handleOpenCreateProject}
-                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#FF5148] hover:bg-[#e64037] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                  onClick={() => setActiveTab("documents")}
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.97] transition-all flex items-center gap-2 cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, #FF5148 0%, #ff6b63 100%)" }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Create Project</span>
+                  <span>Manage Documents</span>
                 </button>
               </div>
             </div>
@@ -500,7 +651,7 @@ export default function DashboardHome() {
                       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF5148] to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                       <div>
-                        {/* Header Row: Icon, Project Name & Slide Count */}
+                        {/* Header Row: Icon & Slide Count */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="w-11 h-11 rounded-xl bg-orange-100 text-[#FF5148] flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,33 +683,37 @@ export default function DashboardHome() {
                         {/* Badges / Metadata */}
                         <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
                           {/* Database */}
-                          {(ws.database_display_name || ws.database_name) && (
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                              <span className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center shrink-0 text-slate-500">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                                </svg>
-                              </span>
-                              <span className="truncate">
-                                <span className="font-semibold text-slate-700">{ws.database_display_name || ws.database_name}</span>
-                                <span className="text-slate-400 text-[11px] ml-1">({ws.database_type || "database"})</span>
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <span className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
+                              <img src="/database.png" alt="Database" className="w-3.5 h-3.5 object-contain" />
+                            </span>
+                            <span className="truncate">
+                              {ws.database_display_name || ws.database_name ? (
+                                <>
+                                  <span className="font-semibold text-slate-700">{ws.database_display_name || ws.database_name}</span>
+                                  {ws.database_type && (
+                                    <span className="text-slate-400 text-[11px] ml-1">({ws.database_type})</span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-slate-400 font-medium">N/A</span>
+                              )}
+                            </span>
+                          </div>
 
-                          {/* Template */}
-                          {ws.template_name && (
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                              <span className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 border border-amber-200/50 flex items-center justify-center shrink-0">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z" />
-                                </svg>
-                              </span>
-                              <span className="truncate text-slate-500" title={ws.template_name}>
-                                {ws.template_name}
-                              </span>
-                            </div>
-                          )}
+                          {/* Collection */}
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <span className="w-5 h-5 rounded-md bg-orange-50 flex items-center justify-center shrink-0">
+                              <img src="/collection.png" alt="Collection" className="w-3.5 h-3.5 object-contain" />
+                            </span>
+                            <span className="truncate">
+                              {ws.collection_display_name ? (
+                                <span className="font-semibold text-slate-700">{ws.collection_display_name}</span>
+                              ) : (
+                                <span className="text-slate-400 font-medium">N/A</span>
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -628,17 +783,24 @@ export default function DashboardHome() {
               )}
             </div>
           </div>
+          </main>
         )}
 
         {/* TAB 2: DATABASES */}
-        {activeTab === "databases" && <DatabasesPage />}
-
-        {/* TAB 3: DOCUMENTS (RAG) */}
-        {activeTab === "documents" && <DocumentsPage />}
-      </main>
+        {activeTab === "databases" && (
+          <div className="flex-1 w-full min-h-screen flex flex-col">
+            <DatabasesPage />
+          </div>
         )}
 
-        {/* TAB 4: TEMPLATES (Full width and native background) */}
+        {/* TAB 3: DOCUMENTS (RAG) */}
+        {activeTab === "documents" && (
+          <div className="flex-1 w-full min-h-screen flex flex-col">
+            <DocumentsPage />
+          </div>
+        )}
+
+        {/* TAB 4: TEMPLATES */}
         {activeTab === "templates" && (
           <div className="flex-1 w-full min-h-screen flex flex-col">
             <TemplatesPage onNavigateTab={(tab) => setActiveTab(tab)} />
@@ -669,14 +831,14 @@ export default function DashboardHome() {
                     {projectStep === 1
                       ? "Step 1: Enter Project Name"
                       : projectStep === 2
-                      ? "Step 2: Choose Your Database"
+                      ? "Step 2: Choose Data Source (Database & Collection)"
                       : "Step 3: Choose Your PPT Template"}
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {projectStep === 1
                       ? "Give your presentation workspace a descriptive project name"
                       : projectStep === 2
-                      ? "Select one available database to connect to your project"
+                      ? "Select one database, one collection, or both (at least one is required)"
                       : "Select a presentation template design for your report"}
                   </p>
                 </div>
@@ -731,100 +893,214 @@ export default function DashboardHome() {
                 </div>
               )}
 
-              {/* STEP 2: CHOOSE YOUR DATABASE */}
+              {/* STEP 2: CHOOSE DATABASE OR COLLECTION */}
               {projectStep === 2 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Available Databases
-                    </span>
-                    <span className="text-xs text-slate-500 font-medium">
-                      {availableDbs.length} connected
+                <div className="space-y-5">
+                  {/* Selection Status Banner */}
+                  <div className="p-3 rounded-xl border transition-all text-xs font-medium flex items-center justify-between bg-slate-50 border-slate-200">
+                    <div className="flex items-center gap-2">
+                      {selectedDbId && selectedCollectionId ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-bold text-slate-800">
+                            Hybrid Mode: 1 Database & 1 Collection selected
+                          </span>
+                        </>
+                      ) : selectedDbId ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="font-bold text-slate-800">
+                            1 Database Selected
+                          </span>
+                        </>
+                      ) : selectedCollectionId ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-orange-500" />
+                          <span className="font-bold text-slate-800">
+                            1 Collection Selected (Document RAG)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-slate-400" />
+                          <span className="text-slate-500">
+                            Select at least one database or one collection to proceed
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-normal">
+                      (both optional, pick either or both)
                     </span>
                   </div>
 
-                  {loadingDbs ? (
-                    <div className="py-12 text-center text-sm text-slate-400">
-                      Loading databases...
+                  {/* Section 1: DATABASES */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        Available Databases
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        {availableDbs.length} connected
+                      </span>
                     </div>
-                  ) : availableDbs.length === 0 ? (
-                    <div className="p-8 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50">
-                      <p className="text-sm font-semibold text-slate-700">No connected databases found.</p>
-                      <p className="text-xs text-slate-400 mt-1 mb-4">
-                        Please connect a database first before creating a project.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setProjectModalOpen(false);
-                          setActiveTab("databases");
-                        }}
-                        className="px-4 py-2 text-xs font-semibold text-white bg-[#FF5148] hover:bg-[#e64037] rounded-lg transition-all cursor-pointer"
-                      >
-                        Go to Databases
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                      {availableDbs.map((db) => {
-                        const isSelected = selectedDbId === db.db_id;
-                        const displayName = db.display_name || db.database_name || db.service_name || "Database";
-                        const rawDb = db.database_name || db.service_name;
 
-                        return (
-                          <div
-                            key={db.db_id}
-                            onClick={() => setSelectedDbId(db.db_id)}
-                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                              isSelected
-                                ? "border-[#FF5148] bg-orange-50/40 shadow-sm"
-                                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div className="w-12 h-12 flex items-center justify-center shrink-0">
-                                <img
-                                  src="/database.png"
-                                  alt={displayName}
-                                  className="w-full h-full object-contain pointer-events-none"
-                                />
-                              </div>
-                              <div className="overflow-hidden">
-                                <h3 className="text-sm font-bold text-slate-900 truncate" title={displayName}>
-                                  {displayName}
-                                </h3>
-                                <p className="text-xs text-slate-500 truncate mt-0.5">
-                                  {rawDb && rawDb !== displayName ? `${rawDb} • ` : ""}{db.host}:{db.port}
-                                </p>
-                                <span className="inline-block text-[10px] font-semibold text-emerald-600 uppercase mt-1">
-                                  {db.database_type}
-                                </span>
-                              </div>
-                            </div>
+                    {loadingDbs ? (
+                      <div className="py-6 text-center text-xs text-slate-400">Loading databases...</div>
+                    ) : availableDbs.length === 0 ? (
+                      <div className="p-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <p className="text-xs font-medium text-slate-600">No databases connected yet.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[175px] overflow-y-auto pr-1">
+                        {availableDbs.map((db) => {
+                          const isSelected = selectedDbId === db.db_id;
+                          const displayName = db.display_name || db.database_name || db.service_name || "Database";
+                          const engine = getEngineInfo(db.database_type);
 
-                            <div className="shrink-0 ml-2">
-                              <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  isSelected
-                                    ? "border-[#FF5148] bg-[#FF5148]"
-                                    : "border-slate-300 bg-white"
-                                }`}
-                              >
-                                {isSelected && (
-                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clipRule="evenodd"
+                          return (
+                            <div
+                              key={db.db_id}
+                              onClick={() => setSelectedDbId(isSelected ? null : db.db_id)}
+                              className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                                isSelected
+                                  ? "border-[#FF5148] bg-orange-50/40 shadow-xs"
+                                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                                  <img
+                                    src="/database.png"
+                                    alt={displayName}
+                                    className="w-full h-full object-contain pointer-events-none"
+                                  />
+                                </div>
+                                <div className="overflow-hidden">
+                                  <h3 className="text-xs font-bold text-slate-900 truncate" title={displayName}>
+                                    {displayName}
+                                  </h3>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <img
+                                      src={engine.icon}
+                                      alt={engine.name}
+                                      className="w-3.5 h-3.5 object-contain pointer-events-none shrink-0"
                                     />
-                                  </svg>
-                                )}
+                                    <span className="text-[11px] font-medium text-slate-600">
+                                      {engine.name}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 ml-2">
+                                <div
+                                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? "border-[#FF5148] bg-[#FF5148]"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 2: DOCUMENT COLLECTIONS */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <img src="/collection.png" alt="Collection" className="w-3.5 h-3.5 object-contain" />
+                        Available Collections
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        {availableCollections.length} available
+                      </span>
                     </div>
-                  )}
+
+                    {loadingCollections ? (
+                      <div className="py-6 text-center text-xs text-slate-400">Loading collections...</div>
+                    ) : availableCollections.length === 0 ? (
+                      <div className="p-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <p className="text-xs font-medium text-slate-600">No document collections created yet.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[175px] overflow-y-auto pr-1">
+                        {availableCollections.map((col) => {
+                          const isSelected = selectedCollectionId === col.collection_id;
+                          const fileCount = col.total_files || (col.documents?.length || 0);
+
+                          return (
+                            <div
+                              key={col.collection_id}
+                              onClick={() => setSelectedCollectionId(isSelected ? null : col.collection_id)}
+                              className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                                isSelected
+                                  ? "border-[#FF5148] bg-orange-50/40 shadow-xs"
+                                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                                  <img
+                                    src="/collection.png"
+                                    alt={col.display_name}
+                                    className="w-full h-full object-contain pointer-events-none"
+                                  />
+                                </div>
+                                <div className="overflow-hidden">
+                                  <h3 className="text-xs font-bold text-slate-900 truncate" title={col.display_name}>
+                                    {col.display_name}
+                                  </h3>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[11px] font-medium text-slate-500">
+                                      {fileCount} {fileCount === 1 ? "document" : "documents"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 ml-2">
+                                <div
+                                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? "border-[#FF5148] bg-[#FF5148]"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -852,54 +1128,80 @@ export default function DashboardHome() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[380px] overflow-y-auto pr-1">
                       {availableTemplates.map((tmpl) => {
                         const isSelected = selectedTemplateId === tmpl.template_id;
+                        const previewSrc = tmpl.preview_url
+                          ? `${API_BASE_URL}${tmpl.preview_url}`
+                          : `${API_BASE_URL}/api/templates/${tmpl.template_id}/preview`;
 
                         return (
                           <div
                             key={tmpl.template_id}
                             onClick={() => setSelectedTemplateId(tmpl.template_id)}
-                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                            className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between group ${
                               isSelected
-                                ? "border-[#FF5148] bg-orange-50/40 shadow-sm"
+                                ? "border-[#FF5148] bg-orange-50/40 shadow-sm ring-1 ring-[#FF5148]/20"
                                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
                             }`}
                           >
-                            <div className="flex items-center gap-3.5">
-                              <div
-                                className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs ${
-                                  isSelected
-                                    ? "bg-[#FF5148] text-white"
-                                    : "bg-orange-100 text-[#FF5148]"
-                                }`}
-                              >
-                                PPT
-                              </div>
-                              <div>
-                                <span className="text-sm font-bold text-slate-900">
+                            {/* Top Row: PPT Badge, Truncated Title, and Radio Indicator */}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <div
+                                  className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                                    isSelected
+                                      ? "bg-[#FF5148] text-white"
+                                      : "bg-orange-100 text-[#FF5148]"
+                                  }`}
+                                >
+                                  PPT
+                                </div>
+                                <h4
+                                  className="text-xs font-bold text-slate-800 truncate"
+                                  title={tmpl.template_name}
+                                >
                                   {tmpl.template_name}
-                                </span>
+                                </h4>
+                              </div>
+
+                              <div className="shrink-0">
+                                <div
+                                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                    isSelected
+                                      ? "border-[#FF5148] bg-[#FF5148]"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
-                            <div className="shrink-0 ml-2">
-                              <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  isSelected
-                                    ? "border-[#FF5148] bg-[#FF5148]"
-                                    : "border-slate-300 bg-white"
-                                }`}
-                              >
-                                {isSelected && (
-                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                )}
+                            {/* Preview Image (16:9 Presentation Format) */}
+                            <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200/80">
+                              <img
+                                src={previewSrc}
+                                alt={tmpl.template_name}
+                                loading="lazy"
+                                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                              {/* Fallback visual if preview is still generating */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 via-white to-orange-100/30 -z-10 flex items-center justify-center p-2">
+                                <span className="text-[10px] font-bold text-[#FF5148] bg-orange-100 px-2 py-0.5 rounded">
+                                  PPT Preview
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -950,7 +1252,7 @@ export default function DashboardHome() {
 
                   <button
                     type="button"
-                    disabled={!selectedDbId || availableDbs.length === 0}
+                    disabled={!selectedDbId && !selectedCollectionId}
                     onClick={() => setProjectStep(3)}
                     className="px-5 py-2 text-sm font-semibold text-white bg-[#FF5148] hover:bg-[#e64037] rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                   >

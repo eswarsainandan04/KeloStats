@@ -27,8 +27,16 @@ router = APIRouter(prefix="/api/workspace", tags=["Workspace"])
 class CreateWorkspacePayload(BaseModel):
     project_name: str
     user_id: str
-    database_id: str
+    database_id: Optional[str] = None
+    collection_id: Optional[str] = None
+    source: Optional[str] = None
     template_id: str
+
+
+class UpdateWorkspaceSourcePayload(BaseModel):
+    project_id: str
+    user_id: Optional[str] = None
+    source: str  # 'database', 'documents', 'auto'
 
 
 def get_s3_client():
@@ -98,8 +106,12 @@ def copy_supabase_template_files(template_id: str, user_id: str, project_id: str
         print("[!] Supabase S3 client not available; skipping template copy.")
         return []
 
-    src_prefix = f"templates/{template_id}/"
-    dest_prefix = f"workspace/{user_id}/{project_id}/"
+    clean_template_id = str(template_id or "").strip()
+    clean_user_id = str(user_id or "").strip()
+    clean_project_id = str(project_id or "").strip()
+
+    src_prefix = f"templates/{clean_template_id}/"
+    dest_prefix = f"workspace/{clean_user_id}/{clean_project_id}/"
 
     copied_keys: List[str] = []
     continuation_token = None
@@ -169,41 +181,71 @@ def create_workspace_session(payload: CreateWorkspacePayload):
             detail="Project name is required."
         )
 
-    if not payload.user_id or not payload.database_id or not payload.template_id:
+    if not payload.user_id or not payload.template_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing required fields: user_id, database_id, or template_id."
+            detail="Missing required fields: user_id or template_id."
         )
+
+    # Clean and resolve database_id and collection_id (both optional, but at least one must be provided)
+    database_id = payload.database_id.strip() if (payload.database_id and str(payload.database_id).strip()) else None
+    collection_id = payload.collection_id.strip() if (payload.collection_id and str(payload.collection_id).strip()) else None
+
+    if not database_id and not collection_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please select at least one database or one collection to create a workspace."
+        )
+
+    # Determine source:
+    # source = ['database', 'documents', 'auto']
+    # if user selected database only then source = 'database'
+    # elif user selected documents only then source = 'documents'
+    # elif user selects both documents & database then source = 'auto'
+    if payload.source and payload.source in ("database", "documents", "auto"):
+        source = payload.source
+    elif database_id and collection_id:
+        source = "auto"
+    elif database_id and not collection_id:
+        source = "database"
+    elif collection_id and not database_id:
+        source = "documents"
+    else:
+        source = "auto"
 
     # Generate project_id as project_{UUID}
     project_id = f"project_{uuid.uuid4()}"
     project_name = payload.project_name.strip()
+    user_id = payload.user_id.strip()
+    template_id = payload.template_id.strip()
 
     try:
         # 1. Insert into PostgreSQL workspace table
         with engine.connect() as conn:
             conn.execute(
                 text("""
-                    INSERT INTO workspace (project_id, project_name, user_id, database_id, template_id, created_at, updated_at)
-                    VALUES (:project_id, :project_name, :user_id, :database_id, :template_id, NOW(), NOW());
+                    INSERT INTO workspace (project_id, project_name, user_id, database_id, collection_id, source, template_id, created_at, updated_at)
+                    VALUES (:project_id, :project_name, :user_id, :database_id, :collection_id, :source, :template_id, NOW(), NOW());
                 """),
                 {
                     "project_id": project_id,
                     "project_name": project_name,
-                    "user_id": payload.user_id,
-                    "database_id": payload.database_id,
-                    "template_id": payload.template_id,
+                    "user_id": user_id,
+                    "database_id": database_id,
+                    "collection_id": collection_id,
+                    "source": source,
+                    "template_id": template_id,
                 }
             )
             conn.commit()
 
         # 2. Create S3 folder in Supabase bucket: workspace/{user_id}/{project_id}/
-        s3_folder = create_supabase_s3_folder(user_id=payload.user_id, project_id=project_id)
+        s3_folder = create_supabase_s3_folder(user_id=user_id, project_id=project_id)
 
         # 3. Copy all files and folders from templates/{template_id}/ to workspace/{user_id}/{project_id}/
         copied_files = copy_supabase_template_files(
-            template_id=payload.template_id,
-            user_id=payload.user_id,
+            template_id=template_id,
+            user_id=user_id,
             project_id=project_id
         )
 
@@ -221,7 +263,9 @@ def create_workspace_session(payload: CreateWorkspacePayload):
             "project_id": project_id,
             "project_name": project_name,
             "user_id": payload.user_id,
-            "database_id": payload.database_id,
+            "database_id": database_id,
+            "collection_id": collection_id,
+            "source": source,
             "template_id": payload.template_id,
             "s3_folder": s3_folder,
             "copied_files_count": len(copied_files),
@@ -233,6 +277,59 @@ def create_workspace_session(payload: CreateWorkspacePayload):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create workspace project: {str(exc)}"
+        )
+
+
+@router.post("/update_source", summary="Update workspace project source mode")
+def update_workspace_source(payload: UpdateWorkspaceSourcePayload):
+    """
+    Updates the 'source' column in the workspace table for a given project_id.
+    Valid source options: 'database', 'documents', 'auto'.
+    """
+    clean_project_id = (payload.project_id or "").strip()
+    clean_source = (payload.source or "").strip().lower()
+
+    if not clean_project_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing required field: project_id."
+        )
+
+    if clean_source not in ("database", "documents", "auto"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid source. Must be one of: 'database', 'documents', or 'auto'."
+        )
+
+    try:
+        with engine.connect() as conn:
+            stmt = text("""
+                UPDATE workspace
+                SET source = :source, updated_at = NOW()
+                WHERE project_id = :project_id
+                RETURNING project_id, project_name, source, database_id, collection_id;
+            """)
+            res = conn.execute(stmt, {"source": clean_source, "project_id": clean_project_id}).mappings().first()
+            conn.commit()
+
+            if not res:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Workspace project '{clean_project_id}' not found."
+                )
+
+            return {
+                "status": "success",
+                "message": f"Workspace source updated to '{clean_source}' successfully",
+                "project_id": res["project_id"],
+                "source": res["source"]
+            }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update workspace source: {str(exc)}"
         )
 
 
@@ -352,16 +449,20 @@ def list_workspaces(user_id: str = Query(..., description="User ID / UUID")):
                         w.project_name, 
                         CAST(w.user_id AS TEXT) as user_id, 
                         w.database_id, 
+                        w.collection_id,
+                        w.source,
                         w.template_id, 
                         w.created_at, 
                         w.updated_at,
                         d.database_name, 
                         d.database_type,
                         d.display_name as database_display_name,
+                        c.display_name as collection_display_name,
                         t.template_name,
                         t.category as template_category
                     FROM workspace w
                     LEFT JOIN user_databases d ON w.database_id = d.db_id
+                    LEFT JOIN user_collections c ON w.collection_id = c.collection_id
                     LEFT JOIN templates t ON w.template_id = t.template_id
                     WHERE CAST(w.user_id AS TEXT) = :user_id
                     ORDER BY w.updated_at DESC
@@ -389,6 +490,18 @@ def list_workspaces(user_id: str = Query(..., description="User ID / UUID")):
         default_name = pid.replace("project_", "Project ").replace("_", " ").title()
         project_name = db_info.get("project_name") or default_name
 
+        # Resolve source if missing:
+        item_source = db_info.get("source")
+        if not item_source:
+            if db_info.get("database_id") and db_info.get("collection_id"):
+                item_source = "auto"
+            elif db_info.get("database_id"):
+                item_source = "database"
+            elif db_info.get("collection_id"):
+                item_source = "documents"
+            else:
+                item_source = "auto"
+
         merged_workspaces.append({
             "project_id": pid,
             "project_name": project_name,
@@ -397,6 +510,9 @@ def list_workspaces(user_id: str = Query(..., description="User ID / UUID")):
             "database_name": db_info.get("database_name"),
             "database_display_name": db_info.get("database_display_name") or db_info.get("database_name"),
             "database_type": db_info.get("database_type"),
+            "collection_id": db_info.get("collection_id"),
+            "collection_display_name": db_info.get("collection_display_name"),
+            "source": item_source,
             "template_id": db_info.get("template_id"),
             "template_name": db_info.get("template_name"),
             "template_category": db_info.get("template_category"),

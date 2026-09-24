@@ -64,13 +64,44 @@ CREATE TABLE IF NOT EXISTS templates (
 );
 """
 
-# Workspace table DDL
+# Users documents table DDL
+CREATE_USERS_DOCUMENTS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS users_documents (
+    document_id VARCHAR(255) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    file_size BIGINT NOT NULL,
+    total_pages INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_documents_user_id ON users_documents(user_id);
+"""
+
+# User collections table DDL (defined before workspace to allow FK reference)
+CREATE_USER_COLLECTIONS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS user_collections (
+    collection_id VARCHAR(255) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    display_name VARCHAR(255) NOT NULL,
+    documents JSONB DEFAULT '[]'::jsonb,
+    total_files INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_collections_user_id ON user_collections(user_id);
+"""
+
+# Workspace table DDL with optional database_id, collection_id FK, and source
 CREATE_WORKSPACE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS workspace (
     project_id VARCHAR(255) PRIMARY KEY,
     project_name VARCHAR(255) NOT NULL,
     user_id UUID NOT NULL,
-    database_id VARCHAR(255) NOT NULL,
+    database_id VARCHAR(255),
+    collection_id VARCHAR(255) REFERENCES user_collections(collection_id) ON DELETE SET NULL,
+    source VARCHAR(50) DEFAULT 'auto',
     template_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -90,6 +121,28 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_chat_messages_project_id ON chat_messages(project_id);
 """
 
+# Enable pgvector extension DDL
+ENABLE_PGVECTOR_EXTENSION_SQL = """
+CREATE EXTENSION IF NOT EXISTS vector;
+"""
+
+# Document chunks table DDL
+CREATE_DOCUMENT_CHUNKS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS document_chunks (
+    chunk_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    collection_id VARCHAR(255) REFERENCES user_collections(collection_id) ON DELETE CASCADE,
+    document_id VARCHAR(255) NOT NULL REFERENCES users_documents(document_id) ON DELETE CASCADE,
+    chunk_index INTEGER DEFAULT 0,
+    context TEXT,
+    embedding vector,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_document_id ON document_chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_collection_id ON document_chunks(collection_id);
+"""
+
+
+
 
 def init_db(db_url: str = None) -> bool:
     """
@@ -104,14 +157,27 @@ def init_db(db_url: str = None) -> bool:
             conn.execute(text(CREATE_USERS_TABLE_SQL))
             conn.execute(text(CREATE_TABLE_SQL))
             conn.execute(text(CREATE_TEMPLATES_TABLE_SQL))
+            conn.execute(text(CREATE_USER_COLLECTIONS_TABLE_SQL))
             conn.execute(text(CREATE_WORKSPACE_TABLE_SQL))
             conn.execute(text(CREATE_CHAT_MESSAGES_TABLE_SQL))
+            conn.execute(text(CREATE_USERS_DOCUMENTS_TABLE_SQL))
+            conn.execute(text(ENABLE_PGVECTOR_EXTENSION_SQL))
+            conn.execute(text(CREATE_DOCUMENT_CHUNKS_TABLE_SQL))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_user_id ON workspace(user_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_collection_id ON workspace(collection_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_database_id ON workspace(database_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_source ON workspace(source);"))
+
             conn.commit()
             print("[+] Table 'users' created/verified successfully!")
             print("[+] Table 'user_databases' created/verified successfully with 'schema JSONB' column!")
             print("[+] Table 'templates' created/verified successfully!")
-            print("[+] Table 'workspace' created/verified successfully!")
+            print("[+] Table 'user_collections' created/verified successfully!")
+            print("[+] Table 'workspace' created/verified successfully with 'collection_id' FK column!")
             print("[+] Table 'chat_messages' created/verified successfully!")
+            print("[+] Table 'users_documents' created/verified successfully!")
+            print("[+] Extension 'vector' (pgvector) enabled successfully!")
+            print("[+] Table 'document_chunks' created/verified successfully with 'collection_id' column!")
         return True
     except Exception as e:
         print(f"[-] Error creating tables: {e}", file=sys.stderr)

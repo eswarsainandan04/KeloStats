@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide - Radar Chart by Sub-Category</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFFFF;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide-canvas * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Top-Right Corner Dot Accent Cluster */
+    .dot-cluster {
+      position: absolute;
+      right: 4.5%;
+      top: 8.667%;
+      width: 6.6%;
+      height: 8.8%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Slide Title */
+    .slide-title {
+      position: absolute;
+      left: 6.375%;
+      top: 11.000%;
+      width: 78.75%;
+      height: 8.000%;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: calc(52 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #000000;
+      line-height: 1.1;
+      text-align: left;
+      z-index: 2;
+    }
+
+    /* Red Accent Divider Bar */
+    .accent-bar {
+      position: absolute;
+      left: 6.375%;
+      top: 20.667%;
+      width: 7.125%;
+      height: 0.867%;
+      background-color: #FF5148;
+      border-radius: 0px;
+      z-index: 2;
+    }
+
+    /* Metric Cards Container (Left Side) */
+    .metrics-container {
+      position: absolute;
+      left: 6.375%;
+      top: 25%;
+      width: 45%;
+      height: 65%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .metric-card {
+      background-color: #F8F9FA;
+      border: 1px solid #E9ECEF;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      font-family: Arial, Helvetica, sans-serif;
+      color: #212529;
+    }
+
+    .metric-card h3 {
+      font-size: calc(20 / 19.2 * 1cqw);
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #495057;
+    }
+
+    .metric-card p {
+      font-size: calc(16 / 19.2 * 1cqw);
+      font-weight: 500;
+      margin: 0;
+      color: #000000;
+    }
+
+    /* Radar Chart Container (Right Side) */
+    .chart-container {
+      position: absolute;
+      right: 6.375%;
+      top: 25%;
+      width: 45%;
+      height: 65%;
+      background-color: #F8F9FA;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      z-index: 2;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Footer Label for Chart */
+    .chart-label {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      font-size: calc(14 / 19.2 * 1cqw);
+      font-weight: 500;
+      color: #6C757D;
+      text-align: right;
+      z-index: 2;
+    }
+
+    /* SVG Dot Pattern */
+    .dot-cluster svg {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide Presentation Canvas -->
+  <div class="slide-canvas">
+
+    <!-- Top Right Dot Cluster Graphic -->
+    <div class="dot-cluster">
+      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
+          </pattern>
+        </defs>
+        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+      </svg>
+    </div>
+
+    <!-- Slide Title -->
+    <h1 class="slide-title">Sub-Category Performance Radar</h1>
+
+    <!-- Accent Line -->
+    <div class="accent-bar"></div>
+
+    <!-- Metrics Cards (Top 3 Sub-Categories) -->
+    <div class="metrics-container">
+      <div class="metric-card">
+        <h3>Phones</h3>
+        <p>$1.7M Sales | $217K Profit</p>
+      </div>
+      <div class="metric-card">
+        <h3>Copiers</h3>
+        <p>$1.5M Sales | $259K Profit</p>
+      </div>
+      <div class="metric-card">
+        <h3>Chairs</h3>
+        <p>$1.5M Sales | $140K Profit</p>
+      </div>
+      <div class="metric-card">
+        <h3>Bookcases</h3>
+        <p>$1.47M Sales | $162K Profit</p>
+      </div>
+    </div>
+
+    <!-- Radar Chart Container -->
+    <div class="chart-container">
+      <canvas id="radarChart"></canvas>
+      <div class="chart-label">Performance across key metrics</div>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script>
+      const ctx = document.getElementById('radarChart').getContext('2d');
+
+      // Extract sub-categories and normalize data for radar chart
+      const dataRows = [
+        { sub_category: "Phones", total_sales: 1706824.1392, total_profit: 216717.0058, avg_discount: 0.14584748287161156, total_quantity: 11870 },
+        { sub_category: "Copiers", total_sales: 1509436.2742, total_profit: 258567.5491, avg_discount: 0.11714709851551956, total_quantity: 7454 },
+        { sub_category: "Chairs", total_sales: 1501681.7642, total_profit: 140396.2675, avg_discount: 0.1631100757134537, total_quantity: 12336 },
+        { sub_category: "Bookcases", total_sales: 1466572.2418, total_profit: 161924.4195, avg_discount: 0.1537577768560763, total_quantity: 8310 },
+        { sub_category: "Storage", total_sales: 1127085.8614, total_profit: 108461.4898, avg_discount: 0.1384641233445345, total_quantity: 16917 },
+        { sub_category: "Appliances", total_sales: 1011064.305, total_profit: 141680.5894, avg_discount: 0.14170940170940172, total_quantity: 6078 },
+        { sub_category: "Machines", total_sales: 779060.0671, total_profit: 58867.873, avg_discount: 0.1695827725437416, total_quantity: 4906 },
+        { sub_category: "Tables", total_sales: 757041.9244, total_profit: -64083.3887, avg_discount: 0.29073170731707315, total_quantity: 3083 },
+        { sub_category: "Accessories", total_sales: 749237.0185, total_profit: 129626.3062, avg_discount: 0.12048130081300813, total_quantity: 10946 },
+        { sub_category: "Binders", total_sales: 461911.5057, total_profit: 72449.846, avg_discount: 0.17920676202860858, total_quantity: 21429 },
+        { sub_category: "Furnishings", total_sales: 385578.2559, total_profit: 46967.4255, avg_discount: 0.15106624605678234, total_quantity: 11225 },
+        { sub_category: "Art", total_sales: 372091.9659, total_profit: 57953.9109, avg_discount: 0.11736227728855211, total_quantity: 16301 },
+        { sub_category: "Paper", total_sales: 244291.7194, total_profit: 59207.6827, avg_discount: 0.10946862634256642, total_quantity: 12822 },
+        { sub_category: "Supplies", total_sales: 243074.2206, total_profit: 22583.2631, avg_discount: 0.12791752577319587, total_quantity: 8543 },
+        { sub_category: "Envelopes", total_sales: 170904.3016, total_profit: 29601.1163, avg_discount: 0.13174948665297742, total_quantity: 8380 },
+        { sub_category: "Fasteners", total_sales: 83242.3159, total_profit: 11525.4241, avg_discount: 0.14059504132231404, total_quantity: 8390 },
+        { sub_category: "Labels", total_sales: 73404.03, total_profit: 15010.512, avg_discount: 0.12044896392939371, total_quantity: 9322 }
+      ];
+
+      // Normalize values for radar chart (scale to 0-100)
+      const normalizedData = dataRows.map(row => ({
+        label: row.sub_category,
+        sales: (row.total_sales / Math.max(...dataRows.map(r => r.total_sales))) * 100,
+        profit: (row.total_profit / Math.max(...dataRows.map(r => r.total_profit))) * 100,
+        discount: (row.avg_discount / 0.3) * 100,
+        quantity: (row.total_quantity / Math.max(...dataRows.map(r => r.total_quantity))) * 100
+      }));
+
+      // Create radar chart
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Sales', 'Profit', 'Discount', 'Quantity'],
+          datasets: [
+            {
+              label: 'Sub-Category Performance',
+              data: [
+                normalizedData[0].sales,
+                normalizedData[0].profit,
+                normalizedData[0].discount,
+                normalizedData[0].quantity
+              ],
+              backgroundColor: 'rgba(255, 81, 72, 0.1)',
+              borderColor: '#FF5148',
+              borderWidth: 2,
+              pointBackgroundColor: '#FF5148',
+              pointBorderColor: '#FFFFFF',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: {
+                color: '#E9ECEF'
+              },
+              grid: {
+                color: '#E9ECEF'
+              },
+              ticks: {
+                color: '#6C757D',
+                font: {
+                  size: 12
+                }
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const label = context.label;
+                  return `${label}: ${value.toFixed(1)}%`;
+                }
+              }
+            }
+          }
+        }
+      });
+    </script>
+
+  </div>
+
+</body>
+</html>

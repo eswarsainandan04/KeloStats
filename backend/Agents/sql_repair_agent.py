@@ -254,30 +254,4 @@ def SQLRepairAgent(
 SQLRepairAgennt = SQLRepairAgent
 
 
-# ==========================================
-# Direct Script Test
-# ==========================================
-if __name__ == "__main__":
-    test_db_id = "db_4edfa948-8f02-4508-a3fc-7605da52caf1"
-    test_user_query = "show total sales by city"
-    test_broken_sql = "SELECT city, SUM(sales_amount) FROM store.global_superstore GROUP BY city"
-    test_error = 'column "sales_amount" does not exist'
 
-    print("=" * 60)
-    print("Testing SQLRepairAgent")
-    print("=" * 60)
-
-    try:
-        fixed_sql = SQLRepairAgent(
-            user_query=test_user_query,
-            sql_query=test_broken_sql,
-            error=test_error,
-            database_id=test_db_id,
-            max_attempts=3
-        )
-        print("\n" + "=" * 60)
-        print("Final Repaired & Verified SQL:")
-        print(fixed_sql)
-        print("=" * 60)
-    except Exception as e:
-        print(f"[!] Test execution error: {e}")

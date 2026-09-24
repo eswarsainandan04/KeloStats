@@ -14,7 +14,7 @@ CATEGORIES AND CRITERIA:
      - "Greetings"
 
 2. "out_of_scope":
-   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, or presentation/slide generation.
+   - The user query is completely unrelated to business, data, databases, SQL, metrics, analytics, documents, company policies, pdfs, or presentation/slide generation...... etc.
    - Examples:
      - "Who is Narendra Modi?"
      - "Tell me the biography of Neil Armstrong"
@@ -25,7 +25,7 @@ CATEGORIES AND CRITERIA:
      - "How to cook pasta?"
 
 3. "in_scope":
-   - The user query relates to business analytics, numbers, databases, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
+   - The user query relates to business analytics, numbers, databases, docuemts, pdfs, company information, RAG Based knowledge, SQL, queries, metrics, reports, summaries, or creating/editing presentations and slide decks.
    - Examples:
      - "Show me total sales by region"
      - "What is our net profit in 2023?"

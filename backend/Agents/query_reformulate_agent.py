@@ -4,7 +4,8 @@ import re
 import urllib.request
 import urllib.error
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field, field_validator
 
 from dotenv import load_dotenv
 
@@ -19,23 +20,24 @@ if not PROMPT_TEMPLATE_PATH.exists():
         PROMPT_TEMPLATE_PATH = ALT_PATH
 
 
-def _clean_json_response(raw_response: str) -> str:
-    """
-    Strips markdown code blocks, reasoning tags (<think>...</think>), and extracts clean JSON.
-    """
-    text = raw_response.strip()
-    text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+class InitReformulationResponse(BaseModel):
+    is_reformulation: bool = Field(default=False, description="Whether query needs reformulation")
+    reason: Optional[str] = Field(default=None, description="Explanation")
 
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
-    if match:
-        text = match.group(1).strip()
+    @field_validator("is_reformulation", mode="before")
+    @classmethod
+    def normalize_bool(cls, value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            clean = value.strip().lower()
+            return clean in ("true", "yes", "1")
+        return False
 
-    first_brace = text.find("{")
-    last_brace = text.rfind("}")
-    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-        text = text[first_brace:last_brace + 1]
 
-    return text
+class ReformulationResponse(BaseModel):
+    reformulated_query: str = Field(default="", description="Standalone rewritten query")
+    reason: Optional[str] = Field(default="", description="Explanation of reformulation")
 
 
 def _clean_text_response(raw_response: str) -> str:
@@ -55,7 +57,13 @@ def _clean_text_response(raw_response: str) -> str:
     return text
 
 
-def _execute_llm_call(prompt: str, node_name: str, agent_name: str, temperature: float = 0.2) -> str:
+def _execute_llm_call(
+    prompt: str,
+    node_name: str,
+    agent_name: str,
+    temperature: float = 0.2,
+    response_format: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Helper to execute chat completion requests and log them to workflow logger.
     """
@@ -78,6 +86,8 @@ def _execute_llm_call(prompt: str, node_name: str, agent_name: str, temperature:
         ],
         "temperature": temperature
     }
+    if response_format:
+        request_data["response_format"] = response_format
 
     req = urllib.request.Request(
         endpoint_url,
@@ -171,16 +181,24 @@ def init_reformulation(user_query: str) -> bool:
             prompt=prompt,
             node_name="Node 0: Init Reformulation Check",
             agent_name="Init Reformulation Agent",
-            temperature=0.0
+            temperature=0.0,
+            response_format={"type": "json_object"}
         )
-        cleaned_json_str = _clean_json_response(raw_output)
-        data = json.loads(cleaned_json_str)
-        val = data.get("is_reformulation", "False")
+        try:
+            parsed = InitReformulationResponse.model_validate_json(raw_output)
+        except Exception:
+            stripped = raw_output.strip()
+            if "```" in stripped:
+                match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped, re.IGNORECASE)
+                if match:
+                    stripped = match.group(1).strip()
+            first_brace = stripped.find("{")
+            last_brace = stripped.rfind("}")
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                stripped = stripped[first_brace:last_brace + 1]
+            parsed = InitReformulationResponse.model_validate_json(stripped)
 
-        if isinstance(val, bool):
-            return val
-        str_val = str(val).strip().lower()
-        return str_val in ("true", "yes", "1")
+        return parsed.is_reformulation
     except Exception as err:
         print(f"[!] Warning in init_reformulation: {err}. Falling back to heuristic check.")
         # Heuristic fallback if LLM call fails
@@ -278,13 +296,25 @@ def QueryReformulateAgent(
             prompt=formatted_prompt,
             node_name="Node 0: Query Reformulation",
             agent_name="Query Reformulation Agent",
-            temperature=0.2
+            temperature=0.2,
+            response_format={"type": "json_object"}
         )
-        cleaned_json_str = _clean_json_response(raw_output)
-        result_json = json.loads(cleaned_json_str)
+        try:
+            parsed = ReformulationResponse.model_validate_json(raw_output)
+        except Exception:
+            stripped = raw_output.strip()
+            if "```" in stripped:
+                match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", stripped, re.IGNORECASE)
+                if match:
+                    stripped = match.group(1).strip()
+            first_brace = stripped.find("{")
+            last_brace = stripped.rfind("}")
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                stripped = stripped[first_brace:last_brace + 1]
+            parsed = ReformulationResponse.model_validate_json(stripped)
 
-        rewritten = result_json.get("reformulated_query", "").strip()
-        reason = result_json.get("reason", "").strip()
+        rewritten = parsed.reformulated_query.strip()
+        reason = (parsed.reason or "").strip()
 
         if rewritten:
             print(f"[+] [QueryReformulateAgent] Reformulated: '{cleaned_query}' -> '{rewritten}' (Reason: {reason})")

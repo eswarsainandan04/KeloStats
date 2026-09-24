@@ -44,14 +44,56 @@ def _clean_html_response(raw_response: str) -> str:
     if doc_start != -1 and doc_end != -1 and doc_end > doc_start:
         text = text[doc_start:doc_end + len("</html>")].strip()
 
+    # 4. Enforce strict slide rules (remove scrollbars and mobile column collapses)
+    text = _sanitize_slide_html(text)
+
     return text
+
+
+def _sanitize_slide_html(html_code: str) -> str:
+    """
+    Sanitizes slide HTML to guarantee zero scrollbars and prevent
+    destructive mobile media queries that collapse side-by-side layouts.
+    """
+    if not html_code:
+        return html_code
+
+    # 1. Eliminate scrollbars: force overflow: hidden
+    sanitized = re.sub(
+        r"overflow(?:-[yx])?\s*:\s*(?:auto|scroll)\s*!?;?",
+        "overflow: hidden;",
+        html_code,
+        flags=re.IGNORECASE
+    )
+
+    # 2. Strip destructive responsive collapse media queries that force 1fr columns
+    def _strip_collapse_media(match):
+        block = match.group(0)
+        if (
+            "grid-template-columns: 1fr" in block
+            or "grid-template-columns:1fr" in block
+            or "grid-column: 1 / -1" in block
+            or "grid-column:1/-1" in block
+        ):
+            return "/* Stripped mobile collapse to preserve 16:9 side-by-side layout */"
+        return block
+
+    sanitized = re.sub(
+        r"@media\s*\([^{]+\)\s*\{[\s\S]*?\}\s*\}",
+        _strip_collapse_media,
+        sanitized,
+        flags=re.IGNORECASE
+    )
+
+    return sanitized
 
 
 def ValidateHTMLCodeAgent(html_code: str) -> str:
     """
     Node 7: HTML Code Validation Agent
     Passes ONLY the HTML code to the validation agent to:
-    - Rewrite code if broken UI or overlapping elements exist
+    - Find any overlapping canvas, design, cards, badges, headers, etc. then make it correct!
+    - Rewrite code if broken UI, card collisions, or overlapping elements exist
     - Rewrite code if not proper alignment of the PPT slide frame (16:9 aspect ratio)
     - Rewrite code if any syntax errors, unclosed tags, or broken CSS/JS exist (e.g. calc() inside JS)
     - Returns the proper, working HTML code.

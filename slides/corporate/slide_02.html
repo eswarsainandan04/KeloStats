@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 02 - Table of Contents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      background-color: #0b0f19;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+    }
+
+    /* Presentation Slide Canvas (16:9 Widescreen: 1920x1080) */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #020524;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Top Section (0% to 31.5%) with Royal Blue Background */
+    .top-header-section {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 31.5%;
+      background: radial-gradient(circle at 50% 10%, #1545b5 0%, #0d3498 60%, #092675 100%);
+      display: flex;
+      align-items: center;
+      padding: 0 6.8%;
+      z-index: 5;
+    }
+
+    /* Title "CONTENTS" */
+    .header-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(68 / 19.2 * 1cqw);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      margin-right: calc(30 / 19.2 * 1cqw);
+    }
+
+    /* Thin White Horizontal Rule */
+    .header-divider-line {
+      flex: 1;
+      height: calc(1.5 / 19.2 * 1cqw);
+      background-color: rgba(255, 255, 255, 0.45);
+      margin-right: calc(40 / 19.2 * 1cqw);
+    }
+
+    /* Top-Right Meta Links */
+    .top-meta {
+      display: flex;
+      align-items: center;
+      gap: calc(75 / 19.2 * 1cqw);
+      white-space: nowrap;
+    }
+
+    .meta-item {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(18 / 19.2 * 1cqw);
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.04em;
+    }
+
+    /* Center Downward Arrow Badge sitting on divider */
+    .divider-arrow-badge {
+      position: absolute;
+      left: 50%;
+      top: 31.5%;
+      transform: translate(-50%, -50%);
+      width: calc(56 / 19.2 * 1cqw);
+      height: calc(56 / 19.2 * 1cqw);
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d946ef 0%, #a855f7 50%, #9333ea 100%);
+      box-shadow: 0 calc(6 / 19.2 * 1cqw) calc(18 / 19.2 * 1cqw) rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .divider-arrow-badge svg {
+      width: calc(24 / 19.2 * 1cqw);
+      height: calc(24 / 19.2 * 1cqw);
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      margin-top: calc(2 / 19.2 * 1cqw);
+    }
+
+    /* Bottom Main Area (31.5% to 100%) */
+    .bottom-main-section {
+      position: absolute;
+      left: 0;
+      top: 31.5%;
+      width: 100%;
+      bottom: 0;
+      background-color: #020524;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    /* Luminous Glowing Purple Sphere in bottom area */
+    .sphere-bottom-purple {
+      position: absolute;
+      right: -10%;
+      bottom: -32%;
+      width: calc(980 / 19.2 * 1cqw);
+      height: calc(980 / 19.2 * 1cqw);
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 45%, rgba(192, 38, 211, 0.8) 0%, rgba(147, 51, 234, 0.6) 38%, rgba(88, 28, 135, 0.25) 60%, transparent 75%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* SVG Halftone Dots Matrix in bottom-left corner */
+    .dots-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* 2x2 Grid of White Content Cards */
+    .cards-container {
+      position: absolute;
+      left: 6.8%;
+      right: 6.8%;
+      top: 41.5%;
+      bottom: 6%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: calc(28 / 19.2 * 1cqw) calc(34 / 19.2 * 1cqw);
+      z-index: 10;
+    }
+
+    /* Content Card */
+    .toc-card {
+      background-color: #ffffff;
+      border-radius: calc(14 / 19.2 * 1cqw);
+      box-shadow: 0 calc(12 / 19.2 * 1cqw) calc(32 / 19.2 * 1cqw) rgba(0, 0, 0, 0.38);
+      padding: calc(24 / 19.2 * 1cqw) calc(28 / 19.2 * 1cqw);
+      display: flex;
+      align-items: center;
+      gap: calc(24 / 19.2 * 1cqw);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Circular Number Badges */
+    .card-badge {
+      width: calc(68 / 19.2 * 1cqw);
+      height: calc(68 / 19.2 * 1cqw);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 calc(4 / 19.2 * 1cqw) calc(12 / 19.2 * 1cqw) rgba(0, 0, 0, 0.18);
+    }
+
+    .badge-blue {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    }
+
+    .badge-purple {
+      background: linear-gradient(135deg, #c026d3 0%, #9333ea 100%);
+    }
+
+    .badge-number {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(30 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    /* Card Text Content */
+    .card-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(24 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #0c2363;
+      line-height: 1.25;
+      margin-bottom: calc(8 / 19.2 * 1cqw);
+    }
+
+    .card-description {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-size: calc(13.5 / 19.2 * 1cqw);
+      font-weight: 400;
+      color: #64748b;
+      line-height: 1.48;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
+
+    <!-- 1. Top Royal Blue Header Section -->
+    <div class="top-header-section">
+      <h1 id="header_title" class="header-title" data-editable="text">CONTENTS</h1>
+      <div class="header-divider-line"></div>
+      <div class="top-meta">
+        <div id="meta_education" class="meta-item" data-editable="text">Education</div>
+        <div id="meta_university" class="meta-item" data-editable="text">University</div>
+      </div>
+    </div>
+
+    <!-- 2. Center Divider Downward Arrow Badge -->
+    <div id="divider_arrow_badge" class="divider-arrow-badge">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+
+    <!-- 3. Bottom Section with Overlapping Glow & Halftone Grid -->
+    <div class="bottom-main-section">
+      <!-- Glowing Purple Sphere -->
+      <div class="sphere-bottom-purple"></div>
+
+      <!-- SVG Dotted Halftone Matrix (Bottom-Left Corner) -->
+      <svg class="dots-overlay" viewBox="0 0 1920 740" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="cornerDotFade" cx="0" cy="740" r="480" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+            <stop offset="50%" stop-color="#fff" stop-opacity="0.85"/>
+            <stop offset="80%" stop-color="#fff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- BOTTOM-LEFT CONCENTRIC ARCS OF DOTS (#f43f8e) -->
+        <g mask="url(#cornerDotFade)" fill="none" stroke="#f43f8e" stroke-linecap="round">
+          <circle cx="0" cy="740" r="90" stroke-width="4.0" stroke-dasharray="0 20" opacity="0.95"/>
+          <circle cx="0" cy="740" r="122" stroke-width="4.4" stroke-dasharray="0 22" opacity="0.92"/>
+          <circle cx="0" cy="740" r="156" stroke-width="4.8" stroke-dasharray="0 24" opacity="0.89"/>
+          <circle cx="0" cy="740" r="192" stroke-width="5.2" stroke-dasharray="0 26" opacity="0.86"/>
+          <circle cx="0" cy="740" r="230" stroke-width="5.6" stroke-dasharray="0 28" opacity="0.82"/>
+          <circle cx="0" cy="740" r="270" stroke-width="6.0" stroke-dasharray="0 30" opacity="0.78"/>
+          <circle cx="0" cy="740" r="312" stroke-width="6.4" stroke-dasharray="0 32" opacity="0.74"/>
+          <circle cx="0" cy="740" r="356" stroke-width="6.8" stroke-dasharray="0 34" opacity="0.68"/>
+          <circle cx="0" cy="740" r="402" stroke-width="7.2" stroke-dasharray="0 36" opacity="0.60"/>
+          <circle cx="0" cy="740" r="450" stroke-width="7.6" stroke-dasharray="0 38" opacity="0.50"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 4. 2x2 Grid of Content Cards -->
+    <div class="cards-container">
+
+      <!-- Card 1 (Blue Badge) -->
+      <div id="card_01" class="toc-card">
+        <div class="card-badge badge-blue">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_01_title" class="card-title" data-editable="text">Background significance</h2>
+          <p id="card_01_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2 (Purple Badge) -->
+      <div id="card_02" class="toc-card">
+        <div class="card-badge badge-purple">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_02_title" class="card-title" data-editable="text">Method and process</h2>
+          <p id="card_02_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3 (Purple Badge) -->
+      <div id="card_03" class="toc-card">
+        <div class="card-badge badge-purple">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_03_title" class="card-title" data-editable="text">Achievement display</h2>
+          <p id="card_03_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 4 (Blue Badge) -->
+      <div id="card_04" class="toc-card">
+        <div class="card-badge badge-blue">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_04_title" class="card-title" data-editable="text">Summary of the paper</h2>
+          <p id="card_04_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
+import { fetchWithAuth } from "@/lib/api";
 
 export interface TemplateItem {
   template_id: string;
@@ -175,7 +176,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
     setLoadingDbs(true);
     const userId = getUserId();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
       if (res.ok) {
         const data = await res.json();
         const dbs: DatabaseItem[] = data.databases || [];
@@ -212,7 +213,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
 
     const userId = getUserId();
     try {
-      const res = await fetch(`${API_BASE_URL}/api/workspace/create`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -268,7 +269,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
   if (selectedTemplate) {
     const isFav = !!favorites[selectedTemplate.template_id];
     return (
-      <div className="fixed inset-0 z-50 bg-[#f4f6f9] flex flex-col overflow-y-auto animate-in fade-in duration-150">
+      <div className="fixed inset-0 z-50 bg-[#f4f6f9] flex flex-col overflow-y-auto overflow-x-hidden animate-in fade-in duration-150">
         {/* ===================================================================== */}
         {/* TOP PERSISTENT PREVIEW NAVIGATION BAR */}
         {/* Matches Image 2: < Back | [P] Template_Name.pptx   [♡] [+ Create Project] */}
@@ -376,14 +377,28 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
               {slides.map((slide, idx) => (
                 <div key={slide.filename || idx} className="flex flex-col items-center group">
                   {/* Slide Container with 16:9 Aspect Ratio */}
-                  <div
-                    className="w-full aspect-[16/9] bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200/80 relative transition-transform duration-200"
-                    style={{ containerType: "inline-size" }}
-                  >
-                    <div
-                      className="w-full h-full relative"
-                      dangerouslySetInnerHTML={{ __html: slide.rendered_html }}
-                    />
+                  <div className="w-full aspect-[16/9] bg-slate-900 rounded-xl shadow-xl overflow-hidden border border-slate-200/80 relative">
+                    {(() => {
+                      const slideCode = slide.raw_html || slide.rendered_html || "";
+                      const lucideInject = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="https://unpkg.com/lucide-static@1.45.0/font/lucide.css">`;
+                      const cleanDoc = slideCode.includes("<head>")
+                        ? slideCode.replace(
+                            "<head>",
+                            `<head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;margin:0 auto!important;}</style>`
+                          )
+                        : `<!DOCTYPE html><html><head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;margin:0 auto!important;}</style></head><body>${slideCode}</body></html>`;
+
+                      return (
+                        <iframe
+                          key={`${slide.filename || idx}-${slideCode.length}`}
+                          srcDoc={cleanDoc}
+                          className="w-full h-full border-0 block"
+                          scrolling="no"
+                          sandbox="allow-scripts allow-same-origin"
+                          title={slide.name || `Slide ${idx + 1}`}
+                        />
+                      );
+                    })()}
                   </div>
 
                   {/* Slide numbering label */}

@@ -125,7 +125,7 @@ flowchart TD
 
     %% Downstream Routing (Occurs after SQL Execution & Data Fetch)
     DECIDE_DOWNSTREAM -->|decision == 'normal_qa'| NODE5
-    DECIDE_DOWNSTREAM -->|decision == 'agent'| NODE6
+    DECIDE_DOWNSTREAM -->|decision == 'agent'| NODE5_5
 
     %% Node 5: Answer Generator
     subgraph S5_QA["Layer 5: Conversational QA Synthesis"]
@@ -133,16 +133,18 @@ flowchart TD
     end
     NODE5 --> SAVE_AI_MSG
 
-    %% Nodes 6 & 7: PPT Generation & HTML Validation
-    subgraph S6_PPT["Layer 6: Dynamic Presentation Engine"]
-        NODE6["🎨 <b>Node 6: PPT Generation Node</b><br>Reads manifest.json for Slide {n} (UUID.html)<br>Case 1: Empty Canvas -> uses previous slide template<br>Case 2: Existing Canvas -> updates active slide<br>Generates HTML5 / Tailwind / Chart.js"]:::agentNode
+    %% Nodes 5.5, 6 & 7: PPT Planning, Generation & HTML Validation
+    subgraph S6_PPT["Layer 6: Dynamic Presentation Engine (Planner-Compiler Architecture)"]
+        NODE5_5["📐 <b>Node 5.5: Slide Planning Agent</b><br>Translates query & retrieved rows into structured JSON layout<br>Generates components & exact 1920x1080 bounding box locations"]:::agentNode
+        
+        NODE5_5 --> NODE6["🎨 <b>Node 6: PPT Generation Node</b><br>Compiles structured slide_plan JSON into HTML5 / Tailwind / Chart.js<br>Case 1: Empty Canvas -> uses previous slide template<br>Case 2: Existing Canvas -> updates active slide<br><i>(Raw database rows NOT passed directly to HTML generator)</i>"]:::agentNode
         
         NODE6 --> NODE7["✅ <b>Node 7: HTML Code Validation Node</b><br>Inspects slide layout for 16:9 ratio, broken CSS,<br>overlapping divs, and JavaScript/Chart.js syntax errors"]:::guardNode
 
         NODE7 --> S3_SAVE[("☁️ <b>Persist Validated Slide to S3</b><br>workspace/{user_id}/{project_id}/slides/{uuid}.html<br>via manifest.json")]:::storageNode
     end
 
-    S6_PPT --> SAVE_AI_MSG
+    NODE6 --> SAVE_AI_MSG
 
     %% Exit & Persistence Layer
     subgraph S_FINAL["Layer 7: Response Persistence & Observability"]
@@ -241,20 +243,24 @@ The state passed across all LangGraph nodes is strictly typed:
 >    - `normal_qa` &rarr; **Node 5 (Answer Generator)** for natural language answers.
 >    - `agent` &rarr; **Node 6 (PPT Generator)** & **Node 7 (HTML Validator)** with retrieved data rows.
 
-### Layer 5 & 6: Conversational QA & Slide Synthesis
+### Layer 5 & 6: Conversational QA & Slide Synthesis (Planner-Compiler Pattern)
 1. **`answer_generator_node` (`AnswerGeneratorAgent`)**:
    - Triggered when `decision == "normal_qa"`.
    - Formulates natural language explanations, key metrics, and bulleted takeaways grounded solely in retrieved database rows.
-2. **`ppt_generation_node` (`PPTGenerationAgent`)**:
-   - Triggered when `decision == "agent"`.
-   - **Dual Prompt Selection**:
-     - `sql_required: False`: Uses [ppt_general_agent_prompt.txt](file:///c:/Kelostats/backend/Agents/prompts/ppt_general_agent_prompt.txt) for direct editing, styling, layout refinement, and copywriting improvements without SQL data.
-     - `sql_required: True`: Uses [ppt_theme_prompt.txt](file:///c:/Kelostats/backend/Agents/prompts/ppt_theme_prompt.txt) with `retrieved_data` records to synthesize new data visualizations.
+2. **`slide_planning_node` (`SlidePlanningAgent`)**:
+   - Triggered when `decision == "agent"`. Runs immediately before PPT code compilation.
+   - **Inputs**: `user_query`, `html_code` (template), `retrived_rows` (optional), `sql_required`.
+   - **Mode A (`sql_required: True`)**: Synthesizes key metrics, trends, and charts from retrieved database records.
+   - **Mode B (`sql_required: False`)**: Inspects current slide HTML and repositions, adds, or updates components based on user instruction.
+   - **Spatial Planning**: Maps each planned component to exact non-overlapping bounding box coordinates on a standard `1920 × 1080` canvas (`x`, `y`, `width`, `height`).
+   - **Outputs**: Strict layout plan JSON (`slide_plan`), completely stripping styling/hex codes so the LLM focuses purely on content and spatial structure.
+3. **`ppt_generation_node` (`PPTGenerationAgent`)**:
+   - Compiles the structured `slide_plan` JSON and template HTML into responsive, standalone 16:9 HTML with Tailwind CSS and Chart.js telemetry charts.
+   - **Decoupled Architecture**: Raw database rows are **never** passed to this node; it acts purely as an HTML/Tailwind compiler for the verified plan.
    - **Dynamic Manifest Resolution**: Uses `workspace/{user_id}/{project_id}/manifest.json` to identify active slide UUID (`{uuid}.html`).
    - **Case 1 (Empty Slide)**: If the target slide has no content, inherits theme, color palette, and layout from the previous content slide.
    - **Case 2 (Slide with Content)**: Uses existing slide canvas as template to update text, tables, and charts.
-   - Generates responsive, standalone 16:9 HTML with Tailwind CSS and Chart.js telemetry charts.
-3. **`validate_html_code_node` (`ValidateHTMLCodeAgent`)**:
+4. **`validate_html_code_node` (`ValidateHTMLCodeAgent`)**:
    - Post-processes generated HTML code.
    - Detects and repairs broken aspect ratios, overlapping divs, missing script tags, and JavaScript syntax bugs (such as invalid `calc()` inside JS objects).
    - Persists validated HTML back to Supabase S3.

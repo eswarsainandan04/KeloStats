@@ -142,11 +142,11 @@ def get_templates():
             templates_list = []
             for row in result:
                 mapping = row._mapping if hasattr(row, "_mapping") else dict(row)
-                template_id = str(mapping.get("template_id", ""))
+                template_id = str(mapping.get("template_id", "")).strip()
                 templates_list.append({
                     "template_id": template_id,
-                    "template_name": str(mapping.get("template_name", "")),
-                    "category": str(mapping.get("category", "") or "general"),
+                    "template_name": str(mapping.get("template_name", "")).strip(),
+                    "category": str(mapping.get("category", "") or "general").strip(),
                     "preview_url": f"/api/templates/{template_id}/preview",
                 })
 
@@ -167,6 +167,7 @@ def get_template_preview(template_id: str):
     """
     Fetches templates/{template_id}/preview.png from Supabase S3 bucket and streams it.
     """
+    template_id = str(template_id or "").strip()
     s3_client = get_s3_client()
     bucket_name = os.getenv("SUPABASE_BUCKET_NAME", "storage")
     s3_key = f"templates/{template_id}/preview.png"
@@ -215,6 +216,7 @@ def get_template_slides(template_id: str):
     Sorts them numerically (slide_01.html -> slide_02.html).
     Returns list of slides with raw HTML and embeddable rendered_html.
     """
+    template_id = str(template_id or "").strip()
     s3_client = get_s3_client()
     bucket_name = os.getenv("SUPABASE_BUCKET_NAME", "storage")
     prefix = f"templates/{template_id}/slides/"
