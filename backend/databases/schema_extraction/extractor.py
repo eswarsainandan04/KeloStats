@@ -33,7 +33,11 @@ def is_categorical(series: pd.Series) -> bool:
     """
     Determines if a pandas Series is categorical using pandas dtype keyword checkers.
     """
-    numeric_series = pd.to_numeric(series, errors="ignore")
+    try:
+        numeric_series = pd.to_numeric(series, errors="raise")
+    except (ValueError, TypeError):
+        numeric_series = series
+
     if pd.api.types.is_numeric_dtype(numeric_series) or pd.api.types.is_datetime64_any_dtype(numeric_series):
         return False
 
@@ -41,7 +45,7 @@ def is_categorical(series: pd.Series) -> bool:
         pd.api.types.is_object_dtype(numeric_series)
         or pd.api.types.is_string_dtype(numeric_series)
         or pd.api.types.is_bool_dtype(numeric_series)
-        or pd.api.types.is_categorical_dtype(numeric_series)
+        or isinstance(numeric_series.dtype, pd.CategoricalDtype)
     )
 
 
@@ -306,7 +310,10 @@ def _schema_extraction(
                     is_cat = False
                 elif sample_values:
                     # Check via Pandas type keywords
-                    col_series = pd.to_numeric(pd.Series(sample_values), errors="ignore")
+                    try:
+                        col_series = pd.to_numeric(pd.Series(sample_values), errors="raise")
+                    except (ValueError, TypeError):
+                        col_series = pd.Series(sample_values)
                     is_cat = is_categorical(col_series)
                 else:
                     # Fallback for empty tables

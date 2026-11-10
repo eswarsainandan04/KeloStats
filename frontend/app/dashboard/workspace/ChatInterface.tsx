@@ -48,11 +48,41 @@ export default function ChatInterface({
   isExpanded,
   onToggleExpand,
 }: ChatInterfaceProps) {
+  const [resolvedDbId, setResolvedDbId] = useState<string>(databaseId || "");
+  const [resolvedCollectionId, setResolvedCollectionId] = useState<string>(collectionId || "");
+  const [dbDisplayName, setDbDisplayName] = useState<string>(databaseDisplayName || "");
+  const [colDisplayName, setColDisplayName] = useState<string>(collectionDisplayName || "");
+
   const [currentSource, setCurrentSource] = useState<"database" | "documents" | "auto">(
     source || (databaseId && collectionId ? "auto" : databaseId ? "database" : collectionId ? "documents" : "auto")
   );
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [isUpdatingSource, setIsUpdatingSource] = useState(false);
+
+  const hasDatabase = Boolean(resolvedDbId && resolvedDbId.trim());
+  const hasCollection = Boolean(resolvedCollectionId && resolvedCollectionId.trim());
+  const hasBothSources = hasDatabase && hasCollection;
+
+  const effectiveSource: "database" | "documents" | "auto" =
+    hasDatabase && !hasCollection
+      ? "database"
+      : !hasDatabase && hasCollection
+      ? "documents"
+      : currentSource;
+
+  useEffect(() => {
+    setResolvedDbId(databaseId || "");
+  }, [databaseId]);
+
+  useEffect(() => {
+    setResolvedCollectionId(collectionId || "");
+  }, [collectionId]);
+
+  useEffect(() => {
+    if (collectionDisplayName && collectionDisplayName.trim() && collectionDisplayName.toLowerCase() !== "collection") {
+      setColDisplayName(collectionDisplayName.trim());
+    }
+  }, [collectionDisplayName]);
 
   useEffect(() => {
     if (source) {
@@ -60,9 +90,19 @@ export default function ChatInterface({
     }
   }, [source]);
 
+  useEffect(() => {
+    if (hasDatabase && !hasCollection && currentSource !== "database") {
+      setCurrentSource("database");
+    } else if (!hasDatabase && hasCollection && currentSource !== "documents") {
+      setCurrentSource("documents");
+    }
+  }, [hasDatabase, hasCollection, currentSource]);
+
   const handleSelectSource = async (newSource: "database" | "documents" | "auto") => {
-    setCurrentSource(newSource);
     setIsSourceModalOpen(false);
+    if (newSource === effectiveSource) return;
+
+    setCurrentSource(newSource);
 
     if (projectId) {
       try {
@@ -88,63 +128,103 @@ export default function ChatInterface({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [dbDisplayName, setDbDisplayName] = useState<string>(databaseDisplayName || "");
 
-  // Dynamically resolve real database display name
+  // Dynamically resolve workspace source IDs and display names
   useEffect(() => {
     if (databaseDisplayName && databaseDisplayName.trim() && databaseDisplayName.toLowerCase() !== "database") {
       setDbDisplayName(databaseDisplayName.trim());
-      return;
     }
 
     if (!userId) return;
 
     let isMounted = true;
-    const resolveDatabaseName = async () => {
+    const resolveSourceMetadata = async () => {
+      let targetDbId = (databaseId || "").trim();
+      let targetColId = (collectionId || "").trim();
+      let resolvedDbName =
+        databaseDisplayName && databaseDisplayName.trim() && databaseDisplayName.trim().toLowerCase() !== "database"
+          ? databaseDisplayName.trim()
+          : "";
+      let resolvedColName =
+        collectionDisplayName && collectionDisplayName.trim() && collectionDisplayName.trim().toLowerCase() !== "collection"
+          ? collectionDisplayName.trim()
+          : "";
+
       try {
-        // 1. Check workspace projects list for this project's database_display_name
+        // 1. Check workspace projects list for authoritative database_id, collection_id, and display names
         if (projectId && projectId !== "project_default") {
           const wsRes = await fetchWithAuth(`${API_BASE_URL}/api/workspace/list?user_id=${userId}`);
-          if (wsRes.ok) {
+          if (wsRes.ok && isMounted) {
             const wsData = await wsRes.json();
             const wsList = wsData.workspaces || [];
             const matchedWs = wsList.find((w: any) => w.project_id === projectId);
-            if (matchedWs && isMounted) {
-              const name = matchedWs.database_display_name || matchedWs.database_name;
-              if (name) {
-                setDbDisplayName(name);
-                return;
+            if (matchedWs) {
+              targetDbId = (matchedWs.database_id || "").trim();
+              targetColId = (matchedWs.collection_id || "").trim();
+              setResolvedDbId(targetDbId);
+              setResolvedCollectionId(targetColId);
+
+              const wsDbName = matchedWs.database_display_name || matchedWs.database_name;
+              if (wsDbName && String(wsDbName).trim()) {
+                resolvedDbName = String(wsDbName).trim();
+                setDbDisplayName(resolvedDbName);
+              }
+
+              const wsColName = matchedWs.collection_display_name;
+              if (wsColName && String(wsColName).trim()) {
+                resolvedColName = String(wsColName).trim();
+                setColDisplayName(resolvedColName);
+              }
+
+              if (targetDbId && targetColId && (matchedWs.source === "database" || matchedWs.source === "documents" || matchedWs.source === "auto")) {
+                setCurrentSource(matchedWs.source);
+              } else if (targetDbId && !targetColId) {
+                setCurrentSource("database");
+              } else if (!targetDbId && targetColId) {
+                setCurrentSource("documents");
               }
             }
           }
         }
 
-        // 2. Fallback: inspect user's connected database list
-        const dbRes = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
-        if (dbRes.ok) {
-          const dbData = await dbRes.json();
-          const dbList = Array.isArray(dbData.databases) ? dbData.databases : (Array.isArray(dbData) ? dbData : []);
-          let matched = databaseId ? dbList.find((d: any) => d.db_id === databaseId) : null;
-          if (!matched && dbList.length > 0) {
-            matched = dbList[0];
+        // 2. Fallback: look up matching database display name ONLY if a database is attached
+        if (targetDbId && !resolvedDbName && isMounted) {
+          const dbRes = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
+          if (dbRes.ok && isMounted) {
+            const dbData = await dbRes.json();
+            const dbList = Array.isArray(dbData.databases) ? dbData.databases : (Array.isArray(dbData) ? dbData : []);
+            const matched = dbList.find((d: any) => d.db_id === targetDbId);
+            if (matched) {
+              const name = matched.display_name || matched.database_name || matched.service_name;
+              if (name) {
+                setDbDisplayName(String(name).trim());
+              }
+            }
           }
-          if (matched && isMounted) {
-            const name = matched.display_name || matched.database_name || matched.service_name;
-            if (name) {
-              setDbDisplayName(name);
+        }
+
+        // 3. Fallback: look up matching collection display name ONLY if a collection is attached
+        if (targetColId && !resolvedColName && isMounted) {
+          const colRes = await fetchWithAuth(`${API_BASE_URL}/api/documents/collections?user_id=${userId}`);
+          if (colRes.ok && isMounted) {
+            const colData = await colRes.json();
+            const colList = Array.isArray(colData.collections) ? colData.collections : [];
+            const matched = colList.find((c: any) => c.collection_id === targetColId);
+            if (matched?.display_name) {
+              setColDisplayName(String(matched.display_name).trim());
             }
           }
         }
       } catch (err) {
-        console.warn("Could not load database display name:", err);
+        console.warn("Could not load workspace source metadata:", err);
       }
     };
 
-    resolveDatabaseName();
+    resolveSourceMetadata();
     return () => {
       isMounted = false;
     };
-  }, [databaseDisplayName, userId, databaseId, projectId]);
+  }, [databaseDisplayName, collectionDisplayName, userId, databaseId, collectionId, projectId]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -271,11 +351,11 @@ export default function ChatInterface({
         },
         body: JSON.stringify({
           user_query: query,
-          database_id: databaseId || undefined,
-          collection_id: collectionId || undefined,
+          database_id: resolvedDbId || undefined,
+          collection_id: resolvedCollectionId || undefined,
           project_id: projectId || undefined,
           user_id: userId || undefined,
-          source: currentSource,
+          source: effectiveSource,
           slide_number: targetSlideNumber,
           slide_filename: targetFilename,
         }),
@@ -516,9 +596,9 @@ export default function ChatInterface({
             disabled={isTyping}
             rows={1}
             placeholder={
-              currentSource === "auto"
+              effectiveSource === "auto"
                 ? "Ask questions across database & documents or command slide edits..."
-                : currentSource === "database"
+                : effectiveSource === "database"
                 ? "Ask questions about database or command slide edits..."
                 : "Ask questions from documents or command slide edits..."
             }
@@ -531,7 +611,7 @@ export default function ChatInterface({
             {/* Badges Container */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Dynamic Source Indicator at Input Bar */}
-              {currentSource === "auto" && (
+              {effectiveSource === "auto" && (
                 <div
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/90 text-[10px] font-semibold text-amber-700 shadow-2xs shrink-0 cursor-default"
                   title="Source: Auto"
@@ -543,7 +623,7 @@ export default function ChatInterface({
                 </div>
               )}
 
-              {currentSource === "database" && (
+              {effectiveSource === "database" && (
                 <div
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-semibold text-slate-700 shadow-2xs shrink-0 cursor-default max-w-[160px] truncate"
                   title={dbDisplayName || "Database"}
@@ -559,10 +639,10 @@ export default function ChatInterface({
                 </div>
               )}
 
-              {currentSource === "documents" && (
+              {effectiveSource === "documents" && (
                 <div
                   className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-semibold text-slate-700 shadow-2xs shrink-0 cursor-default max-w-[160px] truncate"
-                  title={collectionDisplayName || "Collection"}
+                  title={colDisplayName || "Collection"}
                 >
                   <img
                     src="/collection.png"
@@ -570,7 +650,7 @@ export default function ChatInterface({
                     className="w-3.5 h-3.5 object-contain shrink-0"
                   />
                   <span className="tracking-tight text-[10px] font-semibold truncate">
-                    {collectionDisplayName || "Collection"}
+                    {colDisplayName || "Collection"}
                   </span>
                 </div>
               )}
@@ -627,98 +707,104 @@ export default function ChatInterface({
                       </div>
 
                       <div className="space-y-0.5">
-                        {/* Option 1: Database */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSource("database")}
-                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                            currentSource === "database"
-                              ? "bg-slate-100 text-slate-900 font-semibold"
-                              : "hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {/* Database Icon */}
-                            <img
-                              src="/database.png"
-                              alt="Database"
-                              className="w-4 h-4 object-contain shrink-0"
-                            />
-                            {/* Display Name */}
-                            <span className="text-xs truncate">
-                              {dbDisplayName || "Database"}
-                            </span>
-                          </div>
-                          {currentSource === "database" && (
-                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {/* Option 2: Collection */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSource("documents")}
-                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                            currentSource === "documents"
-                              ? "bg-slate-100 text-slate-900 font-semibold"
-                              : "hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {/* Collection Icon */}
-                            <img
-                              src="/collection.png"
-                              alt="Collection"
-                              className="w-4 h-4 object-contain shrink-0"
-                            />
-                            {/* Display Name */}
-                            <span className="text-xs truncate">
-                              {collectionDisplayName || "Collection"}
-                            </span>
-                          </div>
-                          {currentSource === "documents" && (
-                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {/* Option 3: Auto */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSource("auto")}
-                          className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                            currentSource === "auto"
-                              ? "bg-slate-100 text-slate-900 font-semibold"
-                              : "hover:bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {/* Auto Icon */}
-                            <svg
-                              className="w-4 h-4 text-amber-500 shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-                                clipRule="evenodd"
+                        {/* Option 1: Database (only when a database is attached to this workspace) */}
+                        {hasDatabase && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectSource("database")}
+                            className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                              effectiveSource === "database"
+                                ? "bg-slate-100 text-slate-900 font-semibold"
+                                : "hover:bg-slate-50 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {/* Database Icon */}
+                              <img
+                                src="/database.png"
+                                alt="Database"
+                                className="w-4 h-4 object-contain shrink-0"
                               />
-                            </svg>
-                            {/* Auto Name */}
-                            <span className="text-xs">
-                              Auto
-                            </span>
-                          </div>
-                          {currentSource === "auto" && (
-                            <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </button>
+                              {/* Display Name */}
+                              <span className="text-xs truncate">
+                                {dbDisplayName || "Database"}
+                              </span>
+                            </div>
+                            {effectiveSource === "database" && (
+                              <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Option 2: Collection (only when a document collection is attached to this workspace) */}
+                        {hasCollection && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectSource("documents")}
+                            className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                              effectiveSource === "documents"
+                                ? "bg-slate-100 text-slate-900 font-semibold"
+                                : "hover:bg-slate-50 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {/* Collection Icon */}
+                              <img
+                                src="/collection.png"
+                                alt="Collection"
+                                className="w-4 h-4 object-contain shrink-0"
+                              />
+                              {/* Display Name */}
+                              <span className="text-xs truncate">
+                                {colDisplayName || "Collection"}
+                              </span>
+                            </div>
+                            {effectiveSource === "documents" && (
+                              <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Option 3: Auto (only when BOTH database & collection are attached, or if neither ID was provided) */}
+                        {(hasBothSources || (!hasDatabase && !hasCollection)) && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectSource("auto")}
+                            className={`w-full px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                              effectiveSource === "auto"
+                                ? "bg-slate-100 text-slate-900 font-semibold"
+                                : "hover:bg-slate-50 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {/* Auto Icon */}
+                              <svg
+                                className="w-4 h-4 text-amber-500 shrink-0"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              {/* Auto Name */}
+                              <span className="text-xs">
+                                Auto
+                              </span>
+                            </div>
+                            {effectiveSource === "auto" && (
+                              <svg className="w-3.5 h-3.5 text-[#FF5148] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </>

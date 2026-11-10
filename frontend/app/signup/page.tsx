@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { API_BASE_URL } from "@/lib/config";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -50,6 +51,34 @@ export default function SignUpPage() {
 
       if (authError) {
         throw new Error(authError.message || "Failed to create account.");
+      }
+
+      if (!data?.user?.id) {
+        throw new Error("Failed to create user account in authentication provider.");
+      }
+
+      if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new Error("An account with this email address already exists. Please log in.");
+      }
+
+      // Also store user details in PostgreSQL `users` table with the same Supabase Auth user_id
+      const dbRes = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: data.user.id,
+          full_name: fullName.trim(),
+          email: email.trim(),
+          password,
+          confirm_password: confirmPassword,
+        }),
+      });
+
+      if (!dbRes.ok) {
+        const dbErr = await dbRes.json().catch(() => ({}));
+        throw new Error(dbErr.detail || "Failed to save user details to database.");
       }
 
       if (data?.session && data?.user) {

@@ -3,296 +3,339 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide - Radar Chart by Sub-Category</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Slide 02 - Table of Contents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      padding: 24px;
-      min-height: 100vh;
-      background-color: #0f172a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .slide-canvas {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background-color: #FFFFFF;
-      overflow: hidden;
-      container-type: inline-size;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .slide-canvas * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    /* Top-Right Corner Dot Accent Cluster */
-    .dot-cluster {
-      position: absolute;
-      right: 4.5%;
-      top: 8.667%;
-      width: 6.6%;
-      height: 8.8%;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    /* Slide Title */
-    .slide-title {
-      position: absolute;
-      left: 6.375%;
-      top: 11.000%;
-      width: 78.75%;
-      height: 8.000%;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: calc(52 / 19.2 * 1cqw);
-      font-weight: 700;
-      color: #000000;
-      line-height: 1.1;
-      text-align: left;
-      z-index: 2;
-    }
-
-    /* Red Accent Divider Bar */
-    .accent-bar {
-      position: absolute;
-      left: 6.375%;
-      top: 20.667%;
-      width: 7.125%;
-      height: 0.867%;
-      background-color: #FF5148;
-      border-radius: 0px;
-      z-index: 2;
-    }
-
-    /* Metric Cards Container (Left Side) */
-    .metrics-container {
-      position: absolute;
-      left: 6.375%;
-      top: 25%;
-      width: 45%;
-      height: 65%;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      z-index: 2;
-    }
-
-    .metric-card {
-      background-color: #F8F9FA;
-      border: 1px solid #E9ECEF;
-      border-radius: 8px;
-      padding: 12px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      font-family: Arial, Helvetica, sans-serif;
-      color: #212529;
-    }
-
-    .metric-card h3 {
-      font-size: calc(20 / 19.2 * 1cqw);
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: #495057;
-    }
-
-    .metric-card p {
-      font-size: calc(16 / 19.2 * 1cqw);
-      font-weight: 500;
+    body {
       margin: 0;
-      color: #000000;
-    }
-
-    /* Radar Chart Container (Right Side) */
-    .chart-container {
-      position: absolute;
-      right: 6.375%;
-      top: 25%;
-      width: 45%;
-      height: 65%;
-      background-color: #F8F9FA;
-      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      z-index: 2;
+      min-height: 100vh;
+      background-color: #0b0f19;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
     }
 
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
-    }
-
-    /* Footer Label for Chart */
-    .chart-label {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
-      font-size: calc(14 / 19.2 * 1cqw);
-      font-weight: 500;
-      color: #6C757D;
-      text-align: right;
-      z-index: 2;
-    }
-
-    /* SVG Dot Pattern */
-    .dot-cluster svg {
+    /* Presentation Slide Canvas (16:9 Widescreen) */
+    .slide-canvas {
+      position: relative;
       width: 100%;
-      height: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #020524;
+      overflow: hidden;
+      container-type: inline-size;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Top Section (0% to 31.5%) with Royal Blue Background */
+    .top-header-section {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 31.5%;
+      background: radial-gradient(circle at 50% 10%, #1545b5 0%, #0d3498 60%, #092675 100%);
+      display: flex;
+      align-items: center;
+      padding: 0 6.8%;
+      z-index: 5;
+    }
+
+    /* Title "CONTENTS" */
+    .header-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(68 / 19.2 * 1cqw);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      margin-right: calc(30 / 19.2 * 1cqw);
+    }
+
+    /* Thin White Horizontal Rule */
+    .header-divider-line {
+      flex: 1;
+      height: calc(1.5 / 19.2 * 1cqw);
+      background-color: rgba(255, 255, 255, 0.45);
+      margin-right: calc(40 / 19.2 * 1cqw);
+    }
+
+    /* Top-Right Meta Links */
+    .top-meta {
+      display: flex;
+      align-items: center;
+      gap: calc(75 / 19.2 * 1cqw);
+      white-space: nowrap;
+    }
+
+    .meta-item {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(18 / 19.2 * 1cqw);
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.04em;
+    }
+
+    /* Center Downward Arrow Badge sitting on divider */
+    .divider-arrow-badge {
+      position: absolute;
+      left: 50%;
+      top: 36%;
+      transform: translate(-50%, -50%);
+      width: calc(56 / 19.2 * 1cqw);
+      height: calc(56 / 19.2 * 1cqw);
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d946ef 0%, #a855f7 50%, #9333ea 100%);
+      box-shadow: 0 calc(6 / 19.2 * 1cqw) calc(18 / 19.2 * 1cqw) rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .divider-arrow-badge svg {
+      width: calc(24 / 19.2 * 1cqw);
+      height: calc(24 / 19.2 * 1cqw);
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      margin-top: calc(2 / 19.2 * 1cqw);
+    }
+
+    /* Bottom Main Area (31.5% to 100%) */
+    .bottom-main-section {
+      position: absolute;
+      left: 0;
+      top: 31.5%;
+      width: 100%;
+      bottom: 0;
+      background-color: #020524;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    /* Luminous Glowing Purple Sphere in bottom area */
+    .sphere-bottom-purple {
+      position: absolute;
+      right: -10%;
+      bottom: -32%;
+      width: calc(980 / 19.2 * 1cqw);
+      height: calc(980 / 19.2 * 1cqw);
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 45%, rgba(192, 38, 211, 0.8) 0%, rgba(147, 51, 234, 0.6) 38%, rgba(88, 28, 135, 0.25) 60%, transparent 75%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* SVG Halftone Dots Matrix in bottom-left corner */
+    .dots-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* 2x2 Grid of White Content Cards */
+    .cards-container {
+      position: absolute;
+      left: 6.8%;
+      right: 6.8%;
+      top: 41.5%;
+      bottom: 6%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: calc(28 / 19.2 * 1cqw) calc(34 / 19.2 * 1cqw);
+      z-index: 10;
+    }
+
+    /* Content Card */
+    .toc-card {
+      background-color: #ffffff;
+      border-radius: calc(14 / 19.2 * 1cqw);
+      box-shadow: 0 calc(12 / 19.2 * 1cqw) calc(32 / 19.2 * 1cqw) rgba(0, 0, 0, 0.38);
+      padding: calc(24 / 19.2 * 1cqw) calc(28 / 19.2 * 1cqw);
+      display: flex;
+      align-items: center;
+      gap: calc(24 / 19.2 * 1cqw);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Circular Number Badges */
+    .card-badge {
+      width: calc(68 / 19.2 * 1cqw);
+      height: calc(68 / 19.2 * 1cqw);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 calc(4 / 19.2 * 1cqw) calc(12 / 19.2 * 1cqw) rgba(0, 0, 0, 0.18);
+    }
+
+    .badge-blue {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    }
+
+    .badge-purple {
+      background: linear-gradient(135deg, #c026d3 0%, #9333ea 100%);
+    }
+
+    .badge-number {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(30 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    /* Card Text Content */
+    .card-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: calc(24 / 19.2 * 1cqw);
+      font-weight: 700;
+      color: #0c2363;
+      line-height: 1.25;
+      margin-bottom: calc(8 / 19.2 * 1cqw);
+    }
+
+    .card-description {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      font-size: calc(13.5 / 19.2 * 1cqw);
+      font-weight: 400;
+      color: #64748b;
+      line-height: 1.48;
     }
   </style>
 </head>
 <body>
 
-  <!-- Slide Presentation Canvas -->
-  <div class="slide-canvas">
+  <!-- Slide 02 Presentation Canvas -->
+  <div id="slide_02" class="slide-canvas">
 
-    <!-- Top Right Dot Cluster Graphic -->
-    <div class="dot-cluster">
-      <svg viewBox="0 0 88 66" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="dotGrid4x3_s2" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="11" cy="11" r="2.5" fill="#FF5148" opacity="0.35"/>
-          </pattern>
-        </defs>
-        <rect width="88" height="66" fill="url(#dotGrid4x3_s2)"/>
+    <!-- 1. Top Royal Blue Header Section -->
+    <div class="top-header-section">
+      <h1 id="header_title" class="header-title" data-editable="text">CONTENTS</h1>
+      <div class="header-divider-line"></div>
+      <div class="top-meta">
+        <div id="meta_education" class="meta-item" data-editable="text">Education</div>
+        <div id="meta_university" class="meta-item" data-editable="text">University</div>
+      </div>
+    </div>
+
+    <!-- 2. Center Divider Downward Arrow Badge -->
+    <div id="divider_arrow_badge" class="divider-arrow-badge">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 12 15 18 9"></polyline>
       </svg>
     </div>
 
-    <!-- Slide Title -->
-    <h1 class="slide-title">Sub-Category Performance Radar</h1>
+    <!-- 3. Bottom Section with Overlapping Glow & Halftone Grid -->
+    <div class="bottom-main-section">
+      <!-- Glowing Purple Sphere -->
+      <div class="sphere-bottom-purple"></div>
 
-    <!-- Accent Line -->
-    <div class="accent-bar"></div>
+      <!-- SVG Dotted Halftone Matrix (Bottom-Left Corner) -->
+      <svg class="dots-overlay" viewBox="0 0 1920 740" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="cornerDotFade" cx="0" cy="740" r="480" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+            <stop offset="50%" stop-color="#fff" stop-opacity="0.85"/>
+            <stop offset="80%" stop-color="#fff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
 
-    <!-- Metrics Cards (Top 3 Sub-Categories) -->
-    <div class="metrics-container">
-      <div class="metric-card">
-        <h3>Phones</h3>
-        <p>$1.7M Sales | $217K Profit</p>
-      </div>
-      <div class="metric-card">
-        <h3>Copiers</h3>
-        <p>$1.5M Sales | $259K Profit</p>
-      </div>
-      <div class="metric-card">
-        <h3>Chairs</h3>
-        <p>$1.5M Sales | $140K Profit</p>
-      </div>
-      <div class="metric-card">
-        <h3>Bookcases</h3>
-        <p>$1.47M Sales | $162K Profit</p>
-      </div>
+        <!-- BOTTOM-LEFT CONCENTRIC ARCS OF DOTS (#f43f8e) -->
+        <g mask="url(#cornerDotFade)" fill="none" stroke="#f43f8e" stroke-linecap="round">
+          <circle cx="0" cy="740" r="90" stroke-width="4.0" stroke-dasharray="0 20" opacity="0.95"/>
+          <circle cx="0" cy="740" r="122" stroke-width="4.4" stroke-dasharray="0 22" opacity="0.92"/>
+          <circle cx="0" cy="740" r="156" stroke-width="4.8" stroke-dasharray="0 24" opacity="0.89"/>
+          <circle cx="0" cy="740" r="192" stroke-width="5.2" stroke-dasharray="0 26" opacity="0.86"/>
+          <circle cx="0" cy="740" r="230" stroke-width="5.6" stroke-dasharray="0 28" opacity="0.82"/>
+          <circle cx="0" cy="740" r="270" stroke-width="6.0" stroke-dasharray="0 30" opacity="0.78"/>
+          <circle cx="0" cy="740" r="312" stroke-width="6.4" stroke-dasharray="0 32" opacity="0.74"/>
+          <circle cx="0" cy="740" r="356" stroke-width="6.8" stroke-dasharray="0 34" opacity="0.68"/>
+          <circle cx="0" cy="740" r="402" stroke-width="7.2" stroke-dasharray="0 36" opacity="0.60"/>
+          <circle cx="0" cy="740" r="450" stroke-width="7.6" stroke-dasharray="0 38" opacity="0.50"/>
+        </g>
+      </svg>
     </div>
 
-    <!-- Radar Chart Container -->
-    <div class="chart-container">
-      <canvas id="radarChart"></canvas>
-      <div class="chart-label">Performance across key metrics</div>
+    <!-- 4. 2x2 Grid of Content Cards -->
+    <div class="cards-container">
+
+      <!-- Card 1 (Blue Badge) -->
+      <div id="card_01" class="toc-card">
+        <div class="card-badge badge-blue">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_01_title" class="card-title" data-editable="text">Background significance</h2>
+          <p id="card_01_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2 (Purple Badge) -->
+      <div id="card_02" class="toc-card">
+        <div class="card-badge badge-purple">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_02_title" class="card-title" data-editable="text">Method and process</h2>
+          <p id="card_02_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3 (Purple Badge) -->
+      <div id="card_03" class="toc-card">
+        <div class="card-badge badge-purple">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_03_title" class="card-title" data-editable="text">Achievement display</h2>
+          <p id="card_03_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 4 (Blue Badge) -->
+      <div id="card_04" class="toc-card">
+        <div class="card-badge badge-blue">
+          <span class="badge-number" data-editable="text">01</span>
+        </div>
+        <div class="card-content">
+          <h2 id="card_04_title" class="card-title" data-editable="text">Summary of the paper</h2>
+          <p id="card_04_desc" class="card-description" data-editable="text">
+            Presentations are communication tools that can be used as speeches, reports, and more.
+          </p>
+        </div>
+      </div>
+
     </div>
-
-    <!-- Chart.js Script -->
-    <script>
-      const ctx = document.getElementById('radarChart').getContext('2d');
-
-      // Extract sub-categories and normalize data for radar chart
-      const dataRows = [
-        { sub_category: "Phones", total_sales: 1706824.1392, total_profit: 216717.0058, avg_discount: 0.14584748287161156, total_quantity: 11870 },
-        { sub_category: "Copiers", total_sales: 1509436.2742, total_profit: 258567.5491, avg_discount: 0.11714709851551956, total_quantity: 7454 },
-        { sub_category: "Chairs", total_sales: 1501681.7642, total_profit: 140396.2675, avg_discount: 0.1631100757134537, total_quantity: 12336 },
-        { sub_category: "Bookcases", total_sales: 1466572.2418, total_profit: 161924.4195, avg_discount: 0.1537577768560763, total_quantity: 8310 },
-        { sub_category: "Storage", total_sales: 1127085.8614, total_profit: 108461.4898, avg_discount: 0.1384641233445345, total_quantity: 16917 },
-        { sub_category: "Appliances", total_sales: 1011064.305, total_profit: 141680.5894, avg_discount: 0.14170940170940172, total_quantity: 6078 },
-        { sub_category: "Machines", total_sales: 779060.0671, total_profit: 58867.873, avg_discount: 0.1695827725437416, total_quantity: 4906 },
-        { sub_category: "Tables", total_sales: 757041.9244, total_profit: -64083.3887, avg_discount: 0.29073170731707315, total_quantity: 3083 },
-        { sub_category: "Accessories", total_sales: 749237.0185, total_profit: 129626.3062, avg_discount: 0.12048130081300813, total_quantity: 10946 },
-        { sub_category: "Binders", total_sales: 461911.5057, total_profit: 72449.846, avg_discount: 0.17920676202860858, total_quantity: 21429 },
-        { sub_category: "Furnishings", total_sales: 385578.2559, total_profit: 46967.4255, avg_discount: 0.15106624605678234, total_quantity: 11225 },
-        { sub_category: "Art", total_sales: 372091.9659, total_profit: 57953.9109, avg_discount: 0.11736227728855211, total_quantity: 16301 },
-        { sub_category: "Paper", total_sales: 244291.7194, total_profit: 59207.6827, avg_discount: 0.10946862634256642, total_quantity: 12822 },
-        { sub_category: "Supplies", total_sales: 243074.2206, total_profit: 22583.2631, avg_discount: 0.12791752577319587, total_quantity: 8543 },
-        { sub_category: "Envelopes", total_sales: 170904.3016, total_profit: 29601.1163, avg_discount: 0.13174948665297742, total_quantity: 8380 },
-        { sub_category: "Fasteners", total_sales: 83242.3159, total_profit: 11525.4241, avg_discount: 0.14059504132231404, total_quantity: 8390 },
-        { sub_category: "Labels", total_sales: 73404.03, total_profit: 15010.512, avg_discount: 0.12044896392939371, total_quantity: 9322 }
-      ];
-
-      // Normalize values for radar chart (scale to 0-100)
-      const normalizedData = dataRows.map(row => ({
-        label: row.sub_category,
-        sales: (row.total_sales / Math.max(...dataRows.map(r => r.total_sales))) * 100,
-        profit: (row.total_profit / Math.max(...dataRows.map(r => r.total_profit))) * 100,
-        discount: (row.avg_discount / 0.3) * 100,
-        quantity: (row.total_quantity / Math.max(...dataRows.map(r => r.total_quantity))) * 100
-      }));
-
-      // Create radar chart
-      new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: ['Sales', 'Profit', 'Discount', 'Quantity'],
-          datasets: [
-            {
-              label: 'Sub-Category Performance',
-              data: [
-                normalizedData[0].sales,
-                normalizedData[0].profit,
-                normalizedData[0].discount,
-                normalizedData[0].quantity
-              ],
-              backgroundColor: 'rgba(255, 81, 72, 0.1)',
-              borderColor: '#FF5148',
-              borderWidth: 2,
-              pointBackgroundColor: '#FF5148',
-              pointBorderColor: '#FFFFFF',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              tension: 0.1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            r: {
-              angleLines: {
-                color: '#E9ECEF'
-              },
-              grid: {
-                color: '#E9ECEF'
-              },
-              ticks: {
-                color: '#6C757D',
-                font: {
-                  size: 12
-                }
-              },
-              suggestedMin: 0,
-              suggestedMax: 100
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const value = context.parsed;
-                  const label = context.label;
-                  return `${label}: ${value.toFixed(1)}%`;
-                }
-              }
-            }
-          }
-        }
-      });
-    </script>
 
   </div>
 

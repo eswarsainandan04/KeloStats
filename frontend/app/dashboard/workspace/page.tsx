@@ -89,14 +89,16 @@ function WorkspaceContent() {
   const collectionDisplayName = searchParams.get("collection_display_name") || searchParams.get("col_name") || "";
   const rawSource = searchParams.get("source");
   const source: "database" | "documents" | "auto" =
-    rawSource === "database" || rawSource === "documents" || rawSource === "auto"
-      ? rawSource
-      : (databaseId && collectionId)
-      ? "auto"
+    databaseId && collectionId
+      ? rawSource === "database" || rawSource === "documents" || rawSource === "auto"
+        ? rawSource
+        : "auto"
       : databaseId
       ? "database"
       : collectionId
       ? "documents"
+      : rawSource === "database" || rawSource === "documents" || rawSource === "auto"
+      ? rawSource
       : "auto";
 
   // Dynamic slides loaded directly from Supabase S3 JSON files

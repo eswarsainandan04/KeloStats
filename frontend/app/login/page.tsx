@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { API_BASE_URL } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,14 +35,35 @@ export default function LoginPage() {
         throw new Error(authError.message || "Invalid email or password.");
       }
 
-      // Store user info in localStorage for seamless backward-compatibility
-      if (typeof window !== "undefined" && data.user) {
-        const userInfo = {
-          user_id: data.user.id,
-          email: data.user.email,
-          full_name: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User",
-        };
-        localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
+      // Store user info in localStorage and ensure user exists in PostgreSQL `users` table
+      if (data.user) {
+        const resolvedFullName =
+          data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User";
+
+        try {
+          await fetch(`${API_BASE_URL}/api/auth/sync-user`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              email: data.user.email || email.trim(),
+              full_name: resolvedFullName,
+            }),
+          });
+        } catch (syncErr) {
+          console.warn("Could not sync user record to backend database:", syncErr);
+        }
+
+        if (typeof window !== "undefined") {
+          const userInfo = {
+            user_id: data.user.id,
+            email: data.user.email,
+            full_name: resolvedFullName,
+          };
+          localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
+        }
       }
 
       // Immediately redirect on success

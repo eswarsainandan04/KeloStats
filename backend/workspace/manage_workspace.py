@@ -197,15 +197,12 @@ def create_workspace_session(payload: CreateWorkspacePayload):
             detail="Please select at least one database or one collection to create a workspace."
         )
 
-    # Determine source:
-    # source = ['database', 'documents', 'auto']
+    # Determine source consistent with attached database/collection:
     # if user selected database only then source = 'database'
     # elif user selected documents only then source = 'documents'
-    # elif user selects both documents & database then source = 'auto'
-    if payload.source and payload.source in ("database", "documents", "auto"):
-        source = payload.source
-    elif database_id and collection_id:
-        source = "auto"
+    # elif user selected both documents & database then allow requested source (default 'auto')
+    if database_id and collection_id:
+        source = payload.source if (payload.source in ("database", "documents", "auto")) else "auto"
     elif database_id and not collection_id:
         source = "database"
     elif collection_id and not database_id:
@@ -303,6 +300,41 @@ def update_workspace_source(payload: UpdateWorkspaceSourcePayload):
 
     try:
         with engine.connect() as conn:
+            existing = conn.execute(
+                text("""
+                    SELECT project_id, database_id, collection_id
+                    FROM workspace
+                    WHERE project_id = :project_id
+                    LIMIT 1;
+                """),
+                {"project_id": clean_project_id}
+            ).mappings().first()
+
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Workspace project '{clean_project_id}' not found."
+                )
+
+            has_db = bool(existing["database_id"])
+            has_col = bool(existing["collection_id"])
+            if has_db or has_col:
+                if clean_source == "database" and not has_db:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Cannot switch source to 'database' when no database is attached to this workspace."
+                    )
+                if clean_source == "documents" and not has_col:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Cannot switch source to 'documents' when no collection is attached to this workspace."
+                    )
+                if clean_source == "auto" and not (has_db and has_col):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Source 'auto' is only available when both a database and a collection are attached."
+                    )
+
             stmt = text("""
                 UPDATE workspace
                 SET source = :source, updated_at = NOW()
@@ -311,12 +343,6 @@ def update_workspace_source(payload: UpdateWorkspaceSourcePayload):
             """)
             res = conn.execute(stmt, {"source": clean_source, "project_id": clean_project_id}).mappings().first()
             conn.commit()
-
-            if not res:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Workspace project '{clean_project_id}' not found."
-                )
 
             return {
                 "status": "success",
@@ -490,17 +516,15 @@ def list_workspaces(user_id: str = Query(..., description="User ID / UUID")):
         default_name = pid.replace("project_", "Project ").replace("_", " ").title()
         project_name = db_info.get("project_name") or default_name
 
-        # Resolve source if missing:
-        item_source = db_info.get("source")
-        if not item_source:
-            if db_info.get("database_id") and db_info.get("collection_id"):
-                item_source = "auto"
-            elif db_info.get("database_id"):
-                item_source = "database"
-            elif db_info.get("collection_id"):
-                item_source = "documents"
-            else:
-                item_source = "auto"
+        # Resolve source consistent with attached database/collection:
+        has_db = bool(db_info.get("database_id"))
+        has_col = bool(db_info.get("collection_id"))
+        if has_db and not has_col:
+            item_source = "database"
+        elif has_col and not has_db:
+            item_source = "documents"
+        else:
+            item_source = db_info.get("source") or "auto"
 
         merged_workspaces.append({
             "project_id": pid,

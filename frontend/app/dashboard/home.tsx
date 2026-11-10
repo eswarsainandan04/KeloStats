@@ -185,7 +185,14 @@ export default function DashboardHome() {
     const projName = encodeURIComponent(ws.project_name || "Presentation Project");
     const dbDispName = encodeURIComponent(ws.database_display_name || ws.database_name || "");
     const colDispName = encodeURIComponent(ws.collection_display_name || "");
-    const source = ws.source || (ws.database_id && ws.collection_id ? "auto" : ws.database_id ? "database" : ws.collection_id ? "documents" : "auto");
+    const source =
+      ws.database_id && ws.collection_id
+        ? ws.source || "auto"
+        : ws.database_id
+        ? "database"
+        : ws.collection_id
+        ? "documents"
+        : ws.source || "auto";
     router.push(
       `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&display_name=${dbDispName}&collection_id=${ws.collection_id || ""}&collection_display_name=${colDispName}&source=${source}&template_id=${ws.template_id || ""}`
     );
@@ -257,6 +264,20 @@ export default function DashboardHome() {
               })
             );
           }
+
+          // Ensure Supabase Auth user also exists in PostgreSQL `users` table
+          if (email) {
+            fetch(`${API_BASE_URL}/api/auth/sync-user`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: session.user.id,
+                email,
+                full_name: fullName,
+              }),
+            }).catch(() => {});
+          }
+
           fetchWorkspaces();
         } else if (!hasLocalUser) {
           // If no local session AND no Supabase session, redirect to login
