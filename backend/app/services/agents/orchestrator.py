@@ -1,0 +1,1188 @@
+import os
+import sys
+import json
+import re
+from pathlib import Path
+from typing import TypedDict, Optional, Dict, Any, Union, List
+
+from fastapi import APIRouter, HTTPException, status, Request
+from pydantic import BaseModel
+from langgraph.graph import StateGraph, END
+
+# Ensure backend root is in sys.path for direct script execution and package imports
+backend_dir = Path(__file__).resolve().parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+# 1. Observe and import required modules
+from .nodes.retrival_agent import RetrievalAgent
+from .nodes.sql_writer_agent import SQLWriterAgent, _execute_and_save_master_data
+from .nodes.query_verification_agent import QueryVerifyAgent
+from .nodes.sql_repair_agent import SQLRepairAgent
+from .nodes.query_reformulate_agent import (
+    QueryReformulateAgent,
+    init_reformulation
+)
+from .nodes.query_classication_agent import (
+    QueryClassificationAgent,
+    handle_greet,
+    handle_out_of_scope
+)
+from .nodes.quey_decision_agent import (
+    QueryDecisionAgent,
+    QueryDecisionClassifyAgent
+)
+from .nodes.knowledge_answer_agent import KnowledgeAnswerAgent
+from .nodes.answer_generator_agent import AnswerGeneratorAgent
+from .nodes.ppt_generation_agent import (
+    PPTGenerationAgent,
+    save_slide_to_s3
+)
+from app.services.presentations.manager import (
+    GetSVGCode,
+    is_empty_slide
+)
+from .nodes.slide_planning_agent import SlidePlanningAgent
+from app.services.messages import save_chat_message
+from app.services.connectors.schema import schema_input
+from app.services.connectors import fetch_database_info
+from app.logs.llm_logger import start_workflow_logger
+
+# ==========================================
+# 2. Define LangGraph Typed State
+# ==========================================
+class KelostatsGraphState(TypedDict):
+    """
+    State passed across LangGraph nodes.
+    """
+    user_query: str
+    original_user_query: Optional[str]
+    reformulated_query: Optional[str]
+    is_reformulated: Optional[bool]
+    database_id: Optional[str]
+    collection_id: Optional[str]
+    project_id: Optional[str]
+    user_id: Optional[str]
+    slide_number: Optional[int]
+    classification_intent: Optional[str]  # "greet" | "out_of_scope" | "in_scope"
+    classification_reason: Optional[str]
+    decision: Optional[str]               # "normal_qa" | "agent"
+    decision_reason: Optional[str]
+    sql_required: Optional[bool]          # True if SQL pipeline needed, False for direct PPT edit
+    rag_required: Optional[bool]          # True if RAG document retrieval needed
+    source: Optional[str]                 # "database" | "documents"
+    llm_prompt_text: Optional[str]
+    verification_status: Optional[str]  # "SCHEMA_MATCH" | "RETRIEVAL_REQUIRED"
+    verification_reason: Optional[str]
+    retrieved_markdown_table: Optional[str]  # Markdown table of retrieved entity values
+    generated_sql: Optional[str]
+    sql_error: Optional[str]
+    retrieved_data: Optional[Dict[str, Any]]
+    retrieved_rows_count: Optional[int]
+    slide_plan: Optional[Dict[str, Any]]
+    template_svg: Optional[str]
+    slide_type: Optional[str]
+    slide_info: Optional[str]
+    generated_slide_svg: Optional[str]
+    final_output: Optional[str]
+    status: Optional[str]
+
+
+# ==========================================
+# 3. Node Implementations
+# ==========================================
+
+def save_user_message_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Initial Node: Saves user query to chat_messages table (role: 'User') before classification.
+    """
+    project_id = state.get("project_id")
+    user_query = state.get("user_query") or ""
+    print(f"\n[LangGraph - Entry: Save User Message] Persisting User message for project '{project_id}'...")
+
+    if project_id:
+        save_chat_message(project_id=project_id, role="User", message=user_query)
+
+    return {
+        "status": "USER_MESSAGE_RECORDED"
+    }
+
+
+def query_reformulate_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 0: QueryReformulateAgent
+    Evaluates whether the user query contains ambiguous referential pronouns (e.g. 'it', 'that', 'those', 'this').
+    If so, reformulates the query using recent conversation history from the chat_messages table.
+    The updated query is then passed to QueryClassificationAgent and all downstream agents.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    print(f"\n[LangGraph - Node 0: Query Reformulation] Checking query: '{user_query}' for project: '{project_id}'...")
+
+    result = QueryReformulateAgent(
+        user_query=user_query,
+        project_id=project_id
+    )
+
+    reformulated = result.get("reformulated_query") or user_query
+    is_reformulated = result.get("is_reformulated", False)
+    reason = result.get("reason", "")
+
+    if is_reformulated:
+        print(f"[+] [LangGraph - Node 0: Query Reformulation] Query reformulated to: '{reformulated}' (Reason: {reason})")
+    else:
+        print(f"[*] [LangGraph - Node 0: Query Reformulation] Query retained as-is: '{user_query}' (Reason: {reason})")
+
+    return {
+        "user_query": reformulated,
+        "original_user_query": user_query,
+        "reformulated_query": reformulated if is_reformulated else None,
+        "is_reformulated": is_reformulated,
+        "status": "QUERY_REFORMULATED" if is_reformulated else "QUERY_RETAINED"
+    }
+
+
+def query_classification_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 0A: QueryClassificationAgent
+    Classifies the user query as 'greet', 'out_of_scope', or 'in_scope'.
+    """
+    user_query = state.get("user_query") or ""
+    print(f"\n[LangGraph - Node 0A: Query Classification] Classifying intent for query: '{user_query}'...")
+
+    classification = QueryClassificationAgent(user_query=user_query)
+    intent = classification.get("intent", "in_scope").lower().strip()
+    reason = classification.get("reason", "")
+    print(f"[*] [LangGraph - Node 0A] Classification Result: intent='{intent}' | reason='{reason}'")
+
+    return {
+        "classification_intent": intent,
+        "classification_reason": reason,
+        "status": f"INTENT_{intent.upper()}"
+    }
+
+
+def handle_greet_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Handles greeting intent and returns a welcoming Copilot response generated dynamically by LLM.
+    """
+    user_query = state.get("user_query") or ""
+    print(f"\n[LangGraph - Greeting Handler] Generating dynamic greeting response for query: '{user_query}'...")
+    greeting_message = handle_greet(user_query=user_query)
+    return {
+        "final_output": greeting_message,
+        "status": "GREETING_COMPLETED"
+    }
+
+
+def handle_out_of_scope_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Handles out-of-scope queries by explaining domain boundaries dynamically via LLM.
+    """
+    user_query = state.get("user_query") or ""
+    print(f"\n[LangGraph - Out of Scope Handler] Generating dynamic out-of-scope response for query: '{user_query}'...")
+    out_of_scope_message = handle_out_of_scope(user_query=user_query)
+    return {
+        "final_output": out_of_scope_message,
+        "status": "OUT_OF_SCOPE_REJECTED"
+    }
+
+
+def query_decision_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 0B: QueryDecisionAgent
+    Classifies in-scope query into:
+    - 'normal_qa': Direct question/inquiry asking for numbers or metrics
+    - 'agent': Action command or directive to create/generate/edit presentation slides
+      If 'agent', QueryDecisionClassifyAgent evaluates whether SQL is required (sql_required=True)
+      or if it's a direct edit/styling request without SQL (sql_required=False).
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    source_input = state.get("source")
+    print(f"\n[LangGraph - Node 0B: Query Decision] Classifying task type (normal_qa vs agent)...")
+
+    decision_res = QueryDecisionAgent(user_query=user_query, project_id=project_id, source=source_input)
+    decision = decision_res.get("decision", "normal_qa").lower().strip()
+    reason = decision_res.get("reason", "")
+    source = decision_res.get("source", "database")
+
+    result_dict: Dict[str, Any] = {
+        "decision": decision,
+        "decision_reason": reason,
+        "source": source,
+        "status": f"DECISION_{decision.upper()}"
+    }
+
+    if source in ("documents", "document", "docs"):
+        rag_required = decision_res.get("rag_required", True)
+        result_dict["rag_required"] = rag_required
+        print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | source='{source}' | rag_required={rag_required} | reason='{reason}'")
+    else:
+        sql_required = decision_res.get("sql_required", True)
+        result_dict["sql_required"] = sql_required
+        print(f"[*] [LangGraph - Node 0B] Decision Result: decision='{decision}' | source='{source}' | sql_required={sql_required} | reason='{reason}'")
+
+    return result_dict
+
+
+def schema_input_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 1: schema_input
+    Extracts schema JSON for the specified database_id and converts it to formatted LLM prompt text.
+    """
+    db_id = state.get("database_id")
+    if not db_id:
+        raise RuntimeError("Missing required field 'database_id' to extract schema for in-scope queries.")
+
+    print(f"\n[LangGraph - Node 1: Schema Input] Extracting schema for database: '{db_id}'...")
+
+    try:
+        # Converts schema JSON to formatted LLM text prompt
+        llm_prompt_text = schema_input._schema_to_llm(database_id=db_id)
+        return {
+            "llm_prompt_text": llm_prompt_text,
+            "status": "SCHEMA_EXTRACTED"
+        }
+    except Exception as err:
+        print(f"[!] Error in schema_input_node: {err}")
+        # Fallback to empty prompt or raise
+        raise RuntimeError(f"Failed to extract schema for database '{db_id}': {str(err)}") from err
+
+
+def verification_agent_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 2: verification_agent
+    Receives extracted schema text and user query, calls verification LLM,
+    and classifies query as SCHEMA_MATCH, RETRIEVAL_REQUIRED, or UNRELATED.
+    """
+    print("\n[LangGraph - Node 2: Verification Agent] Verifying user query against schema context...")
+    user_query = state["user_query"]
+    llm_prompt_text = state.get("llm_prompt_text") or ""
+    db_id = state.get("database_id")
+
+    verification = QueryVerifyAgent(
+        user_query=user_query,
+        llm_prompt_text=llm_prompt_text,
+        database_id=db_id
+    )
+
+    status_val = (verification.get("status") or "SCHEMA_MATCH").upper().strip()
+    reason_val = verification.get("reason", "No reason provided.")
+
+    print(f"[*] Verification Classification: {status_val} | Reason: {reason_val}")
+
+    return {
+        "verification_status": status_val,
+        "verification_reason": reason_val,
+        "status": f"VERIFIED_{status_val}"
+    }
+
+
+def sql_writer_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 3A: SQLWriterAgent
+    Triggered when verification_status == "SCHEMA_MATCH" OR routed from retrieval_agent (with markdown table).
+    Translates user query into executable SQL using schema, database dialect, and any retrieved keywords table.
+    Executes the query and saves data rows to data/{timestamp}.json.
+    If execution fails, sets status to 'REPAIR_REQUIRED' for routing to sql_repair_node in LangGraph.
+    """
+    print("\n[LangGraph - Node 3A: SQL Writer Node] Generating master SQL query...")
+    sql_query = SQLWriterAgent(
+        user_query=state["user_query"],
+        llm_prompt_text=state.get("llm_prompt_text") or "",
+        database_id=state["database_id"],
+        retrieved_markdown_table=state.get("retrieved_markdown_table")
+    )
+
+    db_id = state.get("database_id")
+    if db_id:
+        try:
+            db_info = fetch_database_info(db_id)
+            print(f"[*] [LangGraph - SQL Writer Node] Executing query on {db_info.get('database_type', 'DB')} & saving rows...")
+            data_payload = _execute_and_save_master_data(db_info, sql_query)
+            rows_count = len(data_payload.get("rows", [])) if isinstance(data_payload, dict) else 0
+            print(f"[+] [LangGraph - SQL Writer Node] Master SQL query executed and saved {rows_count} data rows successfully!")
+            return {
+                "generated_sql": sql_query,
+                "final_output": sql_query,
+                "retrieved_data": data_payload,
+                "retrieved_rows_count": rows_count,
+                "status": "SUCCESS_SQL_GENERATED"
+            }
+        except Exception as exec_err:
+            print(f"[!] [LangGraph - SQL Writer Node] SQL Execution failed: {exec_err}")
+            print("[*] [LangGraph - SQL Writer Node] Routing to SQLRepairAgent node in LangGraph...")
+            return {
+                "generated_sql": sql_query,
+                "sql_error": str(exec_err),
+                "status": "REPAIR_REQUIRED"
+            }
+
+    return {
+        "generated_sql": sql_query,
+        "final_output": sql_query,
+        "retrieved_data": None,
+        "retrieved_rows_count": 0,
+        "status": "SUCCESS_SQL_GENERATED"
+    }
+
+
+def sql_repair_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 4: SQLRepairAgent (LangGraph Node)
+    Triggered when either master SQL execution or retrieval search SQL execution fails.
+    Receives user_query, generated_sql, sql_error, schema, and database_id.
+    Attempts up to 3 repair cycles to correct syntax, join, column, or dialect issues.
+    """
+    print("\n[LangGraph - Node 4: SQL Repair Node] Invoking SQLRepairAgent to auto-repair failed query...")
+    db_id = state.get("database_id")
+    user_query = state["user_query"]
+    sql_query = state.get("generated_sql") or ""
+    sql_error = state.get("sql_error") or "Unknown execution error"
+    schema_text = state.get("llm_prompt_text")
+    is_retrieval_repair = (state.get("status") == "RETRIEVAL_REPAIR_REQUIRED")
+
+    try:
+        repaired_sql = SQLRepairAgent(
+            user_query=user_query,
+            sql_query=sql_query,
+            error=sql_error,
+            schema=schema_text,
+            database_id=db_id,
+            max_attempts=3
+        )
+
+        if not db_id:
+            return {
+                "generated_sql": repaired_sql,
+                "final_output": repaired_sql,
+                "status": "SUCCESS_SQL_REPAIRED"
+            }
+
+        db_info = fetch_database_info(db_id)
+
+        # Case A: Retrieval repair -> re-execute search SQL and format markdown table
+        if is_retrieval_repair:
+            from .nodes.retrival_agent import _execute_by_database_type, _format_rows_as_markdown_table, _extract_search_keyword
+            print(f"[*] [LangGraph - SQL Repair Node] Executing repaired retrieval search query...")
+            retrieved_rows = _execute_by_database_type(db_info, repaired_sql)
+            if not retrieved_rows:
+                searched_word = _extract_search_keyword(repaired_sql, user_query=user_query)
+                fallback_msg = f"the {searched_word} not found in your database"
+                return {
+                    "final_output": fallback_msg,
+                    "retrieved_markdown_table": None,
+                    "status": "NOT_FOUND"
+                }
+            md_table = _format_rows_as_markdown_table(retrieved_rows)
+            return {
+                "retrieved_markdown_table": md_table,
+                "status": "RETRIEVAL_SUCCESS"
+            }
+
+        # Case B: Master SQL repair -> re-execute and save data rows to data/{timestamp}.json
+        print(f"[*] [LangGraph - SQL Repair Node] Executing repaired master SQL & saving data rows...")
+        data_payload = _execute_and_save_master_data(db_info, repaired_sql)
+        rows_count = len(data_payload.get("rows", [])) if isinstance(data_payload, dict) else 0
+        print(f"[+] [LangGraph - SQL Repair Node] Repaired SQL executed and saved {rows_count} data rows successfully!")
+
+        return {
+            "generated_sql": repaired_sql,
+            "final_output": repaired_sql,
+            "retrieved_data": data_payload,
+            "retrieved_rows_count": rows_count,
+            "status": "SUCCESS_SQL_REPAIRED"
+        }
+    except Exception as repair_err:
+        print(f"[!] [LangGraph - SQL Repair Node] SQL Repair failed after retries: {repair_err}")
+        return {
+            "final_output": "Sorry, I cant help you rght now",
+            "status": "SQL_EXECUTION_FAILED"
+        }
+
+
+def retrieval_agent_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 3B: RetrievalAgent
+    Triggered when verification_status == "RETRIEVAL_REQUIRED".
+    Handles lookups for specific entities/category values.
+    - If execution error occurs: sets status to RETRIEVAL_REPAIR_REQUIRED to route to sql_repair
+    - If 0 rows returned: returns fallback NOT_FOUND message
+    - If >0 rows returned: captures markdown table and prepares state for sql_writer
+    """
+    print("\n[LangGraph - Node 3B: Retrieval Agent] Performing entity/value retrieval...")
+    retrieval_response = RetrievalAgent(
+        user_query=state["user_query"],
+        llm_prompt_text=state.get("llm_prompt_text") or "",
+        database_id=state["database_id"],
+        reason=state.get("verification_reason") or ""
+    )
+
+    # 1. Handle SQL execution error -> route to SQLRepairAgent in LangGraph
+    if isinstance(retrieval_response, dict) and retrieval_response.get("status") == "EXECUTION_ERROR":
+        print("[*] [LangGraph - Retrieval Node] Search SQL error detected. Routing to SQLRepairAgent in LangGraph...")
+        return {
+            "generated_sql": retrieval_response.get("search_sql"),
+            "sql_error": retrieval_response.get("error"),
+            "status": "RETRIEVAL_REPAIR_REQUIRED"
+        }
+
+    # 2. Handle true 0-row result (clean execution, but entity not present in database)
+    if isinstance(retrieval_response, dict) and retrieval_response.get("status") == "NOT_FOUND":
+        return {
+            "final_output": retrieval_response.get("message", "the requested item not found in your database"),
+            "retrieved_markdown_table": None,
+            "status": "NOT_FOUND"
+        }
+
+    # 3. Extract formatted markdown table for >0 rows
+    md_table = ""
+    if isinstance(retrieval_response, dict):
+        md_table = retrieval_response.get("retrieved_markdown_table") or ""
+
+    print(f"[*] [LangGraph - Retrieval Node] Formatted retrieved values into Markdown table:\n{md_table}")
+
+    return {
+        "retrieved_markdown_table": md_table,
+        "status": "RETRIEVAL_SUCCESS"
+    }
+
+
+def answer_generator_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 5: AnswerGeneratorAgent
+    Triggered when decision == 'normal_qa' and retrieved_rows_count > 0.
+    Generates a concise paragraph or bullet points answering user query based strictly on retrieved SQL rows.
+    """
+    print("\n[LangGraph - Node 5: Answer Generator Node] Synthesizing natural answer from retrieved data...")
+    retrieved_data = state.get("retrieved_data") or {}
+    user_query = state.get("user_query") or ""
+
+    answer_text = AnswerGeneratorAgent(
+        retrieved_rows=retrieved_data,
+        user_query=user_query
+    )
+    print("[+] [LangGraph - Answer Generator Node] Natural answer generated successfully!")
+
+    return {
+        "final_output": answer_text,
+        "status": "SUCCESS_ANSWER_GENERATED"
+    }
+
+
+def get_collection_from_workspace(project_id: Optional[str]) -> Optional[str]:
+    """Retrieves collection_id for a workspace project from the workspace table."""
+    if not project_id or not str(project_id).strip():
+        return None
+    try:
+        from .nodes.quey_decision_agent import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            stmt = text("SELECT collection_id FROM workspace WHERE project_id = :project_id LIMIT 1;")
+            row = conn.execute(stmt, {"project_id": str(project_id).strip()}).fetchone()
+            if row and row[0]:
+                return str(row[0]).strip()
+    except Exception as exc:
+        print(f"[!] Warning fetching collection_id for project '{project_id}': {exc}")
+    return None
+
+
+def knowledge_answer_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node: KnowledgeAnswerAgent
+    Triggered when decision == 'normal_qa' and rag_required is True.
+    Retrieves document chunks from pgvector semantic search and synthesizes
+    a factual answer via KnowledgeAnswerAgent.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    collection_id = state.get("collection_id")
+
+    if not collection_id and project_id:
+        collection_id = get_collection_from_workspace(project_id)
+
+    print(f"\n[LangGraph - Knowledge Answer Node] Synthesizing answer from documents (collection_id={collection_id})...")
+
+    context = ""
+    if collection_id:
+        try:
+            from app.services.documents import generate_query_embeddings, hybrid_search, context_parser
+            query_embedding = generate_query_embeddings(user_query)
+            chunks = hybrid_search(query_text=user_query, embedded_query=query_embedding, collection_id=collection_id)
+            context = context_parser(chunks)
+        except Exception as ctx_err:
+            print(f"[!] Warning retrieving document context: {ctx_err}")
+
+    try:
+        decision_val = state.get("decision") or "normal_qa"
+        answer_text = KnowledgeAnswerAgent(user_query=user_query, context=context, decision=decision_val)
+    except Exception as agent_err:
+        print(f"[!] Error in KnowledgeAnswerAgent: {agent_err}")
+        answer_text = f"I encountered an error retrieving answers from the documents: {str(agent_err)}"
+
+    print("[+] [LangGraph - Knowledge Answer Node] Document answer generated successfully!")
+    return {
+        "final_output": answer_text,
+        "status": "SUCCESS_KNOWLEDGE_ANSWER_GENERATED"
+    }
+
+
+def slide_planning_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Unified Node: SlidePlanningAgent
+    Handles slide planning for both 'database' and 'documents' sources.
+    Triggered when decision == 'agent'. Runs immediately before PPTGenerationAgent.
+
+    - If source == 'documents' (or rag_required is True):
+        1. Retrieves document context chunks for collection_id.
+        2. Resolves template SVG code via GetSVGCode.
+        3. Calls SlidePlanningAgent(user_query, source="documents", svg_code=template_svg, retrived_context=context).
+        4. Detects fallback if context is insufficient and routes message directly.
+    - If source == 'database' (or sql_required is True):
+        1. Retrieves SQL rows from state.
+        2. Resolves template SVG code via GetSVGCode.
+        3. Calls SlidePlanningAgent(user_query, source="database", svg_code=template_svg, retrived_rows=retrieved_data).
+    - Returns: structured slide_plan JSON dict.
+    """
+    user_query = state.get("user_query") or ""
+    project_id = state.get("project_id")
+    user_id = state.get("user_id")
+    slide_number = int(state.get("slide_number") or 1)
+    source = (state.get("source") or "database").lower().strip()
+    sql_required = state.get("sql_required")
+    rag_required = state.get("rag_required")
+    if sql_required is None:
+        sql_required = (source in ("database", "sql"))
+
+    # 1. Retrieve current slide code from storage using GetSVGCode
+    current_svg = GetSVGCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
+
+    # 2. Check if current slide is blank (Case 1 vs Case 2)
+    is_blank = is_empty_slide(current_svg, project_id=project_id, slide_number=slide_number, user_id=user_id)
+    if is_blank:
+        print(f"[*] [Case 1 - Blank Slide] Slide {slide_number} is blank.")
+        if slide_number > 1 and project_id:
+            prev_num = slide_number - 1
+            prev_svg = GetSVGCode(project_id=project_id, slide_number=prev_num, user_id=user_id)
+            prev_is_blank = is_empty_slide(prev_svg, project_id=project_id, slide_number=prev_num, user_id=user_id)
+            if prev_svg and not prev_is_blank:
+                template_svg = prev_svg
+                print(f"[*] [Case 1] Found previous slide {prev_num} with content. Sending to LLM as template.")
+            else:
+                template_svg = prev_svg or current_svg
+            slide_type = "previous"
+            slide_info = "you need carry the theme from previous slide and add the new content in blank slide but do not copy previous slide to blank slide"
+        else:
+            template_svg = current_svg
+            slide_type = "current"
+            slide_info = "you need to update this current slide, with possible adjustment or modifiication or creation basing on user request in user query"
+    else:
+        print(f"[*] [Case 2 - Content Slide] Slide {slide_number} has existing content. Sending current slide to LLM as template.")
+        template_svg = current_svg
+        slide_type = "current"
+        slide_info = "you need to update this current slide, with possible adjustment or modifiication or creation basing on user request in user query"
+
+    # 3. Handle Documents source
+    if source in ("documents", "document", "docs") or rag_required:
+        collection_id = state.get("collection_id")
+        if not collection_id and project_id:
+            collection_id = get_collection_from_workspace(project_id)
+
+        print(f"\n[LangGraph - Slide Planning Node] Planning Slide {slide_number} from document RAG context (collection_id={collection_id})...")
+
+        context = ""
+        if collection_id:
+            try:
+                from app.services.documents import generate_query_embeddings, hybrid_search, context_parser
+                query_embedding = generate_query_embeddings(user_query)
+                chunks = hybrid_search(query_text=user_query, embedded_query=query_embedding, collection_id=collection_id)
+                context = context_parser(chunks)
+            except Exception as ctx_err:
+                print(f"[!] Warning retrieving document context for slide planner: {ctx_err}")
+
+        slide_plan = SlidePlanningAgent(
+            user_query=user_query,
+            source="documents",
+            svg_code=template_svg,
+            retrived_context=context,
+            project_id=project_id,
+            slide_number=slide_number,
+            user_id=user_id,
+            slide_type=slide_type,
+            slide_info=slide_info
+        )
+
+        if isinstance(slide_plan, dict) and slide_plan.get("fallback"):
+            fallback_msg = slide_plan["fallback"]
+            print(f"[!] [LangGraph - Slide Planning Node] Document planning returned fallback: {fallback_msg}")
+            return {
+                "slide_plan": slide_plan,
+                "template_svg": template_svg,
+                "slide_type": slide_type,
+                "slide_info": slide_info,
+                "slide_number": slide_number,
+                "final_output": fallback_msg,
+                "status": "FALLBACK_DOCUMENTS_NOT_PROVIDED"
+            }
+
+    # 4. Handle Database source (or default)
+    else:
+        print(f"\n[LangGraph - Slide Planning Node] Planning Slide {slide_number} from database records (sql_required={sql_required})...")
+        retrieved_data = state.get("retrieved_data") or {} if sql_required else None
+
+        slide_plan = SlidePlanningAgent(
+            user_query=user_query,
+            source="database",
+            svg_code=template_svg,
+            retrived_rows=retrieved_data,
+            sql_required=sql_required,
+            project_id=project_id,
+            slide_number=slide_number,
+            user_id=user_id,
+            slide_type=slide_type,
+            slide_info=slide_info
+        )
+
+    component_count = len(slide_plan.get("components", [])) if isinstance(slide_plan, dict) else 0
+    print(f"[+] [LangGraph - Slide Planning Node] Synthesized layout plan with {component_count} components.")
+
+    if not slide_plan or not isinstance(slide_plan, dict):
+        slide_plan = {"canvas": {"width": 1920, "height": 1080}, "components": []}
+
+    return {
+        "slide_plan": slide_plan,
+        "template_svg": template_svg,
+        "slide_type": slide_type,
+        "slide_info": slide_info,
+        "slide_number": slide_number,
+        "status": "SLIDE_PLAN_GENERATED"
+    }
+
+
+def ppt_generation_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Node 6: PPTGenerationAgent
+    Triggered after slide_planning_node.
+    - Receives: user_query, slide_plan (from SlidePlanningAgent), svg_code (template).
+      (Does NOT receive raw retrived_rows).
+    - Compiles the slide_plan JSON and template SVG into responsive 16:9 SVG slide markup.
+    - Saves generated SVG to storage.
+    """
+    user_query = state.get("user_query") or ""
+    sql_required = state.get("sql_required")
+    if sql_required is None:
+        sql_required = True
+
+    slide_plan = state.get("slide_plan") or {}
+    slide_number = int(state.get("slide_number") or 1)
+    project_id = state.get("project_id")
+    user_id = state.get("user_id")
+
+    # Check if fallback occurred during planning
+    if state.get("status") == "FALLBACK_DOCUMENTS_NOT_PROVIDED" or (isinstance(slide_plan, dict) and slide_plan.get("fallback")):
+        fallback_msg = (isinstance(slide_plan, dict) and slide_plan.get("fallback")) or state.get("final_output") or "the information not provided in docuemts"
+        print(f"[!] [LangGraph - PPT Generation Node] Fallback detected: {fallback_msg}. Skipping slide render.")
+        return {
+            "slide_number": slide_number,
+            "final_output": fallback_msg,
+            "status": "FALLBACK_DOCUMENTS_NOT_PROVIDED"
+        }
+
+    print(f"\n[LangGraph - Node 6: PPT Generation Node] Rendering Slide {slide_number} from Slide Plan (sql_required={sql_required})...")
+
+    # 1. Reuse template SVG resolved in planning step, or fallback to storage lookup if not present
+    template_svg = state.get("template_svg")
+    slide_type = state.get("slide_type")
+    slide_info = state.get("slide_info")
+
+    if not template_svg or not slide_type or not slide_info:
+        current_svg = GetSVGCode(project_id=project_id, slide_number=slide_number, user_id=user_id) if project_id else ""
+        is_blank = is_empty_slide(current_svg, project_id=project_id, slide_number=slide_number, user_id=user_id)
+        if is_blank:
+            print(f"[*] [Case 1 - Blank Slide] Slide {slide_number} is blank.")
+            if slide_number > 1 and project_id:
+                prev_num = slide_number - 1
+                prev_svg = GetSVGCode(project_id=project_id, slide_number=prev_num, user_id=user_id)
+                prev_is_blank = is_empty_slide(prev_svg, project_id=project_id, slide_number=prev_num, user_id=user_id)
+                if prev_svg and not prev_is_blank:
+                    template_svg = prev_svg
+                    print(f"[*] [Case 1] Found previous slide {prev_num} with content. Sending to LLM as template.")
+                else:
+                    template_svg = prev_svg or current_svg
+                if not slide_type:
+                    slide_type = "previous"
+                if not slide_info:
+                    slide_info = "you need carry the theme from previous slide and add the new content in blank slide but do not copy previous slide to blank slide"
+            else:
+                template_svg = current_svg
+                if not slide_type:
+                    slide_type = "current"
+                if not slide_info:
+                    slide_info = "you need to update this current slide, with possible adjustment or modifiication or creation basing on user request in user query"
+        else:
+            print(f"[*] [Case 2 - Content Slide] Slide {slide_number} has existing content. Sending current slide to LLM as template.")
+            template_svg = current_svg
+            if not slide_type:
+                slide_type = "current"
+            if not slide_info:
+                slide_info = "you need to update this current slide, with possible adjustment or modifiication or creation basing on user request in user query"
+
+    rag_required = state.get("rag_required")
+    is_data_driven = bool(sql_required or rag_required)
+
+    # 3. Generate new slide SVG from slide_plan and template SVG
+    generated_svg = PPTGenerationAgent(
+        user_query=user_query,
+        slide_plan=slide_plan,
+        slide_number=slide_number,
+        project_id=project_id,
+        user_id=user_id,
+        svg_code=template_svg,
+        sql_required=is_data_driven,
+        slide_type=slide_type,
+        slide_info=slide_info
+    )
+    action_verb = "generated" if is_data_driven else "updated"
+    print(f"[+] [LangGraph - PPT Generation Node] Presentation slide {slide_number} {action_verb} successfully from plan!")
+
+    # Chat message for the user - Clean conversational response, NEVER raw markup!
+    if rag_required:
+        chat_confirmation = (
+            f"✨ I've designed Slide {slide_number} based on your documents and updated your presentation canvas."
+        )
+    elif not sql_required:
+        chat_confirmation = (
+            f"✨ I've updated Slide {slide_number} according to your design instructions and refreshed your presentation canvas."
+        )
+    else:
+        chat_confirmation = (
+            f"✨ I've designed Slide {slide_number} based on your data and updated your presentation canvas."
+        )
+
+    return {
+        "generated_slide_svg": generated_svg,
+        "slide_number": slide_number,
+        "final_output": chat_confirmation,
+        "status": "SUCCESS_PPT_GENERATED"
+    }
+
+
+def save_ai_response_node(state: KelostatsGraphState) -> Dict[str, Any]:
+    """
+    Terminal Node: Persists final generated response/output to chat_messages table (role: 'AI')
+    before the workflow completes.
+    """
+    project_id = state.get("project_id")
+    final_output = state.get("final_output") or ""
+    print(f"\n[LangGraph - Exit: Save AI Response] Persisting AI message for project '{project_id}'...")
+
+    if project_id and final_output:
+        save_chat_message(project_id=project_id, role="AI", message=final_output)
+
+    return {
+        "status": state.get("status") or "COMPLETED"
+    }
+
+
+# ==========================================
+# 4. Conditional Edge Routers
+# ==========================================
+
+def decide_classification_route(state: KelostatsGraphState) -> str:
+    """
+    Decides routing from query_classification_node:
+    - 'greet' -> handle_greet -> save_ai_response -> END
+    - 'out_of_scope' -> handle_out_of_scope -> save_ai_response -> END
+    - 'in_scope' -> query_decision -> schema_input -> ...
+    """
+    intent = (state.get("classification_intent") or "in_scope").lower().strip()
+    if intent == "greet":
+        return "handle_greet"
+    elif intent == "out_of_scope":
+        return "handle_out_of_scope"
+    return "query_decision"
+
+
+def decide_decision_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the route from query_decision:
+    - if decision == 'normal_qa' and sql_required is True:
+        pass to existing SQL pipeline ('schema_input')
+    - elif decision == 'agent' and sql_required is True:
+        pass to existing SQL pipeline ('schema_input')
+    - elif decision == 'agent' and sql_required is False:
+        bypass SQL pipeline & give it ppt generation ('slide_planning')
+    - elif decision == 'normal_qa' and rag_required is True:
+        now pass to KnowledgeAnswerAgent ('knowledge_answer')
+    - elif decision == 'agent' and rag_required is True:
+        pass to unified SlidePlanningAgent ('slide_planning')
+    - elif decision == 'agent' and rag_required is False:
+        bypass RAG pipeline & give it ppt generation ('slide_planning')
+    """
+    decision = (state.get("decision") or "normal_qa").lower().strip()
+    sql_required = state.get("sql_required")
+    rag_required = state.get("rag_required")
+    source = (state.get("source") or "database").lower().strip()
+
+    # 1. if decision=normal_qa & sql_required=true -> pass the existing SQL pipeline
+    if decision == "normal_qa" and sql_required is True:
+        print("[*] [LangGraph Routing] Routing to existing SQL pipeline (decision='normal_qa', sql_required=True) -> schema_input")
+        return "schema_input"
+
+    # 2. elif decision=agent & sql_required=true -> pass the existing SQL pipeline
+    elif decision == "agent" and sql_required is True:
+        print("[*] [LangGraph Routing] Routing to existing SQL pipeline (decision='agent', sql_required=True) -> schema_input")
+        return "schema_input"
+
+    # 3. elif decision=agent & sql_required=false -> bypass SQL pipeline & give it ppt generation
+    elif decision == "agent" and sql_required is False:
+        print("[*] [LangGraph Routing] Bypassing SQL pipeline for PPT generation (decision='agent', sql_required=False) -> slide_planning")
+        return "slide_planning"
+
+    # 4. elif decision=normal_qa & rag_required=true -> pass to KnowledgeAnswerAgent()
+    elif decision == "normal_qa" and rag_required is True:
+        print("[*] [LangGraph Routing] Routing to KnowledgeAnswerAgent (decision='normal_qa', rag_required=True) -> knowledge_answer")
+        return "knowledge_answer"
+
+    # 5. elif decision=agent & rag_required=true -> pass to unified SlidePlanningAgent
+    elif decision == "agent" and rag_required is True:
+        print("[*] [LangGraph Routing] Routing to unified SlidePlanningAgent (decision='agent', rag_required=True) -> slide_planning")
+        return "slide_planning"
+
+    # 6. elif decision=agent & rag_required=false -> bypass RAG pipeline & give it ppt generation
+    elif decision == "agent" and rag_required is False:
+        print("[*] [LangGraph Routing] Bypassing RAG pipeline for PPT generation (decision='agent', rag_required=False) -> slide_planning")
+        return "slide_planning"
+
+    # Default fallback
+    if source in ("documents", "document", "docs"):
+        if decision == "agent":
+            return "slide_planning"
+        return "knowledge_answer"
+
+    return "schema_input"
+
+
+def decide_verification_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the next node based on verification_status:
+    - RETRIEVAL_REQUIRED -> retrieval_agent
+    - SCHEMA_MATCH (default) -> sql_writer
+    """
+    status_val = (state.get("verification_status") or "").upper().strip()
+
+    if status_val == "RETRIEVAL_REQUIRED":
+        return "retrieval_agent"
+    return "sql_writer"
+
+
+def decide_retrieval_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the route after retrieval_agent_node:
+    - If execution error occurred: routes to sql_repair
+    - If 0 rows were found (status == "NOT_FOUND"): routes to save_ai_response -> END
+    - If rows were found (>0 rows): routes to sql_writer node to generate master SQL query
+    """
+    status_val = (state.get("status") or "").upper().strip()
+    if status_val == "RETRIEVAL_REPAIR_REQUIRED":
+        return "sql_repair"
+    elif status_val == "NOT_FOUND":
+        return "save_ai_response"
+    return "sql_writer"
+
+
+def decide_sql_writer_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the route after sql_writer_node:
+    - If execution failed (status == "REPAIR_REQUIRED"): routes to sql_repair node in LangGraph
+    - If decision == "agent": routes to slide_planning
+    - If decision == "normal_qa":
+        - if retrieved_rows_count > 0: routes to answer_generator
+        - otherwise: routes to save_ai_response -> END
+    """
+    status_val = (state.get("status") or "").upper().strip()
+    if status_val == "REPAIR_REQUIRED":
+        return "sql_repair"
+
+    decision = (state.get("decision") or "normal_qa").lower().strip()
+    rows_count = state.get("retrieved_rows_count") or 0
+
+    if decision == "agent":
+        return "slide_planning"
+
+    if decision == "normal_qa" and rows_count > 0:
+        return "answer_generator"
+
+    return "save_ai_response"
+
+
+def decide_sql_repair_route(state: KelostatsGraphState) -> str:
+    """
+    Decides the route after sql_repair_node:
+    - If repaired from retrieval (status == "RETRIEVAL_SUCCESS"): routes to sql_writer
+    - If repaired master SQL:
+        - If decision == "agent": routes to slide_planning
+        - If decision == "normal_qa" and retrieved_rows_count > 0: routes to answer_generator
+    - Otherwise: routes to save_ai_response -> END
+    """
+    status_val = (state.get("status") or "").upper().strip()
+    if status_val == "RETRIEVAL_SUCCESS":
+        return "sql_writer"
+
+    decision = (state.get("decision") or "normal_qa").lower().strip()
+    rows_count = state.get("retrieved_rows_count") or 0
+
+    if status_val == "SUCCESS_SQL_REPAIRED":
+        if decision == "agent":
+            return "slide_planning"
+        elif decision == "normal_qa" and rows_count > 0:
+            return "answer_generator"
+
+    return "save_ai_response"
+
+    return "save_ai_response"
+
+
+# ==========================================
+# 5. Build and Compile LangGraph Workflow
+# ==========================================
+
+def build_kelostats_workflow():
+    """
+    Assembles the StateGraph with:
+    1. save_user_message (persists incoming user query with role='User')
+    2. query_classification (Classifies greet | out_of_scope | in_scope)
+       - greet -> handle_greet -> save_ai_response -> END
+       - out_of_scope -> handle_out_of_scope -> save_ai_response -> END
+       - in_scope -> query_decision
+    3. query_decision (Classifies normal_qa | agent) -> schema_input
+    4. schema_input (extracts schema.json to text) -> verification_agent
+    5. verification_agent (verifies query vs schema):
+       - SCHEMA_MATCH -> sql_writer
+       - RETRIEVAL_REQUIRED -> retrieval_agent
+           - Execution error -> sql_repair -> sql_writer
+           - 0 rows (NOT_FOUND) -> save_ai_response -> END
+           - >0 rows -> sql_writer (with markdown table)
+       - UNRELATED -> unrelated_query -> save_ai_response -> END
+    6. sql_writer:
+       - If execution fails (REPAIR_REQUIRED) -> sql_repair
+       - If decision == "agent" -> ppt_generation -> save_ai_response -> END
+       - If decision == "normal_qa" and retrieved_rows > 0 -> answer_generator -> save_ai_response -> END
+       - Else -> save_ai_response -> END
+    7. save_ai_response (persists AI response with role='AI') -> END
+    """
+    workflow = StateGraph(KelostatsGraphState)
+
+    # 1. Add all nodes
+    workflow.add_node("save_user_message", save_user_message_node)
+    workflow.add_node("query_reformulate", query_reformulate_node)
+    workflow.add_node("query_classification", query_classification_node)
+    workflow.add_node("handle_greet", handle_greet_node)
+    workflow.add_node("handle_out_of_scope", handle_out_of_scope_node)
+    workflow.add_node("query_decision", query_decision_node)
+    workflow.add_node("schema_input", schema_input_node)
+    workflow.add_node("verification_agent", verification_agent_node)
+    workflow.add_node("sql_writer", sql_writer_node)
+    workflow.add_node("retrieval_agent", retrieval_agent_node)
+    workflow.add_node("sql_repair", sql_repair_node)
+    workflow.add_node("answer_generator", answer_generator_node)
+    workflow.add_node("slide_planning", slide_planning_node)
+    workflow.add_node("ppt_generation", ppt_generation_node)
+    workflow.add_node("save_ai_response", save_ai_response_node)
+    workflow.add_node("knowledge_answer", knowledge_answer_node)
+
+    # 2. Set entry point to save_user_message -> query_reformulate -> query_classification
+    workflow.set_entry_point("save_user_message")
+    workflow.add_edge("save_user_message", "query_reformulate")
+    workflow.add_edge("query_reformulate", "query_classification")
+
+    # 3. Conditional routing from query_classification
+    workflow.add_conditional_edges(
+        "query_classification",
+        decide_classification_route,
+        {
+            "handle_greet": "handle_greet",
+            "handle_out_of_scope": "handle_out_of_scope",
+            "query_decision": "query_decision"
+        }
+    )
+
+    # 4. Greet and Out-of-Scope terminate at save_ai_response
+    workflow.add_edge("handle_greet", "save_ai_response")
+    workflow.add_edge("handle_out_of_scope", "save_ai_response")
+
+    # 5. Conditional routing from query_decision:
+    # Diverts RAG and SQL pipelines according to decision, sql_required, and rag_required
+    workflow.add_conditional_edges(
+        "query_decision",
+        decide_decision_route,
+        {
+            "schema_input": "schema_input",
+            "slide_planning": "slide_planning",
+            "knowledge_answer": "knowledge_answer"
+        }
+    )
+
+    # 6. Connect schema_input to verification_agent
+    workflow.add_edge("schema_input", "verification_agent")
+
+    # 7. Add conditional routing edges from verification_agent
+    workflow.add_conditional_edges(
+        "verification_agent",
+        decide_verification_route,
+        {
+            "sql_writer": "sql_writer",
+            "retrieval_agent": "retrieval_agent"
+        }
+    )
+
+    # 8. Add conditional routing edges from retrieval_agent:
+    workflow.add_conditional_edges(
+        "retrieval_agent",
+        decide_retrieval_route,
+        {
+            "sql_repair": "sql_repair",
+            "sql_writer": "sql_writer",
+            "save_ai_response": "save_ai_response"
+        }
+    )
+
+    # 9. Add conditional routing edges from sql_writer:
+    workflow.add_conditional_edges(
+        "sql_writer",
+        decide_sql_writer_route,
+        {
+            "sql_repair": "sql_repair",
+            "slide_planning": "slide_planning",
+            "answer_generator": "answer_generator",
+            "save_ai_response": "save_ai_response"
+        }
+    )
+
+    # 10. Add conditional routing edges from sql_repair:
+    workflow.add_conditional_edges(
+        "sql_repair",
+        decide_sql_repair_route,
+        {
+            "sql_writer": "sql_writer",
+            "slide_planning": "slide_planning",
+            "answer_generator": "answer_generator",
+            "save_ai_response": "save_ai_response"
+        }
+    )
+
+    # 11. Route slide_planning into ppt_generation
+    workflow.add_edge("slide_planning", "ppt_generation")
+
+    # 12. Route Knowledge RAG nodes
+    workflow.add_edge("knowledge_answer", "save_ai_response")
+
+    # 13. Route remaining terminal nodes into save_ai_response, then to END
+    workflow.add_edge("answer_generator", "save_ai_response")
+    # Direct response from PPT generation agent to save_ai_response
+    workflow.add_edge("ppt_generation", "save_ai_response")
+    workflow.add_edge("save_ai_response", END)
+
+    return workflow.compile()
+
+
+
+# Compile graph instance
+kelostats_graph = build_kelostats_workflow()
+
+
+def run_orchestrator(
+    user_query: str,
+    database_id: Optional[str] = None,
+    collection_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    slide_number: Optional[int] = 1,
+    source: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Programmatic entry point to invoke the LangGraph orchestrator.
+    Starts a workflow log session to record each agent interaction to logs/llm_logs/workflow Log {timestamp}.txt
+    """
+    logger_session = start_workflow_logger()
+
+    initial_state: KelostatsGraphState = {
+        "user_query": user_query,
+        "original_user_query": user_query,
+        "reformulated_query": None,
+        "is_reformulated": False,
+        "database_id": database_id,
+        "collection_id": collection_id,
+        "project_id": project_id,
+        "user_id": user_id,
+        "slide_number": slide_number or 1,
+        "classification_intent": None,
+        "classification_reason": None,
+        "decision": None,
+        "decision_reason": None,
+        "sql_required": None,
+        "rag_required": None,
+        "source": source,
+        "llm_prompt_text": None,
+        "verification_status": None,
+        "verification_reason": None,
+        "retrieved_markdown_table": None,
+        "generated_sql": None,
+        "sql_error": None,
+        "retrieved_data": None,
+        "retrieved_rows_count": None,
+        "slide_plan": None,
+        "template_svg": None,
+        "slide_type": None,
+        "slide_info": None,
+        "generated_slide_svg": None,
+        "final_output": None,
+        "status": "INITIALIZED"
+    }
+
+    try:
+        result = kelostats_graph.invoke(initial_state)
+        # Ensure final_output is never empty or a technical exception string
+        final_output = result.get("final_output")
+        if not final_output or "LLM API Error" in str(final_output) or "SQL Execution & Repair Failed" in str(final_output):
+            result["final_output"] = "Sorry, I cant help you rght now"
+        return result
+    except Exception as exc:
+        print(f"[!] [LangGraph Orchestrator] Execution caught exception: {exc}")
+        fallback_msg = "Sorry, I cant help you rght now"
+        if project_id:
+            try:
+                save_chat_message(project_id=project_id, role="AI", message=fallback_msg)
+            except Exception as save_err:
+                print(f"[!] Warning persisting fallback message: {save_err}")
+
+        return {
+            "user_query": user_query,
+            "database_id": database_id,
+            "project_id": project_id,
+            "user_id": user_id,
+            "slide_number": slide_number or 1,
+            "classification_intent": None,
+            "classification_reason": None,
+            "decision": None,
+            "decision_reason": None,
+            "sql_required": None,
+            "llm_prompt_text": None,
+            "verification_status": None,
+            "verification_reason": None,
+            "retrieved_markdown_table": None,
+            "generated_sql": None,
+            "sql_error": str(exc),
+            "retrieved_data": None,
+            "retrieved_rows_count": 0,
+            "template_svg": None,
+            "generated_slide_svg": None,
+            "final_output": fallback_msg,
+            "status": "FAILED"
+        }
+    finally:
+        log_file = logger_session.save()
+        print(f"[+] [LangGraph Orchestrator] Workflow log saved to: {log_file}")
+
+

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { API_BASE_URL } from "@/lib/config";
 
 export default function SignUpPage() {
@@ -39,36 +38,13 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
-      });
-
-      if (authError) {
-        throw new Error(authError.message || "Failed to create account.");
-      }
-
-      if (!data?.user?.id) {
-        throw new Error("Failed to create user account in authentication provider.");
-      }
-
-      if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-        throw new Error("An account with this email address already exists. Please log in.");
-      }
-
-      // Also store user details in PostgreSQL `users` table with the same Supabase Auth user_id
-      const dbRes = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+      // Direct call to native Kelostats backend authentication
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_id: data.user.id,
           full_name: fullName.trim(),
           email: email.trim(),
           password,
@@ -76,25 +52,26 @@ export default function SignUpPage() {
         }),
       });
 
-      if (!dbRes.ok) {
-        const dbErr = await dbRes.json().catch(() => ({}));
-        throw new Error(dbErr.detail || "Failed to save user details to database.");
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || "Failed to create account.");
       }
 
-      if (data?.session && data?.user) {
-        if (typeof window !== "undefined") {
-          const userInfo = {
-            user_id: data.user.id,
-            email: data.user.email,
-            full_name: fullName.trim(),
-          };
-          localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
+      // Store native JWT token and user profile in localStorage
+      if (typeof window !== "undefined") {
+        if (data.access_token) {
+          localStorage.setItem("kelostats_token", data.access_token);
         }
-        router.push("/dashboard");
-      } else {
-        // Redirection to login
-        router.push("/login");
+        if (data.refresh_token) {
+          localStorage.setItem("kelostats_refresh_token", data.refresh_token);
+        }
+        if (data.user) {
+          localStorage.setItem("kelostats_user", JSON.stringify(data.user));
+        }
       }
+
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
@@ -128,7 +105,6 @@ export default function SignUpPage() {
       <header className="border-b border-slate-100 py-4 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-
             <span className="font-extrabold text-xl tracking-tight text-slate-900">
               <span className="text-[#FF5148]">KeloStats</span>
             </span>

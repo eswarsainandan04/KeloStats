@@ -13,7 +13,7 @@ export interface WorkspaceItem {
   database_type?: string;
   collection_id?: string;
   collection_display_name?: string;
-  source?: "database" | "documents" | "auto";
+  source?: "database" | "documents";
   template_id?: string;
   template_name?: string;
   template_category?: string;

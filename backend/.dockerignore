@@ -1,0 +1,23 @@
+# Python virtual environments & bytecode
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Testing & IDE caches
+.pytest_cache/
+.coverage
+htmlcov/
+.vscode/
+.idea/
+
+# Local logs & storage cache
+logs/llm_logs/*.txt
+storage/
+
+# Git
+.git/
+.gitignore

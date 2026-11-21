@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { API_BASE_URL } from "@/lib/config";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, getStoredUserId } from "@/lib/api";
 
 interface DocumentItem {
   document_id: string;
@@ -54,18 +54,7 @@ export default function DocumentsPage() {
 
   // Helper to retrieve current user_id
   const getUserId = (): string => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("kelostats_user");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return parsed.user_id || "76d244ff-0b4f-476f-b306-844948064e56";
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return "76d244ff-0b4f-476f-b306-844948064e56";
+    return getStoredUserId() || "";
   };
 
   // Format file sizes
@@ -98,6 +87,10 @@ export default function DocumentsPage() {
   const fetchCollections = async () => {
     setLoading(true);
     const userId = getUserId();
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/documents/collections?user_id=${userId}`);
       if (res.ok) {
@@ -200,6 +193,10 @@ export default function DocumentsPage() {
     }
 
     const userId = getUserId();
+    if (!userId) {
+      setFormError("Authentication required. Please log in.");
+      return;
+    }
     const tempId = `pool_temp_${Date.now()}`;
     const filesToUpload = [...selectedFiles];
 
@@ -310,6 +307,10 @@ export default function DocumentsPage() {
     const collectionId = activeCollection.collection_id;
     setIsDeletingCollection(true);
     const userId = getUserId();
+    if (!userId) {
+      setIsDeletingCollection(false);
+      return;
+    }
 
     try {
       const res = await fetchWithAuth(
@@ -386,6 +387,10 @@ export default function DocumentsPage() {
 
     setIsAppendingPdf(true);
     const userId = getUserId();
+    if (!userId) {
+      setIsAppendingPdf(false);
+      return;
+    }
     const formData = new FormData();
     formData.append("collection_id", activeCollection.collection_id);
     formData.append("user_id", userId);

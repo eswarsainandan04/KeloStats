@@ -8,8 +8,7 @@ import DocumentsPage from "./documents";
 import TemplatesPage from "./templates";
 import NavBar from "./NavBar";
 import { API_BASE_URL } from "@/lib/config";
-import { fetchWithAuth } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
+import { fetchWithAuth, getStoredUserId, getStoredUser } from "@/lib/api";
 
 interface DatabaseItem {
   db_id: string;
@@ -48,7 +47,7 @@ interface WorkspaceItem {
   database_type?: string;
   collection_id?: string;
   collection_display_name?: string;
-  source?: "database" | "documents" | "auto";
+  source?: "database" | "documents";
   template_id?: string;
   template_name?: string;
   template_category?: string;
@@ -86,7 +85,7 @@ export default function DashboardHome() {
 
   // Create Project Modal States
   const [projectModalOpen, setProjectModalOpen] = useState(false);
-  const [projectStep, setProjectStep] = useState<1 | 2 | 3>(1);
+  const [projectStep, setProjectStep] = useState<1 | 2>(1);
 
   // Step 1: Project Name
   const [projectName, setProjectName] = useState("");
@@ -115,18 +114,7 @@ export default function DashboardHome() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const getUserId = () => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("kelostats_user");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return parsed.user_id || "93756663-25b3-43c6-9866-be63337e61cc";
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return "93756663-25b3-43c6-9866-be63337e61cc";
+    return getStoredUserId() || "";
   };
 
   // Fetch user workspaces from backend API (which loads from Supabase S3 bucket workspace/user_id/)
@@ -186,13 +174,13 @@ export default function DashboardHome() {
     const dbDispName = encodeURIComponent(ws.database_display_name || ws.database_name || "");
     const colDispName = encodeURIComponent(ws.collection_display_name || "");
     const source =
-      ws.database_id && ws.collection_id
-        ? ws.source || "auto"
-        : ws.database_id
-        ? "database"
-        : ws.collection_id
+      ws.source === "documents"
         ? "documents"
-        : ws.source || "auto";
+        : ws.source === "database"
+        ? "database"
+        : ws.collection_id && !ws.database_id
+        ? "documents"
+        : "database";
     router.push(
       `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&project_id=${ws.project_id}&project_name=${projName}&database_id=${ws.database_id || ""}&display_name=${dbDispName}&collection_id=${ws.collection_id || ""}&collection_display_name=${colDispName}&source=${source}&template_id=${ws.template_id || ""}`
     );
@@ -214,95 +202,16 @@ export default function DashboardHome() {
 
   useEffect(() => {
     // 1. Immediately restore user session from localStorage so dashboard displays without login prompt on restart
-    let hasLocalUser = false;
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("kelostats_user");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.user_id) {
-            setUser({
-              full_name: parsed.full_name || "User",
-              email: parsed.email || "",
-            });
-            hasLocalUser = true;
-          }
-        }
-      } catch (err) {
-        console.warn("Error parsing kelostats_user from localStorage:", err);
-      }
-    }
-
-    // Immediately fetch workspaces if recognized
-    if (hasLocalUser) {
+    const storedUser = getStoredUser();
+    if (storedUser) {
+      setUser({
+        full_name: storedUser.full_name || "User",
+        email: storedUser.email || "",
+      });
       fetchWorkspaces();
+    } else {
+      router.push("/login");
     }
-
-    // 2. Synchronize with Supabase session asynchronously in the background
-    const syncSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && session.user) {
-          const fullName =
-            session.user.user_metadata?.full_name ||
-            session.user.email?.split("@")[0] ||
-            "User";
-          const email = session.user.email || "";
-
-          setUser({
-            full_name: fullName,
-            email,
-          });
-
-          if (typeof window !== "undefined") {
-            localStorage.setItem(
-              "kelostats_user",
-              JSON.stringify({
-                user_id: session.user.id,
-                email,
-                full_name: fullName,
-              })
-            );
-          }
-
-          // Ensure Supabase Auth user also exists in PostgreSQL `users` table
-          if (email) {
-            fetch(`${API_BASE_URL}/api/auth/sync-user`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                user_id: session.user.id,
-                email,
-                full_name: fullName,
-              }),
-            }).catch(() => {});
-          }
-
-          fetchWorkspaces();
-        } else if (!hasLocalUser) {
-          // If no local session AND no Supabase session, redirect to login
-          router.push("/login");
-        }
-      } catch (err) {
-        console.error("Auth session sync error:", err);
-      }
-    };
-
-    syncSession();
-
-    // 3. Listen for explicit auth state changes (e.g. user signs out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("kelostats_user");
-        }
-        router.push("/login");
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
@@ -312,12 +221,9 @@ export default function DashboardHome() {
   }, [activeTab]);
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error("Supabase signOut error:", e);
-    }
     if (typeof window !== "undefined") {
+      localStorage.removeItem("kelostats_token");
+      localStorage.removeItem("kelostats_refresh_token");
       localStorage.removeItem("kelostats_user");
     }
     router.push("/login");
@@ -396,14 +302,12 @@ export default function DashboardHome() {
 
   // Handle "Let's Go" -> Call /api/workspace/create then navigate to workspace
   const handleLetsGo = async () => {
-    if (!projectName.trim() || (!selectedDbId && !selectedCollectionId) || !selectedTemplateId) return;
+    if (!projectName.trim() || !selectedTemplateId) return;
 
     setSubmitting(true);
     setCreationError(null);
 
     const userId = getUserId();
-    const computedSource: "database" | "documents" | "auto" =
-      selectedDbId && selectedCollectionId ? "auto" : selectedDbId ? "database" : "documents";
 
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/create`, {
@@ -414,9 +318,9 @@ export default function DashboardHome() {
         body: JSON.stringify({
           project_name: projectName.trim(),
           user_id: userId,
-          database_id: selectedDbId || null,
-          collection_id: selectedCollectionId || null,
-          source: computedSource,
+          database_id: null,
+          collection_id: null,
+          source: "database",
           template_id: selectedTemplateId,
         }),
       });
@@ -427,20 +331,14 @@ export default function DashboardHome() {
         throw new Error(data.detail || "Failed to create project workspace.");
       }
 
-      // Close modal and navigate to workspace page with all parameters
+      // Close modal and navigate to workspace page
       setProjectModalOpen(false);
       fetchWorkspaces();
       const projectId = data.project_id || "";
       const projName = encodeURIComponent(data.project_name || projectName.trim());
 
-      const selectedDb = availableDbs.find((d) => d.db_id === selectedDbId);
-      const dbDispName = encodeURIComponent(selectedDb?.display_name || selectedDb?.database_name || "");
-
-      const selectedCol = availableCollections.find((c) => c.collection_id === selectedCollectionId);
-      const colDispName = encodeURIComponent(selectedCol?.display_name || "");
-
       router.push(
-        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId || ""}&display_name=${dbDispName}&collection_id=${selectedCollectionId || ""}&collection_display_name=${colDispName}&source=${computedSource}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}`
+        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&template_id=${selectedTemplateId}&project_id=${projectId}&project_name=${projName}`
       );
     } catch (err: any) {
       setCreationError(err.message || "An unexpected error occurred. Please try again.");
@@ -851,16 +749,12 @@ export default function DashboardHome() {
                   <h2 className="text-lg font-bold text-slate-900 leading-tight">
                     {projectStep === 1
                       ? "Step 1: Enter Project Name"
-                      : projectStep === 2
-                      ? "Step 2: Choose Data Source (Database & Collection)"
-                      : "Step 3: Choose Your PPT Template"}
+                      : "Step 2: Choose Your Presentation Template"}
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {projectStep === 1
                       ? "Give your presentation workspace a descriptive project name"
-                      : projectStep === 2
-                      ? "Select one database, one collection, or both (at least one is required)"
-                      : "Select a presentation template design for your report"}
+                      : "Select a presentation design system for your slide deck"}
                   </p>
                 </div>
               </div>
@@ -909,224 +803,13 @@ export default function DashboardHome() {
                     }}
                   />
                   <p className="text-xs text-slate-500">
-                    This project will hold your generated slides, query history, and Supabase cloud artifacts.
+                    This project will hold your generated slides, query history, and cloud presentation artifacts.
                   </p>
                 </div>
               )}
 
-              {/* STEP 2: CHOOSE DATABASE OR COLLECTION */}
+              {/* STEP 2: CHOOSE YOUR PPT TEMPLATES */}
               {projectStep === 2 && (
-                <div className="space-y-5">
-                  {/* Selection Status Banner */}
-                  <div className="p-3 rounded-xl border transition-all text-xs font-medium flex items-center justify-between bg-slate-50 border-slate-200">
-                    <div className="flex items-center gap-2">
-                      {selectedDbId && selectedCollectionId ? (
-                        <>
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="font-bold text-slate-800">
-                            Hybrid Mode: 1 Database & 1 Collection selected
-                          </span>
-                        </>
-                      ) : selectedDbId ? (
-                        <>
-                          <span className="w-2 h-2 rounded-full bg-blue-500" />
-                          <span className="font-bold text-slate-800">
-                            1 Database Selected
-                          </span>
-                        </>
-                      ) : selectedCollectionId ? (
-                        <>
-                          <span className="w-2 h-2 rounded-full bg-orange-500" />
-                          <span className="font-bold text-slate-800">
-                            1 Collection Selected (Document RAG)
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="w-2 h-2 rounded-full bg-slate-400" />
-                          <span className="text-slate-500">
-                            Select at least one database or one collection to proceed
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-slate-400 font-normal">
-                      (both optional, pick either or both)
-                    </span>
-                  </div>
-
-                  {/* Section 1: DATABASES */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                        </svg>
-                        Available Databases
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {availableDbs.length} connected
-                      </span>
-                    </div>
-
-                    {loadingDbs ? (
-                      <div className="py-6 text-center text-xs text-slate-400">Loading databases...</div>
-                    ) : availableDbs.length === 0 ? (
-                      <div className="p-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-                        <p className="text-xs font-medium text-slate-600">No databases connected yet.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[175px] overflow-y-auto pr-1">
-                        {availableDbs.map((db) => {
-                          const isSelected = selectedDbId === db.db_id;
-                          const displayName = db.display_name || db.database_name || db.service_name || "Database";
-                          const engine = getEngineInfo(db.database_type);
-
-                          return (
-                            <div
-                              key={db.db_id}
-                              onClick={() => setSelectedDbId(isSelected ? null : db.db_id)}
-                              className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                                isSelected
-                                  ? "border-[#FF5148] bg-orange-50/40 shadow-xs"
-                                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                                  <img
-                                    src="/database.png"
-                                    alt={displayName}
-                                    className="w-full h-full object-contain pointer-events-none"
-                                  />
-                                </div>
-                                <div className="overflow-hidden">
-                                  <h3 className="text-xs font-bold text-slate-900 truncate" title={displayName}>
-                                    {displayName}
-                                  </h3>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <img
-                                      src={engine.icon}
-                                      alt={engine.name}
-                                      className="w-3.5 h-3.5 object-contain pointer-events-none shrink-0"
-                                    />
-                                    <span className="text-[11px] font-medium text-slate-600">
-                                      {engine.name}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="shrink-0 ml-2">
-                                <div
-                                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                                    isSelected
-                                      ? "border-[#FF5148] bg-[#FF5148]"
-                                      : "border-slate-300 bg-white"
-                                  }`}
-                                >
-                                  {isSelected && (
-                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Section 2: DOCUMENT COLLECTIONS */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                        <img src="/collection.png" alt="Collection" className="w-3.5 h-3.5 object-contain" />
-                        Available Collections
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {availableCollections.length} available
-                      </span>
-                    </div>
-
-                    {loadingCollections ? (
-                      <div className="py-6 text-center text-xs text-slate-400">Loading collections...</div>
-                    ) : availableCollections.length === 0 ? (
-                      <div className="p-4 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-                        <p className="text-xs font-medium text-slate-600">No document collections created yet.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[175px] overflow-y-auto pr-1">
-                        {availableCollections.map((col) => {
-                          const isSelected = selectedCollectionId === col.collection_id;
-                          const fileCount = col.total_files || (col.documents?.length || 0);
-
-                          return (
-                            <div
-                              key={col.collection_id}
-                              onClick={() => setSelectedCollectionId(isSelected ? null : col.collection_id)}
-                              className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                                isSelected
-                                  ? "border-[#FF5148] bg-orange-50/40 shadow-xs"
-                                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                                  <img
-                                    src="/collection.png"
-                                    alt={col.display_name}
-                                    className="w-full h-full object-contain pointer-events-none"
-                                  />
-                                </div>
-                                <div className="overflow-hidden">
-                                  <h3 className="text-xs font-bold text-slate-900 truncate" title={col.display_name}>
-                                    {col.display_name}
-                                  </h3>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[11px] font-medium text-slate-500">
-                                      {fileCount} {fileCount === 1 ? "document" : "documents"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="shrink-0 ml-2">
-                                <div
-                                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                                    isSelected
-                                      ? "border-[#FF5148] bg-[#FF5148]"
-                                      : "border-slate-300 bg-white"
-                                  }`}
-                                >
-                                  {isSelected && (
-                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 3: CHOOSE YOUR PPT TEMPLATES */}
-              {projectStep === 3 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1258,37 +941,12 @@ export default function DashboardHome() {
                     </svg>
                   </button>
                 </>
-              ) : projectStep === 2 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setProjectStep(1)}
-                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span>Back</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={!selectedDbId && !selectedCollectionId}
-                    onClick={() => setProjectStep(3)}
-                    className="px-5 py-2 text-sm font-semibold text-white bg-[#FF5148] hover:bg-[#e64037] rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-                  >
-                    <span>Next</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </>
               ) : (
                 <>
                   <button
                     type="button"
                     disabled={submitting}
-                    onClick={() => setProjectStep(2)}
+                    onClick={() => setProjectStep(1)}
                     className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

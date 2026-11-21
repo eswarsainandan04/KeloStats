@@ -39,9 +39,24 @@ scratch/
 **/scratch/
 backend/scratch/
 
-# Runtime Logs, Test Dumps & Media
+# Runtime Logs, Test Dumps, Storage & Media
 backend/logs/llm_logs/
+backend/app/logs/llm_logs/
+**/llm_logs/
+*.log
 backend/data/*.json
+backend/app/services/agents/data/
+**/agents/data/
 backend/*.pptx
 backend/slide3_dump.html
 backend/canvas_screenshot.png
+backend/storage/
+storage/
+**/storage/
+
+# Large Media Files (CRITICAL)
+*.mp4
+*.mkv
+*.mov
+final_kelostats.mp4
+

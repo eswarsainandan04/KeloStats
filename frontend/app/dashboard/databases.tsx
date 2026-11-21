@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, getStoredUserId } from "@/lib/api";
 
 interface DatabaseItem {
   db_id: string;
@@ -51,12 +51,12 @@ export default function DatabasesPage() {
     return { name: "PostgreSQL", icon: "/postgres.png" };
   };
 
-  // Fetch database schema from /api/database/schema
+  // Fetch database schema from /api/databases/schema
   const fetchDatabaseSchema = async (dbId: string) => {
     setLoadingSchema(true);
     setSchemaError(null);
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/database/schema?database_id=${dbId}`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/schema?database_id=${dbId}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.detail || "Failed to load database schema.");
@@ -114,18 +114,7 @@ export default function DatabasesPage() {
 
   // Get current user ID
   const getUserId = () => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("kelostats_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          return parsed.user_id || "00000000-0000-0000-0000-000000000000";
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return "00000000-0000-0000-0000-000000000000";
+    return getStoredUserId() || "";
   };
 
   // Switch database tab and set smart defaults

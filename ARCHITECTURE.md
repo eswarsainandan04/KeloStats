@@ -1,12 +1,19 @@
 # KeloStats Multi-Agent Architecture & Orchestration Engine
 
-KeloStats is an enterprise-grade AI analytics and presentation generation platform. It transforms natural language queries over relational enterprise databases (PostgreSQL, MySQL, Oracle) into verified SQL, real-time data visualizations, conversational insights, and dynamic corporate slide presentations (16:9).
+KeloStats is an enterprise-grade AI analytics and automated presentation generation platform. It converts natural language queries over relational enterprise databases (PostgreSQL, MySQL, Oracle) and unstructured document repositories (RAG via pgvector) into verified SQL, conversational executive summaries, and boardroom-ready 16:9 presentation slides (pure vector SVG with fixed `viewBox="0 0 1920 1080"`).
 
-The system is orchestrated using **LangGraph**, featuring self-healing SQL execution loops, strict read-only security guardrails, UUID-based dynamic presentation manifests, and automated HTML/Tailwind/Chart.js validation.
+The orchestration backbone is powered by **LangGraph**, featuring:
+- **Multi-Turn Conversational Memory**: Contextual query reformulation with referential pronoun resolution against chat history.
+- **Multi-Tier Intent & Task Classification**: Two-level classification (`QueryClassificationAgent` &rarr; `QueryDecisionAgent`).
+- **Dual Data Ingestion**: Relational analytical SQL engine + unstructured document hybrid vector search (pgvector).
+- **Self-Healing SQL Repair Loops**: Autonomous dialect-aware syntax and schema repair with strict read-only guardrails.
+- **Decoupled Planner-Compiler Architecture**: Unified spatial planner (`SlidePlanningAgent`) decoupled from the code compiler (`PPTGenerationAgent`).
+- **Context-Aware Theme Adaptation**: Dynamic slide inheritance (Case 1: Blank slide theme inheritance from previous slide vs. Case 2: Content slide modification).
+- **Dynamic Slide Manifests**: UUID-based immutable slide storage (`.svg`) synchronized through an ordered `manifest.json`.
 
 ---
 
-## 1. End-to-End Architecture Diagram
+## 1. End-to-End Multi-Agent Architecture Diagram
 
 ```mermaid
 flowchart TD
@@ -22,45 +29,57 @@ flowchart TD
     classDef endNode fill:#064E3B,stroke:#10B981,stroke-width:2px,color:#F8FAFC;
 
     %% Entry & Ingestion Layer
-    API["🚀 <b>POST /api/workflow/query</b><br>User Query + DB ID + Project ID + Slide Num"]:::startNode --> LOGGER_INIT["📝 <b>Initialize LLM Logger Session</b><br>start_workflow_logger()"]:::storageNode
+    API["🚀 <b>POST /api/workflow/query</b><br>User Query + DB ID / Collection ID + Project ID + Slide Num"]:::startNode --> LOGGER_INIT["📝 <b>Initialize LLM Logger Session</b><br>start_workflow_logger()"]:::storageNode
     LOGGER_INIT --> SAVE_USER_MSG["💬 <b>Save User Message Node</b><br>Persists query to public.chat_messages (role: 'User')"]:::storageNode
-    SAVE_USER_MSG --> NODE_0A
+    SAVE_USER_MSG --> NODE_REFORM
 
-    %% Node 0A: Query Classification Agent
+    %% Layer 0: Conversational Memory & Preprocessing
+    subgraph S0_PRE["Layer 0: Conversational Memory & Preprocessing"]
+        NODE_REFORM["🔄 <b>Node 0: Query Reformulate Agent</b><br>Detects ambiguous pronouns ('it', 'that', 'this')<br>Reconstructs standalone query from chat history"]:::agentNode
+    end
+
+    NODE_REFORM --> NODE_0A
+
+    %% Layer 0A: Intent Classification
     subgraph S0A["Layer 0A: Intent Classification"]
         NODE_0A["🎯 <b>Node 0A: Query Classification Agent</b><br>Classifies intent: greet | out_of_scope | in_scope"]:::agentNode
         DECIDE_INTENT{"Intent?"}:::decisionNode
         NODE_0A --> DECIDE_INTENT
     end
 
-    DECIDE_INTENT -->|greet| GREET_HANDLER["👋 <b>Handle Greet Node</b><br>Generates welcoming Copilot greeting via LLM"]:::agentNode
-    DECIDE_INTENT -->|out_of_scope| OOS_HANDLER["🛑 <b>Handle Out-of-Scope Node</b><br>Explains enterprise domain boundaries via LLM"]:::errorNode
+    DECIDE_INTENT -->|greet| GREET_HANDLER["👋 <b>Handle Greet Node</b><br>Dynamic welcoming greeting via LLM"]:::agentNode
+    DECIDE_INTENT -->|out_of_scope| OOS_HANDLER["🛑 <b>Handle Out-of-Scope Node</b><br>Explains domain & enterprise data boundaries"]:::errorNode
     DECIDE_INTENT -->|in_scope| NODE_0B
 
     GREET_HANDLER --> SAVE_AI_MSG
     OOS_HANDLER --> SAVE_AI_MSG
 
-    %% Node 0B: Query Decision Agent
-    subgraph S0B["Layer 0B: Task Decision"]
-        NODE_0B["🧠 <b>Node 0B: Query Decision Agent</b><br>Classifies: normal_qa vs agent<br>Sub-agent: QueryDecisionClassifyAgent (sql_required: true/false)"]:::agentNode
-        DECIDE_SQL{"SQL Required?"}:::decisionNode
-        NODE_0B --> DECIDE_SQL
+    %% Layer 0B: Task Decision & Source Routing
+    subgraph S0B["Layer 0B: Task & Source Decision Routing"]
+        NODE_0B["🧠 <b>Node 0B: Query Decision Agent</b><br>Determines: decision ('normal_qa' vs 'agent')<br>source ('database' vs 'documents')<br>Flags: sql_required | rag_required"]:::agentNode
+        DECIDE_ROUTER{"Routing Path?"}:::decisionNode
+        NODE_0B --> DECIDE_ROUTER
     end
 
-    DECIDE_SQL -->|"Yes (normal_qa or data slide)"| NODE1
-    DECIDE_SQL -->|"No (Direct slide edit/styling)"| NODE6
+    %% Routing Branches from Node 0B
+    DECIDE_ROUTER -->|"source == 'documents' & normal_qa"| NODE_KNOW_QA
+    DECIDE_ROUTER -->|"source == 'documents' & agent"| NODE_PLAN
+    DECIDE_ROUTER -->|"source == 'database' & sql_required=True"| NODE1
+    DECIDE_ROUTER -->|"agent & sql_required=False (Direct Slide Edit)"| NODE_PLAN
 
-    %% Node 1: Schema Input Layer
-    subgraph S1["Layer 1: Schema Ingestion & Context"]
+    %% Layer RAG: Unstructured Knowledge / Document Pipeline
+    subgraph S_RAG["Layer RAG: Unstructured Document Intelligence (pgvector)"]
+        NODE_KNOW_QA["📚 <b>Knowledge Answer Node</b><br>1. generate_query_embeddings()<br>2. hybrid_search() on pgvector chunks<br>3. KnowledgeAnswerAgent synthesizes direct factual answer"]:::agentNode
+    end
+
+    NODE_KNOW_QA --> SAVE_AI_MSG
+
+    %% Layer 1 & 2: Structured SQL Pipeline - Schema Context & Verification
+    subgraph S1_2["Layers 1 & 2: Schema Context & Verification"]
         NODE1["🔍 <b>Node 1: Schema Input Node</b><br>Extracts cached schema JSON from<br>databases/schema_extraction/output/{db_id}.json"]:::agentNode
-        NODE1 --> SCHEMA_FORMAT["📄 <b>Format Schema for LLM</b><br>Tables, columns, types, sample values, min/max"]:::storageNode
-    end
-
-    SCHEMA_FORMAT --> NODE2
-
-    %% Node 2: Verification Agent
-    subgraph S2["Layer 2: Triage & Schema Verification"]
-        NODE2["🛡️ <b>Node 2: Query Verification Agent</b><br>Validates user query against extracted schema context"]:::agentNode
+        NODE1 --> SCHEMA_FORMAT["📄 <b>Format Schema for LLM</b><br>Tables, columns, types, sample values, min/max statistics"]:::storageNode
+        SCHEMA_FORMAT --> NODE2["🛡️ <b>Node 2: Verification Agent</b><br>Validates query feasibility against schema context"]:::agentNode
+        
         DECIDE_VERIFY{"Verification Decision?"}:::decisionNode
         NODE2 --> DECIDE_VERIFY
     end
@@ -68,18 +87,14 @@ flowchart TD
     DECIDE_VERIFY -->|SCHEMA_MATCH| NODE3A
     DECIDE_VERIFY -->|RETRIEVAL_REQUIRED| NODE3B
 
-    %% Node 3B: Retrieval Agent & Guardrail
-    subgraph S3B["Layer 3B: Entity Value Retrieval & Search"]
+    %% Layer 3B: Entity Value Retrieval & Search
+    subgraph S3B["Layer 3B: Entity Value Retrieval & Guardrail"]
         NODE3B["🔎 <b>Node 3B: Retrieval Agent</b><br>Extracts entity keywords & generates search SQL (ILIKE / LIKE)"]:::agentNode
         
         NODE3B --> GUARDRAIL_RETRIEVE{"🛡️ <b>Retrieval Guardrail</b><br>Blocks mutating keywords (DROP, DELETE, etc.)"}:::guardNode
-        GUARDRAIL_RETRIEVE -->|Violation| RETRY_RETRIEVAL["🔁 <b>Retry Retrieval Agent</b><br>Corrective penalty warning (up to 3x)"]:::guardNode
-        RETRY_RETRIEVAL --> NODE3B
-
         GUARDRAIL_RETRIEVE -->|Passed| DB_TOOL_SEARCH["⚡ <b>Execute Search Query on Target DB</b><br>PostgreSQL / MySQL / Oracle"]:::toolNode
         
         DB_TOOL_SEARCH --> CHECK_RETRIEVAL_OUT{"Execution Result?"}:::decisionNode
-        
         CHECK_RETRIEVAL_OUT -->|Database Error| RETRIEVAL_ERR_STATE["⚠️ Status: <b>RETRIEVAL_REPAIR_REQUIRED</b>"]:::errorNode
         CHECK_RETRIEVAL_OUT -->|0 Rows Returned| NOT_FOUND_NODE["⚠️ <b>Status: NOT_FOUND</b><br>'the {word} not found in your database'"]:::errorNode
         CHECK_RETRIEVAL_OUT -->|>0 Rows Returned| MD_TABLE["📊 <b>Format Markdown Table</b><br>Exact values found for SQL WHERE clause"]:::storageNode
@@ -89,14 +104,11 @@ flowchart TD
     MD_TABLE --> NODE3A
     RETRIEVAL_ERR_STATE --> NODE4
 
-    %% Node 3A: Master SQL Writer Agent & Execution
+    %% Layer 3A: Master SQL Writer Agent & Execution
     subgraph S3A["Layer 3A: Master SQL Generation & Execution"]
         NODE3A["✍️ <b>Node 3A: SQL Writer Node</b><br>Generates dialect-aware analytical SQL<br>using schema + retrieved entity table"]:::agentNode
         
         NODE3A --> GUARDRAIL_WRITER{"🛡️ <b>SQL Writer Guardrail</b><br>Enforces SELECT-only; blocks mutations"}:::guardNode
-        GUARDRAIL_WRITER -->|Violation| RETRY_WRITER["🔁 <b>Retry SQL Writer Agent</b><br>Corrective penalty warning (up to 3x)"]:::guardNode
-        RETRY_WRITER --> NODE3A
-        
         GUARDRAIL_WRITER -->|Passed| DB_EXEC["⚡ <b>Execute Master SQL on Target DB</b><br>PostgreSQL / MySQL / Oracle"]:::toolNode
         
         DB_EXEC --> CHECK_WRITER_OUT{"Execution Result?"}:::decisionNode
@@ -106,9 +118,9 @@ flowchart TD
 
     WRITER_ERR_STATE --> NODE4
 
-    %% Node 4: Centralized Self-Healing Repair
+    %% Layer 4: Centralized Self-Healing SQL Repair
     subgraph S4_REPAIR["Layer 4: Centralized Self-Healing SQL Repair"]
-        NODE4["🛠️ <b>Node 4: SQL Repair Node</b><br>SQLRepairAgent: Error + Schema + DB Dialect<br>Attempts up to 3 repair cycles"]:::repairNode
+        NODE4["🛠️ <b>Node 4: SQL Repair Node</b><br>SQLRepairAgent: Error + Schema + DB Dialect<br>Performs up to 3 iterative repair attempts"]:::repairNode
         
         NODE4 --> ROUTE_AFTER_REPAIR{"Source of Repair?"}:::decisionNode
         
@@ -121,36 +133,35 @@ flowchart TD
         RE_EXEC_MASTER --> DECIDE_DOWNSTREAM
     end
 
-    SAVE_DATA --> DECIDE_DOWNSTREAM{"Decision Routing?<br><i>(Evaluates Node 0B: normal_qa vs agent)</i>"}:::decisionNode
+    SAVE_DATA --> DECIDE_DOWNSTREAM{"Downstream Task?"}:::decisionNode
 
-    %% Downstream Routing (Occurs after SQL Execution & Data Fetch)
+    %% Downstream Routing
     DECIDE_DOWNSTREAM -->|decision == 'normal_qa'| NODE5
-    DECIDE_DOWNSTREAM -->|decision == 'agent'| NODE5_5
+    DECIDE_DOWNSTREAM -->|decision == 'agent'| NODE_PLAN
 
-    %% Node 5: Answer Generator
+    %% Layer 5: Conversational QA Synthesis
     subgraph S5_QA["Layer 5: Conversational QA Synthesis"]
         NODE5["💬 <b>Node 5: Answer Generator Node</b><br>Synthesizes direct conversational answer & metrics<br>grounded strictly in executed SQL data"]:::agentNode
     end
     NODE5 --> SAVE_AI_MSG
 
-    %% Nodes 5.5, 6 & 7: PPT Planning, Generation & HTML Validation
-    subgraph S6_PPT["Layer 6: Dynamic Presentation Engine (Planner-Compiler Architecture)"]
-        NODE5_5["📐 <b>Node 5.5: Slide Planning Agent</b><br>Translates query & retrieved rows into structured JSON layout<br>Generates components & exact 1920x1080 bounding box locations"]:::agentNode
+    %% Layer 6: Dynamic Presentation Engine (Unified Planner-Compiler)
+    subgraph S6_PPT["Layer 6: Dynamic Presentation Engine (Unified Planner-Compiler)"]
+        NODE_PLAN["📐 <b>Unified Slide Planning Node</b><br><b>SlidePlanningAgent:</b><br>1. Resolves template SVG via GetSVGCode & is_empty_slide<br>2. Sets slide_type ('current' | 'previous') & slide_info<br>3. Evaluates source:<br>   • 'database': Ingests raw SQL retrieved_data<br>   • 'documents': Generates embeddings & hybrid_search<br>4. Calculates non-overlapping 1920x1080 bounding boxes"]:::agentNode
         
-        NODE5_5 --> NODE6["🎨 <b>Node 6: PPT Generation Node</b><br>Compiles structured slide_plan JSON into HTML5 / Tailwind / Chart.js<br>Case 1: Empty Canvas -> uses previous slide template<br>Case 2: Existing Canvas -> updates active slide<br><i>(Raw database rows NOT passed directly to HTML generator)</i>"]:::agentNode
-        
-        NODE6 --> NODE7["✅ <b>Node 7: HTML Code Validation Node</b><br>Inspects slide layout for 16:9 ratio, broken CSS,<br>overlapping divs, and JavaScript/Chart.js syntax errors"]:::guardNode
-
-        NODE7 --> S3_SAVE[("☁️ <b>Persist Validated Slide to S3</b><br>workspace/{user_id}/{project_id}/slides/{uuid}.html<br>via manifest.json")]:::storageNode
+        CHECK_PLAN_FALLBACK{"Fallback Detected?"}:::decisionNode
+        NODE_PLAN --> CHECK_PLAN_FALLBACK
+        CHECK_PLAN_FALLBACK -->|Yes: Info not found in docs| SAVE_AI_MSG
+        CHECK_PLAN_FALLBACK -->|No: Valid slide plan| NODE_GEN["🎨 <b>Node 6: PPT Generation Node</b><br><b>PPTGenerationAgent:</b><br>1. Receives slide_plan + template_svg + slide_type + slide_info<br>2. Compiles layout into pure 16:9 vector SVG<br>3. Saves SVG directly to workspace storage via manifest.json<br>4. Returns friendly confirmation message"]:::agentNode
     end
 
-    NODE6 --> SAVE_AI_MSG
+    NODE_GEN --> SAVE_AI_MSG
 
-    %% Exit & Persistence Layer
+    %% Layer 7: Persistence & Observability
     subgraph S_FINAL["Layer 7: Response Persistence & Observability"]
         SAVE_AI_MSG["💾 <b>Save AI Response Node</b><br>Persists Copilot answer / confirmation to<br>public.chat_messages (role: 'AI')"]:::storageNode
         
-        SAVE_AI_MSG --> WORKFLOW_END["🏁 <b>LangGraph Final State</b>"]:::endNode
+        SAVE_AI_MSG --> WORKFLOW_END["🏁 <b>LangGraph Final State (END)</b>"]:::endNode
         WORKFLOW_END --> FINALIZE_LOG[("📜 <b>Save Final LLM Log Session</b><br>logs/llm_logs/workflow Log {timestamp}.txt<br>prompts, completions & token telemetry")]:::storageNode
     end
 ```
@@ -159,152 +170,249 @@ flowchart TD
 
 ## 2. Core State Schema (`KelostatsGraphState`)
 
-The state passed across all LangGraph nodes is strictly typed:
+The state dictionary passed across all nodes in the compiled LangGraph workflow is strictly typed as `KelostatsGraphState`:
 
 | State Key | Type | Description |
 |---|---|---|
-| `user_query` | `str` | Raw natural language input from the user |
-| `database_id` | `Optional[str]` | Target connected database ID |
-| `project_id` | `Optional[str]` | Active presentation project ID in Supabase/PostgreSQL |
-| `user_id` | `Optional[str]` | Authenticated user ID |
-| `slide_number` | `Optional[int]` | Active slide index (1-based) being viewed or edited |
-| `classification_intent` | `Optional[str]` | `"greet"` \| `"out_of_scope"` \| `"in_scope"` |
-| `classification_reason` | `Optional[str]` | Explanation from `QueryClassificationAgent` |
-| `decision` | `Optional[str]` | `"normal_qa"` (direct data question) \| `"agent"` (generate/edit slides) |
-| `decision_reason` | `Optional[str]` | Explanation from `QueryDecisionAgent` |
-| `sql_required` | `Optional[bool]` | `True` if database SQL execution is required; `False` if direct slide editing/styling without SQL |
-| `llm_prompt_text` | `Optional[str]` | Rich formatted schema text with columns, types, sample categories, min/max |
-| `verification_status` | `Optional[str]` | `"SCHEMA_MATCH"` \| `"RETRIEVAL_REQUIRED"` |
-| `verification_reason` | `Optional[str]` | Reasoning provided by `QueryVerifyAgent` |
-| `retrieved_markdown_table` | `Optional[str]` | Markdown table of verified database entity values for WHERE clause |
-| `generated_sql` | `Optional[str]` | Dialect-compliant SQL query generated by `SQLWriterAgent` |
-| `sql_error` | `Optional[str]` | Exception traceback string if query execution fails |
-| `retrieved_data` | `Optional[Dict[str, Any]]` | Execution payload `{"columns": [...], "rows": [...]}` |
-| `retrieved_rows_count` | `Optional[int]` | Number of records returned by the master query |
-| `generated_slide_html` | `Optional[str]` | Raw 16:9 slide HTML5 code produced by `PPTGenerationAgent` |
-| `final_output` | `Optional[str]` | Conversational response displayed in Copilot chat |
-| `status` | `Optional[str]` | Current operational lifecycle status string |
+| `user_query` | `str` | Active natural language query (original or reformulated). |
+| `original_user_query` | `Optional[str]` | Pristine user input before any pronoun reformulation. |
+| `reformulated_query` | `Optional[str]` | Query after resolving pronouns against conversation history. |
+| `is_reformulated` | `Optional[bool]` | Flag indicating whether query reformulation took place. |
+| `database_id` | `Optional[str]` | UUID of the connected enterprise SQL database. |
+| `collection_id` | `Optional[str]` | UUID of the document collection for RAG semantic search. |
+| `project_id` | `Optional[str]` | Active presentation project ID in Supabase/PostgreSQL. |
+| `user_id` | `Optional[str]` | Authenticated user ID (from JWT session or project ownership). |
+| `slide_number` | `Optional[int]` | Active slide index (1-based) currently viewed or edited. |
+| `classification_intent` | `Optional[str]` | Top-level intent: `"greet"` \| `"out_of_scope"` \| `"in_scope"`. |
+| `classification_reason` | `Optional[str]` | Reasoning provided by `QueryClassificationAgent`. |
+| `decision` | `Optional[str]` | Target task mode: `"normal_qa"` \| `"agent"`. |
+| `decision_reason` | `Optional[str]` | Reasoning provided by `QueryDecisionAgent`. |
+| `sql_required` | `Optional[bool]` | `True` if database SQL execution is required; `False` for direct slide styling without SQL. |
+| `rag_required` | `Optional[bool]` | `True` if document retrieval via semantic search is required. |
+| `source` | `Optional[str]` | Selected data context: `"database"` \| `"documents"`. |
+| `llm_prompt_text` | `Optional[str]` | Rich formatted database schema context (tables, columns, types, sample values, min/max). |
+| `verification_status` | `Optional[str]` | Schema verification result: `"SCHEMA_MATCH"` \| `"RETRIEVAL_REQUIRED"`. |
+| `verification_reason` | `Optional[str]` | Reasoning provided by `QueryVerifyAgent`. |
+| `retrieved_markdown_table` | `Optional[str]` | Markdown table containing verified categorical database values for the SQL WHERE clause. |
+| `generated_sql` | `Optional[str]` | Dialect-compliant SQL query produced by `SQLWriterAgent`. |
+| `sql_error` | `Optional[str]` | Database execution error message/traceback (if execution failed). |
+| `retrieved_data` | `Optional[Dict[str, Any]]` | Executed query dataset payload: `{"columns": [...], "rows": [...]}`. |
+| `retrieved_rows_count` | `Optional[int]` | Number of records returned by the master analytical SQL query. |
+| `slide_plan` | `Optional[Dict[str, Any]]` | Structured layout plan with 1920x1080 bounding boxes produced by `SlidePlanningAgent`. |
+| `template_svg` | `Optional[str]` | Template SVG markup passed as visual styling/theme reference to planner and generator. |
+| `slide_type` | `Optional[str]` | Context mode: `"current"` (editing active slide) or `"previous"` (inheriting theme from prior slide). |
+| `slide_info` | `Optional[str]` | Directive instructing the LLM how to treat slide theme and content adaptation. |
+| `generated_slide_svg` | `Optional[str]` | Pure 16:9 SVG slide markup generated by `PPTGenerationAgent`. |
+| `final_output` | `Optional[str]` | Conversational response displayed in the AI Copilot chat window. |
+| `status` | `Optional[str]` | Current operational lifecycle stage string. |
 
 ---
 
-## 3. Workflow Layer Breakdown
+## 3. Comprehensive Workflow Layer Breakdown
 
-### Layer 0: Entry, Ingestion & Intent Triage
+### Layer 0: Conversational Memory & Preprocessing
 1. **`save_user_message_node`**:
-   - Persists the user's prompt into `public.chat_messages` table (`role: 'User'`) linked to `project_id`.
-2. **`query_classification_node` (`QueryClassificationAgent`)**:
-   - Classifies query into:
-     - `greet`: Handled by `handle_greet_node` with a dynamic AI welcoming response.
-     - `out_of_scope`: Handled by `handle_out_of_scope_node` explaining analytical capabilities.
-     - `in_scope`: Passes to task decision.
-3. **`query_decision_node` (`QueryDecisionAgent` & `QueryDecisionClassifyAgent`)**:
-   - Distinguishes user intent:
-     - `normal_qa`: Direct inquiry asking for numbers, summaries, or telemetry (`sql_required=True`).
-     - `agent`: Directive to generate, redesign, restyle, or update presentation slides.
-   - For `agent` queries, `QueryDecisionClassifyAgent` classifies whether database SQL is required:
-     - `sql_required: False`: Direct editing, styling, formatting, or text improvements without SQL &rarr; **Routes directly to `ppt_generation_node`**, bypassing `schema_input`, `verification_agent`, and `sql_writer`. Uses `ppt_general_agent_prompt.txt`.
-     - `sql_required: True`: Slide generation requiring database records &rarr; **Routes to `schema_input_node`** to execute the SQL data pipeline. Uses `ppt_theme_prompt.txt`.
+   - Immediately writes the incoming prompt to `public.chat_messages` (`role: 'User'`) linked to `project_id`.
+2. **`query_reformulate_node` (`QueryReformulateAgent`)**:
+   - Evaluates whether the prompt contains ambiguous referential pronouns (e.g., *"give me its breakdown"*, *"show that in a chart"*, *"compare these two"*).
+   - If ambiguous, pulls the last 5 turns of conversation history from `chat_messages` and reconstructs a standalone, fully-qualified prompt.
+   - Downstream agents receive the clear, unambiguous prompt while preserving `original_user_query`.
 
-### Layer 1 & 2: Schema Context & Verification
-1. **`schema_input_node`**:
-   - Loads cached database schema (`databases/schema_extraction/output/{db_id}.json` / `.txt`).
-   - Converts tables, column types, statistics, and sample values into structured LLM prompt text.
-2. **`verification_agent_node` (`QueryVerifyAgent`)**:
-   - Validates how the query should be fulfilled against schema tables and columns:
-     - `SCHEMA_MATCH`: Direct SQL generation.
-     - `RETRIEVAL_REQUIRED`: Ambiguous entity values requiring value search (e.g., country names, product codes).
-   - *Note: `UNRELATED` was removed from verification because general non-database / out-of-scope requests are already triaged upfront at Layer 0A by `QueryClassificationAgent` (`out_of_scope`).*
+### Layer 0A: Intent Classification
+1. **`query_classification_node` (`QueryClassificationAgent`)**:
+   - Classifies query intent:
+     - `greet` &rarr; Handled by `handle_greet_node` with a dynamic welcoming message generated by LLM &rarr; `save_ai_response`.
+     - `out_of_scope` &rarr; Handled by `handle_out_of_scope_node` explaining enterprise data boundaries &rarr; `save_ai_response`.
+     - `in_scope` &rarr; Advances to Task Decision (`query_decision_node`).
 
-### Layer 3: Entity Retrieval & Master SQL Generation
-1. **`retrieval_agent_node` (`RetrievalAgent`)**:
-   - Generates case-insensitive search queries (`ILIKE` / `LIKE`) to locate exact categorical matches.
-   - Built-in regex guardrails block mutating SQL keywords.
-   - If 0 rows return, halts with user-friendly "not found in database" message.
-   - If rows return, formats an entity Markdown table for the SQL writer.
-2. **`sql_writer_node` (`SQLWriterAgent`)**:
-   - Synthesizes dialect-aware SQL (PostgreSQL, MySQL, Oracle).
-   - Enforces read-only safety guardrail (strictly blocks `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, etc.).
-   - Executes SQL and writes records to `backend/data/{timestamp}.json`.
-   - On database execution error, transitions status to `REPAIR_REQUIRED`.
-
-### Layer 4: Centralized Self-Healing SQL Repair
-1. **`sql_repair_node` (`SQLRepairAgent`)**:
-   - Triggered automatically when retrieval search or master SQL fails execution.
-   - Analyzes target database error message, schema structure, and invalid SQL.
-   - Performs up to 3 iterative repair attempts.
-   - Re-executes repaired query and routes state back to normal execution pipelines.
-
-### Dual-Route Decision Routing in LangGraph
-
-> [!NOTE]
-> 1. **Early Intent & SQL Triage (Node 0B)**: `QueryDecisionAgent` identifies `normal_qa` vs `agent`. If `agent`, `QueryDecisionClassifyAgent` determines if SQL data is needed (`sql_required: true/false`).
-> 2. **Direct PPT Route (Bypasses SQL)**: When `decision == 'agent'` and `sql_required is False` (e.g., "change slide title", "make background dark navy", "restyle cards"), LangGraph routes directly from Node 0B to **Node 6 (`ppt_generation_node`)**, eliminating unnecessary database schema lookups, SQL generation, and latency.
-> 3. **Data-Driven Route (Executes SQL)**: When `sql_required is True`, queries pass through schema verification, SQL generation, and execution. Afterwards:
->    - `normal_qa` &rarr; **Node 5 (Answer Generator)** for natural language answers.
->    - `agent` &rarr; **Node 6 (PPT Generator)** & **Node 7 (HTML Validator)** with retrieved data rows.
-
-### Layer 5 & 6: Conversational QA & Slide Synthesis (Planner-Compiler Pattern)
-1. **`answer_generator_node` (`AnswerGeneratorAgent`)**:
-   - Triggered when `decision == "normal_qa"`.
-   - Formulates natural language explanations, key metrics, and bulleted takeaways grounded solely in retrieved database rows.
-2. **`slide_planning_node` (`SlidePlanningAgent`)**:
-   - Triggered when `decision == "agent"`. Runs immediately before PPT code compilation.
-   - **Inputs**: `user_query`, `html_code` (template), `retrived_rows` (optional), `sql_required`.
-   - **Mode A (`sql_required: True`)**: Synthesizes key metrics, trends, and charts from retrieved database records.
-   - **Mode B (`sql_required: False`)**: Inspects current slide HTML and repositions, adds, or updates components based on user instruction.
-   - **Spatial Planning**: Maps each planned component to exact non-overlapping bounding box coordinates on a standard `1920 × 1080` canvas (`x`, `y`, `width`, `height`).
-   - **Outputs**: Strict layout plan JSON (`slide_plan`), completely stripping styling/hex codes so the LLM focuses purely on content and spatial structure.
-3. **`ppt_generation_node` (`PPTGenerationAgent`)**:
-   - Compiles the structured `slide_plan` JSON and template HTML into responsive, standalone 16:9 HTML with Tailwind CSS and Chart.js telemetry charts.
-   - **Decoupled Architecture**: Raw database rows are **never** passed to this node; it acts purely as an HTML/Tailwind compiler for the verified plan.
-   - **Dynamic Manifest Resolution**: Uses `workspace/{user_id}/{project_id}/manifest.json` to identify active slide UUID (`{uuid}.html`).
-   - **Case 1 (Empty Slide)**: If the target slide has no content, inherits theme, color palette, and layout from the previous content slide.
-   - **Case 2 (Slide with Content)**: Uses existing slide canvas as template to update text, tables, and charts.
-4. **`validate_html_code_node` (`ValidateHTMLCodeAgent`)**:
-   - Post-processes generated HTML code.
-   - Detects and repairs broken aspect ratios, overlapping divs, missing script tags, and JavaScript syntax bugs (such as invalid `calc()` inside JS objects).
-   - Persists validated HTML back to Supabase S3.
-   - Sets a polite chat confirmation message (never dumps raw code into Copilot chat).
-
-### Layer 7: Exit & Observability
-1. **`save_ai_response_node`**:
-   - Writes final output message to `public.chat_messages` (`role: 'AI'`).
-2. **Workflow LLM Logger (`logs/llm_logger.py`)**:
-   - Flushes step-by-step agent prompts, completions, and token usage into `backend/logs/llm_logs/workflow Log {timestamp}.txt`.
+### Layer 0B: Task Decision & Source Routing
+1. **`query_decision_node` (`QueryDecisionAgent` & `QueryDecisionClassifyAgent`)**:
+   - Evaluates task type and required data source:
+     - `decision`: `"normal_qa"` (factual question answering) vs. `"agent"` (slide design / presentation generation).
+     - `source`: `"database"` (relational SQL data) vs. `"documents"` (unstructured PDF/DOCX knowledge).
+     - Flags: `sql_required` (boolean) and `rag_required` (boolean).
+   - **Routing Logic (`decide_decision_route`)**:
+     1. `source == 'documents'` & `decision == 'normal_qa'` &rarr; `knowledge_answer_node`.
+     2. `source == 'documents'` & `decision == 'agent'` &rarr; `slide_planning_node`.
+     3. `source == 'database'` & `sql_required == True` &rarr; `schema_input_node` (executes SQL data pipeline).
+     4. `decision == 'agent'` & `sql_required == False` &rarr; `slide_planning_node` (direct styling/layout changes bypassing database schema/SQL).
+     5. `decision == 'agent'` & `rag_required == False` &rarr; `slide_planning_node`.
 
 ---
 
-## 4. Workspace & Storage Architecture
+### Layer RAG: Unstructured Knowledge & Document Intelligence
+1. **`knowledge_answer_node` (`KnowledgeAnswerAgent`)**:
+   - Triggered when `decision == 'normal_qa'` and `rag_required is True` (or `source == 'documents'`).
+   - Resolves `collection_id` (from state or workspace table).
+   - Generates vector embeddings via `generate_query_embeddings(user_query)`.
+   - Executes `hybrid_search` against document chunk embeddings in `pgvector`.
+   - Formats context via `context_parser(chunks)`.
+   - Invokes `KnowledgeAnswerAgent(user_query, context, decision='normal_qa')` to synthesize a concise, factual executive summary.
+   - Routes directly to `save_ai_response_node` &rarr; `END`.
+
+---
+
+### Layers 1 – 4: Structured Enterprise SQL Pipeline
 
 ```
-Supabase S3 Bucket ('workspace')
+[schema_input] ──> [verification_agent] ──┬──(SCHEMA_MATCH)──────> [sql_writer] ──> [DB Execution]
+                                           └──(RETRIEVAL_REQUIRED)─> [retrieval_agent] ──┘
+                                                                            │
+                                                                    (Execution Error)
+                                                                            ▼
+                                                                      [sql_repair] (Up to 3x attempts)
+```
+
+1. **`schema_input_node`**:
+   - Ingests cached schema JSON (`databases/schema_extraction/output/{db_id}.json`).
+   - Converts schema JSON into rich formatted text prompt: table structures, columns, types, sample values, and min/max statistics (`schema_input._schema_to_llm`).
+2. **`verification_agent_node` (`QueryVerifyAgent`)**:
+   - Verifies whether user query attributes exist directly in the schema:
+     - `SCHEMA_MATCH`: Direct column/table correspondence &rarr; routes to `sql_writer`.
+     - `RETRIEVAL_REQUIRED`: Ambiguous entity values requiring value search (e.g., product names, region names, status codes) &rarr; routes to `retrieval_agent`.
+3. **`retrieval_agent_node` (`RetrievalAgent`)**:
+   - Synthesizes fast value-discovery SQL (`ILIKE` / `LIKE`).
+   - Validated by read-only guardrails (blocks mutations: `DROP`, `DELETE`, `UPDATE`, `INSERT`).
+   - If execution fails &rarr; marks status as `RETRIEVAL_REPAIR_REQUIRED` and routes to `sql_repair`.
+   - If 0 rows return &rarr; terminates cleanly with status `NOT_FOUND` (`"the {item} not found in your database"`).
+   - If >0 rows return &rarr; formats an exact Markdown entity mapping table and advances to `sql_writer`.
+4. **`sql_writer_node` (`SQLWriterAgent`)**:
+   - Synthesizes dialect-aware SQL (PostgreSQL, MySQL, Oracle) combining schema context and entity values.
+   - Read-only guardrail blocks any data mutation (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`).
+   - Executes query on the live enterprise database via `_execute_and_save_master_data`.
+   - Saves result payload (`columns`, `rows`, count) to `backend/data/{timestamp}.json` and updates `state["retrieved_data"]`.
+   - If execution fails &rarr; marks status as `REPAIR_REQUIRED` and routes to `sql_repair`.
+5. **`sql_repair_node` (`SQLRepairAgent`)**:
+   - Centralized self-healing repair node.
+   - Receives failed query, database error message, target database dialect, and schema context.
+   - Executes up to 3 repair iterations.
+   - Re-executes query upon successful correction:
+     - Repaired search queries &rarr; formats markdown table &rarr; `sql_writer`.
+     - Repaired master queries &rarr; writes data payload &rarr; routes downstream to `slide_planning` or `answer_generator`.
+
+---
+
+### Layer 5: Conversational QA Synthesis
+1. **`answer_generator_node` (`AnswerGeneratorAgent`)**:
+   - Triggered when `decision == 'normal_qa'` and `retrieved_rows_count > 0`.
+   - Bypasses presentation generation entirely.
+   - Formulates concise executive takeaways, numbers, and bullet points strictly grounded in the retrieved SQL dataset.
+   - Routes to `save_ai_response_node` &rarr; `END`.
+
+---
+
+### Layer 6: Dynamic Presentation Engine (Unified Planner-Compiler)
+
+The presentation engine decouples spatial layout planning from code compilation to eliminate coordinate collisions and formatting errors:
+
+```
+[SQL retrieved_data  OR  Document pgvector context] + [template_svg]
+                          │
+                          ▼
+            ┌─────────────────────────────┐
+            │     SlidePlanningAgent      │  <── Spatial Planner (No SVG/CSS styling)
+            │  (database_plan_generator / │      Calculates 1920x1080 (x, y, w, h)
+            │   document_plan_generator)  │      Resolves slide_type & slide_info
+            └─────────────┬───────────────┘
+                          │ structured slide_plan JSON
+                          ▼
+            ┌─────────────────────────────┐
+            │     PPTGenerationAgent      │  <── Code Compiler (Pure 16:9 Vector SVG)
+            │  (ppt_generation_prompt.txt)│      Persists directly to storage
+            └─────────────┬───────────────┘
+                          │ clean chat confirmation message
+                          ▼
+            ┌─────────────────────────────┐
+            │    save_ai_response_node    │  <── Persists Copilot response
+            └─────────────────────────────┘
+```
+
+1. **`slide_planning_node` (`SlidePlanningAgent`)**:
+   - **Template Resolution & Context Adaptation**:
+     - Fetches active slide SVG via `GetSVGCode(project_id, slide_number, user_id)`.
+     - Tests canvas emptiness with `is_empty_slide`:
+       - **Case 1 (Blank Canvas)**: If `slide_number > 1` and previous slide has content, fetches previous slide SVG as `template_svg`, sets `slide_type = "previous"`, and instructs:
+         `"you need carry the theme from previous slide and add the new content in blank slide but do not copy previous slide to blank slide"`.
+         Otherwise sets `slide_type = "current"` and instructions to update.
+       - **Case 2 (Content Canvas)**: Retains `current_svg` as `template_svg`, sets `slide_type = "current"`, and instructs:
+         `"you need to update this current slide, with possible adjustment or modifiication or creation basing on user request in user query"`.
+   - **Dual Source Ingestion**:
+     - **Documents Source**: Generates query embeddings via `generate_query_embeddings`, queries vector chunks via `hybrid_search`, formats context via `context_parser`, and calls `SlidePlanningAgent(source="documents", prompt="document_plan_generator.txt")`. If context is insufficient, detects fallback (`slide_plan.get("fallback")`), sets status `FALLBACK_DOCUMENTS_NOT_PROVIDED`, and bypasses PPT generation.
+     - **Database Source**: Ingests raw SQL query records `retrieved_data` directly into `SlidePlanningAgent(source="database", prompt="database_plan_generator.txt")`.
+   - **Output**: Pure structured `slide_plan` JSON with 1920 × 1080 bounding boxes (`{ "x": ..., "y": ..., "width": ..., "height": ... }`).
+
+2. **`ppt_generation_node` (`PPTGenerationAgent`)**:
+   - **Compiler Responsibility**: Translates `slide_plan` JSON, `template_svg`, `slide_type`, and `slide_info` into executable, presentation-grade 16:9 pure vector SVG markup (`viewBox="0 0 1920 1080"`).
+   - **Fallback Gate**: If fallback was flagged during document planning, skips SVG rendering and passes the informational message directly.
+   - **Direct Storage Persistence**: Calls `save_slide_to_storage` to write the `.svg` asset directly under `workspace/{user_id}/{project_id}/slides/{uuid}.svg` and updates `manifest.json`.
+   - **Chat Output**: Returns a concise, professional confirmation message (e.g., *"✨ I've designed Slide 2 based on your data and updated your presentation canvas."*), never dumping raw markup into the chat interface.
+   - Routes directly to `save_ai_response_node`.
+
+---
+
+### Layer 7: Response Persistence & Observability
+1. **`save_ai_response_node`**:
+   - Persists the final generated response/confirmation in `public.chat_messages` (`role: 'AI'`).
+   - Completes the LangGraph run by transitioning to `END`.
+2. **`start_workflow_logger` (`backend/app/logs/llm_logger.py`)**:
+   - Captures comprehensive step-by-step telemetry for every agent interaction:
+     - Exact timestamp and node execution order.
+     - Full input prompt and raw LLM completion.
+     - Token telemetry (prompt tokens, completion tokens, total tokens).
+     - Execution latency.
+   - Flushes logs to `backend/app/logs/llm_logs/workflow Log {timestamp}.txt`.
+
+---
+
+## 4. Storage & Workspace File Layout
+
+Slide storage is decoupled from sequential numbering through UUID-based filenames and synchronized via a centralized `manifest.json`:
+
+```
+Storage Adapter (Local backend/storage/ or Supabase S3)
 └── workspace/
     └── {user_id}/
         └── {project_id}/
-            ├── manifest.json                  <-- Tracks slide ordering & UUID mappings
+            ├── manifest.json                  <-- Tracks slide ordering, count & UUID mappings
             └── slides/
-                ├── 3f1a2b3c-4d5e-...html      <-- Standalone 16:9 HTML slide
-                ├── 8e9f0a1b-2c3d-...html
+                ├── 3f1a2b3c-4d5e-...svg       <-- Standalone 16:9 vector SVG slide 1
+                ├── 8e9f0a1b-2c3d-...svg       <-- Standalone 16:9 vector SVG slide 2
                 └── ...
 ```
 
-### Manifest Format (`manifest.json`)
+### Dynamic Manifest Architecture (`manifest.json`)
 ```json
 [
   {
-    "filename": "3f1a2b3c-4d5e-4179-be1f-5d6554850ebe.html",
-    "count": 1
+    "filename": "3f1a2b3c-4d5e-4179-be1f-5d6554850ebe.svg",
+    "count": 1,
+    "title": "Executive Summary"
   },
   {
-    "filename": "8e9f0a1b-2c3d-42d9-a98f-d52f903491a3.html",
-    "count": 2
+    "filename": "8e9f0a1b-2c3d-42d9-a98f-d52f903491a3.svg",
+    "count": 2,
+    "title": "Revenue Breakdown"
   }
 ]
 ```
-- Slide additions or deletions anywhere in the deck adjust the order sequence `count` dynamically without requiring file renames.
+- Slide additions, reordering, or deletions update the `count` index dynamically without requiring destructive file renames in storage.
+- The presentation viewer loads slides dynamically by querying `manifest.json` and fetching the corresponding `.svg` asset.
 
-### Relational Database Schema (`public`)
-- **`user_databases`**: Stores encrypted credentials, dialect type, and user-defined `display_name`.
-- **`workspace`**: Projects mapped to user, database, and template.
-- **`chat_messages`**: Persistent chat thread history between User and AI Copilot.
-- **`templates`**: Presentation design systems and theme definitions.
+---
+
+## 5. Summary of Agent Roles & Prompt Mapping
+
+| Agent Node | Function / Class | Prompt File | Responsibility |
+|---|---|---|---|
+| **Query Reformulation** | `QueryReformulateAgent` | `prompts/query_reformulation_prompt.txt` | Resolves conversational pronouns with multi-turn chat history. |
+| **Intent Classification** | `QueryClassificationAgent` | `prompts/query_classification_prompt.txt` | Categorizes queries as `greet`, `out_of_scope`, or `in_scope`. |
+| **Task Decision** | `QueryDecisionAgent` | In-code system prompt | Determines `normal_qa` vs `agent`, `database` vs `documents`, and flags `sql_required` / `rag_required`. |
+| **Schema Verification** | `QueryVerifyAgent` | `prompts/query_verfication.txt` | Classifies queries as `SCHEMA_MATCH` or `RETRIEVAL_REQUIRED`. |
+| **Entity Retrieval** | `RetrievalAgent` | `prompts/retrival_agent.txt` | Discovers exact database keyword values via `LIKE`/`ILIKE` queries. |
+| **SQL Generation** | `SQLWriterAgent` | `prompts/sql_writer_prompt.txt` | Generates dialect-aware analytical SQL queries. |
+| **Self-Healing SQL Repair** | `SQLRepairAgent` | `prompts/sql_repair_agent.txt` | Iteratively repairs failed SQL queries using database errors and schema. |
+| **Conversational Answer** | `AnswerGeneratorAgent` | `prompts/answer_generator_prompt.txt` | Produces executive conversational summaries from SQL datasets. |
+| **Knowledge QA (RAG)** | `KnowledgeAnswerAgent` | `prompts/rag_agent_prompt.txt` | Synthesizes factual answers from document chunk embeddings. |
+| **Slide Planning (Database)** | `SlidePlanningAgent` | `prompts/planning/database_plan_generator.txt` | Converts SQL datasets & template SVG into 1920x1080 component bounding boxes. |
+| **Slide Planning (Documents)**| `SlidePlanningAgent` | `prompts/planning/document_plan_generator.txt` | Converts document RAG context & template SVG into 1920x1080 component bounding boxes. |
+| **Presentation Generation** | `PPTGenerationAgent` | `prompts/presentation/ppt_generation_prompt.txt` | Compiles slide plan & template SVG into 16:9 pure vector SVG slide markup. |

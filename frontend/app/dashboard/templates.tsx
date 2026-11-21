@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, getStoredUserId } from "@/lib/api";
 
 export interface TemplateItem {
   template_id: string;
@@ -17,8 +17,7 @@ export interface SlideItem {
   filename: string;
   name: string;
   s3_key?: string;
-  raw_html?: string;
-  rendered_html: string;
+  raw_svg?: string;
 }
 
 export interface DatabaseItem {
@@ -72,18 +71,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
 
   // Load user info from localStorage
   const getUserId = () => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("kelostats_user");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return parsed.user_id || "93756663-25b3-43c6-9866-be63337e61cc";
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return "93756663-25b3-43c6-9866-be63337e61cc";
+    return getStoredUserId() || "";
   };
 
   // Load favorites from localStorage
@@ -165,31 +153,12 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
   }, [selectedTemplate]);
 
   // Open Create Project Modal
-  const openCreateModal = async (tmpl: TemplateItem, e?: React.MouseEvent) => {
+  const openCreateModal = (tmpl: TemplateItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setTargetTemplateForModal(tmpl);
     setProjectName(`${tmpl.template_name.split(" ").slice(0, 4).join(" ")} Project`);
     setCreateError(null);
     setCreateModalOpen(true);
-
-    // Fetch user databases
-    setLoadingDbs(true);
-    const userId = getUserId();
-    try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/databases/database_info?user_id=${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const dbs: DatabaseItem[] = data.databases || [];
-        setAvailableDbs(dbs);
-        if (dbs.length > 0 && !selectedDbId) {
-          setSelectedDbId(dbs[0].db_id);
-        }
-      }
-    } catch (err) {
-      console.error("Error loading databases for template project:", err);
-    } finally {
-      setLoadingDbs(false);
-    }
   };
 
   // Submit Create Project
@@ -197,10 +166,6 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
     e.preventDefault();
     if (!projectName.trim()) {
       setCreateError("Please enter a project name.");
-      return;
-    }
-    if (!selectedDbId) {
-      setCreateError("Please select a database for this project.");
       return;
     }
     if (!targetTemplateForModal) {
@@ -221,7 +186,9 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
         body: JSON.stringify({
           project_name: projectName.trim(),
           user_id: userId,
-          database_id: selectedDbId,
+          database_id: null,
+          collection_id: null,
+          source: "database",
           template_id: targetTemplateForModal.template_id,
         }),
       });
@@ -235,12 +202,9 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
       const projectId = data.project_id || "";
       const projName = encodeURIComponent(data.project_name || projectName.trim());
 
-      const selectedDb = availableDbs.find((d) => d.db_id === selectedDbId);
-      const dbDispName = encodeURIComponent(selectedDb?.display_name || selectedDb?.database_name || "");
-
       // Redirect directly to workspace
       router.push(
-        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&database_id=${selectedDbId}&template_id=${targetTemplateForModal.template_id}&project_id=${projectId}&project_name=${projName}&display_name=${dbDispName}`
+        `/dashboard/workspace?user_id=${userId}&userid_id=${userId}&template_id=${targetTemplateForModal.template_id}&project_id=${projectId}&project_name=${projName}`
       );
     } catch (err: any) {
       console.error("Project creation error:", err);
@@ -377,21 +341,14 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
               {slides.map((slide, idx) => (
                 <div key={slide.filename || idx} className="flex flex-col items-center group">
                   {/* Slide Container with 16:9 Aspect Ratio */}
-                  <div className="w-full aspect-[16/9] bg-slate-900 rounded-xl shadow-xl overflow-hidden border border-slate-200/80 relative">
+                  <div className="w-full aspect-[16/9] bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200/80 relative">
                     {(() => {
-                      const slideCode = slide.raw_html || slide.rendered_html || "";
-                      const lucideInject = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="https://unpkg.com/lucide-static@1.45.0/font/lucide.css">`;
-                      const cleanDoc = slideCode.includes("<head>")
-                        ? slideCode.replace(
-                            "<head>",
-                            `<head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;margin:0 auto!important;}</style>`
-                          )
-                        : `<!DOCTYPE html><html><head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;margin:0 auto!important;}</style></head><body>${slideCode}</body></html>`;
+                      const slideCode = slide.raw_svg || "";
 
                       return (
                         <iframe
-                          key={`${slide.filename || idx}-${slideCode.length}`}
-                          srcDoc={cleanDoc}
+                          key={`${slide.filename || idx}`}
+                          srcDoc={slideCode}
                           className="w-full h-full border-0 block"
                           scrolling="no"
                           sandbox="allow-scripts allow-same-origin"
@@ -438,7 +395,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1 max-w-2xl">
-            Choose from boardroom-grade PowerPoint decks. Click any template to inspect live HTML slides or create a new presentation.
+            Choose from boardroom-grade PowerPoint decks. Click any template to inspect live SVG slides or create a new presentation.
           </p>
         </div>
 
@@ -688,86 +645,9 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
                 autoFocus
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5148]/20 focus:border-[#FF5148] transition-all"
               />
-            </div>
-
-            {/* Field 2: Select Database */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Select Connected Database <span className="text-rose-500">*</span>
-                </label>
-                {onNavigateTab && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCreateModalOpen(false);
-                      onNavigateTab("databases");
-                    }}
-                    className="text-[11px] font-semibold text-[#FF5148] hover:underline"
-                  >
-                    + Connect New
-                  </button>
-                )}
-              </div>
-
-              {loadingDbs ? (
-                <div className="p-4 bg-slate-50 rounded-xl text-center text-xs text-slate-400">
-                  Loading connected databases...
-                </div>
-              ) : availableDbs.length === 0 ? (
-                <div className="p-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 text-center">
-                  <p className="text-xs font-semibold text-amber-800">No connected databases found.</p>
-                  <p className="text-[11px] text-amber-600 mt-0.5">Please connect a database first to generate data presentations.</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {availableDbs.map((db) => {
-                    const isSelected = selectedDbId === db.db_id;
-                    return (
-                      <div
-                        key={db.db_id}
-                        onClick={() => setSelectedDbId(db.db_id)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                          isSelected
-                            ? "border-[#FF5148] bg-orange-50/40 shadow-xs ring-1 ring-[#FF5148]/20"
-                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] uppercase ${
-                              db.database_type === "postgres"
-                                ? "bg-blue-100 text-blue-700"
-                                : db.database_type === "mysql"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {db.database_type.slice(0, 2)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">
-                              {db.display_name || db.database_name || "Database"}
-                            </p>
-                            <p className="text-[10px] text-slate-400 truncate">
-                              {db.username}@{db.host}:{db.port}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Radio Checkbox */}
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                            isSelected ? "border-[#FF5148] bg-[#FF5148]" : "border-slate-300"
-                          }`}
-                        >
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                You can select or connect a database later directly inside your editing workspace.
+              </p>
             </div>
 
             {/* Error notice */}
@@ -789,7 +669,7 @@ export default function TemplatesPage({ onNavigateTab }: TemplatesPageProps) {
               </button>
               <button
                 type="submit"
-                disabled={isCreatingProject || !selectedDbId || !projectName.trim()}
+                disabled={isCreatingProject || !projectName.trim()}
                 className="px-5 py-2.5 rounded-xl bg-[#FF5148] hover:bg-[#e64037] disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
               >
                 {isCreatingProject ? (

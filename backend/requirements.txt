@@ -29,11 +29,6 @@ PyJWT>=2.8.0
 # Document Processing & Vector Embeddings (RAG)
 pymupdf>=1.24.0
 pymupdf4llm>=0.0.17
-sentence-transformers>=3.0.0
-
-# Presentation Generation & Headless HTML Rendering
-python-pptx>=1.0.0
-playwright>=1.42.0
 
 # Data Analysis & HTTP Clients
 pandas>=2.2.0

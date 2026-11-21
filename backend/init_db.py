@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS workspace (
     database_id VARCHAR(255),
     collection_id VARCHAR(255) REFERENCES user_collections(collection_id) ON DELETE SET NULL,
     source VARCHAR(50) DEFAULT 'auto',
+    response_mode VARCHAR(50) DEFAULT 'agent',
     template_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -154,30 +155,64 @@ def init_db(db_url: str = None) -> bool:
     try:
         engine = create_engine(target_url, pool_pre_ping=True)
         with engine.connect() as conn:
+            # 1. Base Core Tables (committed sequentially)
             conn.execute(text(CREATE_USERS_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'users' created/verified successfully!")
+
             conn.execute(text(CREATE_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'user_databases' created/verified successfully with 'schema JSONB' column!")
+
             conn.execute(text(CREATE_TEMPLATES_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'templates' created/verified successfully!")
+
             conn.execute(text(CREATE_USER_COLLECTIONS_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'user_collections' created/verified successfully!")
+
             conn.execute(text(CREATE_WORKSPACE_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'workspace' created/verified successfully with 'collection_id' FK column!")
+
             conn.execute(text(CREATE_CHAT_MESSAGES_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'chat_messages' created/verified successfully!")
+
             conn.execute(text(CREATE_USERS_DOCUMENTS_TABLE_SQL))
-            conn.execute(text(ENABLE_PGVECTOR_EXTENSION_SQL))
-            conn.execute(text(CREATE_DOCUMENT_CHUNKS_TABLE_SQL))
+            conn.commit()
+            print("[+] Table 'users_documents' created/verified successfully!")
+
+            # 2. PGVector Extension (safe execution query)
+            has_pgvector = False
+            try:
+                conn.execute(text(ENABLE_PGVECTOR_EXTENSION_SQL))
+                conn.commit()
+                has_pgvector = True
+                print("[+] Extension 'vector' (pgvector) enabled successfully!")
+            except Exception as vec_err:
+                conn.rollback()
+                print("[!] Notice: pgvector extension is not available on this PostgreSQL installation.")
+                print("    Creating 'document_chunks' table with fallback 'embedding TEXT' column.")
+
+            # 3. Document Chunks Table (vector if extension available, otherwise TEXT fallback)
+            if has_pgvector:
+                conn.execute(text(CREATE_DOCUMENT_CHUNKS_TABLE_SQL))
+            else:
+                fallback_chunks_sql = CREATE_DOCUMENT_CHUNKS_TABLE_SQL.replace("embedding vector,", "embedding TEXT,")
+                conn.execute(text(fallback_chunks_sql))
+            conn.commit()
+            print("[+] Table 'document_chunks' created/verified successfully!")
+
+            # 4. Workspace Indexes
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_user_id ON workspace(user_id);"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_collection_id ON workspace(collection_id);"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_database_id ON workspace(database_id);"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_workspace_source ON workspace(source);"))
-
             conn.commit()
-            print("[+] Table 'users' created/verified successfully!")
-            print("[+] Table 'user_databases' created/verified successfully with 'schema JSONB' column!")
-            print("[+] Table 'templates' created/verified successfully!")
-            print("[+] Table 'user_collections' created/verified successfully!")
-            print("[+] Table 'workspace' created/verified successfully with 'collection_id' FK column!")
-            print("[+] Table 'chat_messages' created/verified successfully!")
-            print("[+] Table 'users_documents' created/verified successfully!")
-            print("[+] Extension 'vector' (pgvector) enabled successfully!")
-            print("[+] Table 'document_chunks' created/verified successfully with 'collection_id' column!")
+            print("[+] Workspace indexes verified successfully!")
+
         return True
     except Exception as e:
         print(f"[-] Error creating tables: {e}", file=sys.stderr)

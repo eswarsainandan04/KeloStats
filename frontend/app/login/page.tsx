@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { API_BASE_URL } from "@/lib/config";
 
 export default function LoginPage() {
@@ -26,43 +25,34 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      // Direct call to native Kelostats backend login
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
       });
 
-      if (authError) {
-        throw new Error(authError.message || "Invalid email or password.");
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || "Invalid email or password.");
       }
 
-      // Store user info in localStorage and ensure user exists in PostgreSQL `users` table
-      if (data.user) {
-        const resolvedFullName =
-          data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User";
-
-        try {
-          await fetch(`${API_BASE_URL}/api/auth/sync-user`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              user_id: data.user.id,
-              email: data.user.email || email.trim(),
-              full_name: resolvedFullName,
-            }),
-          });
-        } catch (syncErr) {
-          console.warn("Could not sync user record to backend database:", syncErr);
+      // Store native JWT token and user profile in localStorage
+      if (typeof window !== "undefined") {
+        if (data.access_token) {
+          localStorage.setItem("kelostats_token", data.access_token);
         }
-
-        if (typeof window !== "undefined") {
-          const userInfo = {
-            user_id: data.user.id,
-            email: data.user.email,
-            full_name: resolvedFullName,
-          };
-          localStorage.setItem("kelostats_user", JSON.stringify(userInfo));
+        if (data.refresh_token) {
+          localStorage.setItem("kelostats_refresh_token", data.refresh_token);
+        }
+        if (data.user) {
+          localStorage.setItem("kelostats_user", JSON.stringify(data.user));
         }
       }
 
@@ -101,7 +91,6 @@ export default function LoginPage() {
       <header className="border-b border-slate-100 py-4 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-
             <span className="font-extrabold text-xl tracking-tight text-slate-900">
               <span className="text-[#FF5148]">KeloStats</span>
             </span>

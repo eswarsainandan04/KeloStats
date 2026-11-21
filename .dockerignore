@@ -1,0 +1,12 @@
+# Root dockerignore
+.git/
+.gitignore
+frontend/node_modules/
+frontend/.next/
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/storage/
+*.mp4
+screenshots/
+scratch/

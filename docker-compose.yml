@@ -1,0 +1,45 @@
+# ==============================================================================
+# KeloStats - Docker Compose Configuration
+# Root Location: c:\Kelostats\docker-compose.yml
+# Orchestrates the KeloStats Backend with live access to kelostats/backend files
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    container_name: kelostats-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    
+    # Load environment variables directly from kelostats/backend/.env
+    env_file:
+      - ./backend/.env
+
+    # Live-mount the backend code for development hot-reloading
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    
+    # Start uvicorn with hot reload enabled
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+    # Container healthcheck testing /health endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  default:
+    name: kelostats-network

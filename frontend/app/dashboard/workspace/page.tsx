@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, getStoredUserId } from "@/lib/api";
 import ChatInterface from "./ChatInterface";
 import DesigningTools, { ActiveFormatInfo } from "./DesigningTools";
 
@@ -17,16 +17,15 @@ interface SlideData {
   name: string;
   s3_key?: string;
   json?: any;
-  rendered_html: string;
-  raw_html?: string;
+  raw_svg?: string;
 }
 
 /**
  * High-fidelity scaled miniview for slide thumbnails in sidebar.
- * Renders the real HTML and Chart.js graphics inside an isolated scaled iframe,
+ * Renders the slide graphics inside an isolated scaled iframe,
  * ensuring charts, typography, and layouts are 100% proportionate and visible.
  */
-function SlideThumbnail({ html, title }: { html: string; title?: string }) {
+function SlideThumbnail({ code, title }: { code: string; title?: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(0.2);
 
@@ -47,19 +46,12 @@ function SlideThumbnail({ html, title }: { html: string; title?: string }) {
     return () => ro.disconnect();
   }, []);
 
-  const slideCode = html || "";
-  const lucideInject = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="https://unpkg.com/lucide-static@1.45.0/font/lucide.css">`;
-  const cleanDoc = slideCode.includes("<head>")
-    ? slideCode.replace(
-        "<head>",
-        `<head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;}</style>`
-      )
-    : `<!DOCTYPE html><html><head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;}</style></head><body>${slideCode}</body></html>`;
+  const slideCode = code || "";
 
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-white pointer-events-none select-none">
       <iframe
-        srcDoc={cleanDoc}
+        srcDoc={slideCode}
         tabIndex={-1}
         scrolling="no"
         sandbox="allow-scripts allow-same-origin"
@@ -79,8 +71,23 @@ function SlideThumbnail({ html, title }: { html: string; title?: string }) {
 
 function WorkspaceContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const userId = searchParams.get("user_id") || searchParams.get("userid_id") || "00000000-0000-0000-0000-000000000000";
+  const getEffectiveUserId = () => {
+    const fromQuery = searchParams.get("user_id") || searchParams.get("userid_id");
+    if (fromQuery && fromQuery.trim()) {
+      return fromQuery.trim();
+    }
+    return getStoredUserId() || "";
+  };
+
+  const userId = getEffectiveUserId();
+
+  useEffect(() => {
+    if (!userId) {
+      router.push("/login");
+    }
+  }, [userId, router]);
   const projectId = searchParams.get("project_id") || "project_default";
   const projectName = searchParams.get("project_name") || "Presentation Project";
   const databaseId = searchParams.get("database_id") || searchParams.get("db_id") || "";
@@ -88,18 +95,8 @@ function WorkspaceContent() {
   const collectionId = searchParams.get("collection_id") || "";
   const collectionDisplayName = searchParams.get("collection_display_name") || searchParams.get("col_name") || "";
   const rawSource = searchParams.get("source");
-  const source: "database" | "documents" | "auto" =
-    databaseId && collectionId
-      ? rawSource === "database" || rawSource === "documents" || rawSource === "auto"
-        ? rawSource
-        : "auto"
-      : databaseId
-      ? "database"
-      : collectionId
-      ? "documents"
-      : rawSource === "database" || rawSource === "documents" || rawSource === "auto"
-      ? rawSource
-      : "auto";
+  const source: "database" | "documents" =
+    rawSource === "documents" || (!databaseId && collectionId) ? "documents" : "database";
 
   // Dynamic slides loaded directly from Supabase S3 JSON files
   const [slides, setSlides] = useState<SlideData[]>([]);
@@ -180,9 +177,9 @@ function WorkspaceContent() {
     setLoadError(null);
     setRefreshing(true);
     try {
-      // 1. Primary endpoint: workspace/render_ppt.py -> /api/workspace/render/slides
+      // 1. Primary endpoint: /api/workspace/slides/load
       const res = await fetchWithAuth(
-        `${API_BASE_URL}/api/workspace/render/slides?user_id=${userId}&project_id=${projectId}`
+        `${API_BASE_URL}/api/workspace/slides/load?user_id=${userId}&project_id=${projectId}`
       );
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -222,7 +219,7 @@ function WorkspaceContent() {
     if (!userId || !projectId || isAddingSlide) return;
     setIsAddingSlide(true);
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/editor/new_slide`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/slides/new_slide`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -244,7 +241,7 @@ function WorkspaceContent() {
 
       // Re-fetch slides list from S3 and select the new blank slide
       const fetchRes = await fetchWithAuth(
-        `${API_BASE_URL}/api/workspace/render/slides?user_id=${userId}&project_id=${projectId}`
+        `${API_BASE_URL}/api/workspace/slides/load?user_id=${userId}&project_id=${projectId}`
       );
       if (fetchRes.ok) {
         const freshData = await fetchRes.json();
@@ -265,7 +262,7 @@ function WorkspaceContent() {
     }
   };
 
-  // Delete slide from Supabase S3 via /api/workspace/editor/delete_slide
+  // Delete slide via /api/workspace/slides/delete_slide
   const handleDeleteSlide = async (slideNumber: number) => {
     if (!userId || !projectId || deletingSlideNum !== null) return;
     if (slides.length <= 1) {
@@ -275,7 +272,7 @@ function WorkspaceContent() {
 
     setDeletingSlideNum(slideNumber);
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/editor/delete_slide`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/slides/delete_slide`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -294,7 +291,7 @@ function WorkspaceContent() {
 
       // Re-fetch updated slides list from S3
       const fetchRes = await fetchWithAuth(
-        `${API_BASE_URL}/api/workspace/render/slides?user_id=${userId}&project_id=${projectId}`
+        `${API_BASE_URL}/api/workspace/slides/load?user_id=${userId}&project_id=${projectId}`
       );
       if (fetchRes.ok) {
         const freshData = await fetchRes.json();
@@ -673,7 +670,7 @@ function WorkspaceContent() {
       const editables = clone.querySelectorAll("[contenteditable]");
       editables.forEach((el) => el.removeAttribute("contenteditable"));
 
-      const updatedHtml = "<!DOCTYPE html>\n" + clone.outerHTML;
+      const updatedCode = clone.outerHTML;
 
       const res = await fetchWithAuth(`${API_BASE_URL}/api/workspace/editor/tools`, {
         method: "POST",
@@ -684,8 +681,9 @@ function WorkspaceContent() {
           user_id: userId,
           project_id: projectId,
           slide_number: currentSlide.slide_number,
-          html_code: updatedHtml,
-          action: "update_html",
+          svg_code: updatedCode,
+          slide_code: updatedCode,
+          action: "update_slide",
         }),
       });
 
@@ -699,8 +697,7 @@ function WorkspaceContent() {
           idx === activeSlideIndex
             ? {
                 ...s,
-                raw_html: updatedHtml,
-                rendered_html: updatedHtml,
+                raw_svg: updatedCode,
               }
             : s
         )
@@ -830,7 +827,7 @@ function WorkspaceContent() {
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span className="hidden sm:inline">Reload JSON</span>
+            <span className="hidden sm:inline">Reload</span>
           </button>
 
           <button
@@ -934,7 +931,7 @@ function WorkspaceContent() {
                         >
                           <div className="absolute inset-0 z-10 cursor-pointer" />
                           <SlideThumbnail
-                            html={slide.raw_html || slide.rendered_html}
+                            code={slide.raw_svg || ""}
                             title={`Slide ${idx + 1} preview`}
                           />
                         </div>
@@ -1135,20 +1132,13 @@ function WorkspaceContent() {
                     }}
                   >
                     {(() => {
-                      const slideCode = currentSlide.raw_html || currentSlide.rendered_html;
-                      const lucideInject = `<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="https://unpkg.com/lucide-static@1.45.0/font/lucide.css">`;
-                      const cleanDoc = slideCode.includes("<head>")
-                        ? slideCode.replace(
-                            "<head>",
-                            `<head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;}</style>`
-                          )
-                        : `<!DOCTYPE html><html><head>${lucideInject}<style>html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;} .slide-canvas{width:100%!important;height:100%!important;max-width:100%!important;}</style></head><body>${slideCode}</body></html>`;
+                      const slideCode = currentSlide.raw_svg || "";
 
                       return (
                         <iframe
                           ref={iframeRef}
-                          key={`${currentSlide.s3_key || activeSlideIndex}-${currentSlide.slide_number}-${slideCode.length}`}
-                          srcDoc={cleanDoc}
+                          key={`${currentSlide.s3_key || activeSlideIndex}-${currentSlide.slide_number}`}
+                          srcDoc={slideCode}
                           className="w-full h-full border-0 block"
                           scrolling="no"
                           sandbox="allow-scripts allow-same-origin"
