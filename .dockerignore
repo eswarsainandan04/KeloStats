@@ -7,6 +7,8 @@ backend/venv/
 backend/.venv/
 backend/__pycache__/
 backend/storage/
+!backend/app/core/storage/
+!backend/app/core/storage/**
 *.mp4
 screenshots/
 scratch/

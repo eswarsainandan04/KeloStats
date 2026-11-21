@@ -16,7 +16,9 @@ htmlcov/
 
 # Local logs & storage cache
 logs/llm_logs/*.txt
-storage/
+/storage/
+!app/core/storage/
+!app/core/storage/**
 
 # Git
 .git/

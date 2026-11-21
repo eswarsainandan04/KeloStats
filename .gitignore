@@ -6,8 +6,11 @@
 
 # Python bytecode & cache
 __pycache__/
+**/__pycache__/
+**/__pycache__/*
 *.py[cod]
 *$py.class
+*.pyd
 *.so
 .pytest_cache/
 
@@ -50,9 +53,11 @@ backend/app/services/agents/data/
 backend/*.pptx
 backend/slide3_dump.html
 backend/canvas_screenshot.png
+# Local file storage folders (do NOT ignore app/core/storage python code)
+/backend/storage/
 backend/storage/
-storage/
-**/storage/
+!backend/app/core/storage/
+!backend/app/core/storage/*.py
 
 # Large Media Files (CRITICAL)
 *.mp4
