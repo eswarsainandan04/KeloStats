@@ -19,6 +19,7 @@ logs/llm_logs/*.txt
 /storage/
 !app/core/storage/
 !app/core/storage/**
+app/services/presentations/downloads.py
 
 # Git
 .git/
