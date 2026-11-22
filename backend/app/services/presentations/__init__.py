@@ -1,7 +1,11 @@
-from .downloads import (
-    compile_and_save_pptx,
-    compile_slides_to_pptx,
-)
+try:
+    from .downloads import (
+        compile_and_save_pptx,
+        compile_slides_to_pptx,
+    )
+except (ImportError, ModuleNotFoundError):
+    compile_and_save_pptx = None
+    compile_slides_to_pptx = None
 from .manager import (
     GetSVGCode,
     is_empty_slide,

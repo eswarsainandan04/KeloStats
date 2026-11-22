@@ -9,6 +9,7 @@ backend/__pycache__/
 backend/storage/
 !backend/app/core/storage/
 !backend/app/core/storage/**
+backend/app/services/presentations/downloads.py
 *.mp4
 screenshots/
 scratch/

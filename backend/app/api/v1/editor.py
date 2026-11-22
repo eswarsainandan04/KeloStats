@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from app.core.auth import get_current_user_id
 from app.services.presentations import (
-    compile_and_save_pptx,
     upload_slide_content,
 )
 

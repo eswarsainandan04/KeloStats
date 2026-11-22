@@ -65,3 +65,6 @@ backend/storage/
 *.mov
 final_kelostats.mp4
 
+# Exclude local-only PPTX download generator from git
+backend/app/services/presentations/downloads.py
+
