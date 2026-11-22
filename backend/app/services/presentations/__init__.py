@@ -1,11 +1,3 @@
-try:
-    from .downloads import (
-        compile_and_save_pptx,
-        compile_slides_to_pptx,
-    )
-except (ImportError, ModuleNotFoundError):
-    compile_and_save_pptx = None
-    compile_slides_to_pptx = None
 from .manager import (
     GetSVGCode,
     is_empty_slide,
@@ -70,7 +62,4 @@ __all__ = [
     "get_all_templates",
     "get_template_preview_image",
     "get_template_slides_data",
-    # Downloads
-    "compile_slides_to_pptx",
-    "compile_and_save_pptx",
 ]
